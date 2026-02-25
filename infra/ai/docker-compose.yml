@@ -1,0 +1,129 @@
+services:
+  # L'orchestrateur de maintenance (Bot)
+  maintenance:
+    build: /home/jules/scripts
+    container_name: maintenance
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Paris
+      - DOCKER_MODE=true
+    volumes:
+      - /home/jules/scripts:/app
+      - /home/jules/media_share:/media_share
+      - ./data:/data/internal
+      - /mnt/externe:/data/external
+      # --- Legacy Bridge ---
+      - ./data/media/movies:/movies
+      - ./data/media/tv:/tv
+      - /mnt/externe:/mnt/externe
+    ports:
+      - 5001:5001
+    restart: always
+    networks: [arr_network, npm-nw]
+
+  # Le planificateur de tâches Docker
+  ofelia:
+    image: mcuadros/ofelia:latest
+    container_name: ofelia
+    depends_on: [maintenance]
+    command: daemon --docker
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    labels:
+      ofelia.job-exec.clean-ssd.schedule: "@daily"
+      ofelia.job-exec.clean-ssd.command: "python /app/media_manager.py action clean /app"
+      ofelia.job-exec.clean-ssd.container: "maintenance"
+    restart: always
+
+  # Sauvegarde automatisée
+  duplicati:
+    image: lscr.io/linuxserver/duplicati:latest
+    container_name: duplicati
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Paris
+    volumes:
+      - ./data/duplicati/config:/config
+      - /home/jules/infra:/source/infra:ro
+      - /home/jules/scripts:/source/scripts:ro
+      - ./data/duplicati/backups:/backups
+    ports:
+      - 8200:8200
+    restart: unless-stopped
+    networks: [arr_network, npm-nw]
+
+  # VPN & Torrent
+  gluetun:
+    image: qmcgaw/gluetun
+    container_name: gluetun
+    cap_add: [NET_ADMIN]
+    devices: [/dev/net/tun:/dev/net/tun]
+    environment:
+      - VPN_SERVICE_PROVIDER=nordvpn
+      - VPN_TYPE=openvpn
+      - OPENVPN_USER=${NORDVPN_USER}
+      - OPENVPN_PASSWORD=${NORDVPN_PASS}
+      - SERVER_COUNTRIES=Netherlands
+      - SERVER_CATEGORIES=p2p
+      - LOCAL_NETWORK=192.168.1.0/24,172.18.0.0/16,172.23.0.0/16
+      - FIREWALL=on
+      - FIREWALL_VPN_INPUT_PORTS=6881
+      - BLOCK_IPV6=on
+      - VPN_MTU=1400
+      - DNS_ADDRESS=1.1.1.1
+      - DNS_UPSTREAM_RESOLVERS=cloudflare
+      # Autoriser l'accès via le nom de domaine local
+      - HTTP_CONTROL_SERVER_ADDRESS=:8000
+    ports:
+      - 8090:8080 # qBittorrent WebUI
+      - 6881:6881
+      - 6881:6881/udp
+    restart: always
+    networks: [arr_network, npm-nw]
+
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent:latest
+    container_name: qbittorrent
+    network_mode: "service:gluetun"
+    depends_on: [gluetun]
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Paris
+      - WEBUI_PORT=8080
+    volumes:
+      - ./data/qbittorrent/config:/config
+      - ./data:/data/internal
+      # Legacy support for downloads
+      - ./data/downloads:/downloads
+    restart: always
+
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    container_name: flaresolverr
+    ports: [8191:8191]
+    restart: unless-stopped
+    networks: [arr_network, npm-nw]
+
+  plex:
+    image: lscr.io/linuxserver/plex:latest
+    container_name: plex
+    network_mode: host
+    environment: [PUID=1000, PGID=1000, VERSION=docker]
+    volumes:
+      - ./data/plex/config:/config
+      - ./data:/data/internal
+      - /mnt/externe:/data/external
+      # --- Legacy Bridge ---
+      - ./data/media/movies:/movies
+      - ./data/media/tv:/tv
+      - /mnt/externe:/mnt/externe
+    restart: unless-stopped
+
+networks:
+  arr_network:
+    driver: bridge
+  npm-nw:
+    external: true

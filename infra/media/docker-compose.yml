@@ -1,0 +1,110 @@
+services:
+  # L'indexeur : pour centraliser tes sources de recherche
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: prowlarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Paris
+    volumes:
+      - /home/jules/infra/ai/config/prowlarr:/config
+    ports:
+      - 9696:9696
+    restart: unless-stopped
+    networks:
+      - npm-nw
+      - default
+
+  # La gestion des films
+  radarr:
+    image: lscr.io/linuxserver/radarr:latest
+    container_name: radarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Paris
+    volumes:
+      - /home/jules/infra/ai/data/radarr/config:/config
+      - /home/jules/infra/ai/data:/data/internal
+      - /home/jules/infra/ai/data/downloads:/downloads
+      - /mnt/externe:/data/external
+      # --- Legacy Bridge ---
+      - /home/jules/infra/ai/data/media/movies:/movies
+      - /mnt/externe:/mnt/externe
+    ports:
+      - 7878:7878
+    restart: unless-stopped
+    networks:
+      - npm-nw
+      - default
+
+  # La gestion des séries
+  sonarr:
+    image: lscr.io/linuxserver/sonarr:latest
+    container_name: sonarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Paris
+    volumes:
+      - /home/jules/infra/ai/data/sonarr/config:/config
+      - /home/jules/infra/ai/data:/data/internal
+      - /home/jules/infra/ai/data/downloads:/downloads
+      - /mnt/externe:/data/external
+      # --- Legacy Bridge ---
+      - /home/jules/infra/ai/data/media/tv:/tv
+      - /mnt/externe:/mnt/externe
+    ports:
+      - 8989:8989
+    restart: unless-stopped
+    networks:
+      - npm-nw
+      - default
+
+  # Les sous-titres automatisés
+  bazarr:
+    image: lscr.io/linuxserver/bazarr:latest
+    container_name: bazarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Paris
+    volumes:
+      - /home/jules/infra/ai/data/bazarr/config:/config
+      - /home/jules/infra/ai/data:/data/internal
+      - /mnt/externe:/data/external
+      # --- Legacy Bridge ---
+      - /home/jules/infra/ai/data/media/movies:/movies
+      - /home/jules/infra/ai/data/media/tv:/tv
+      - /mnt/externe:/mnt/externe
+    ports:
+      - 6767:6767
+    restart: unless-stopped
+    networks:
+      - npm-nw
+      - default
+
+  # La synchronisation (Syncthing)
+  syncthing:
+    image: lscr.io/linuxserver/syncthing:latest
+    container_name: syncthing
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Paris
+    volumes:
+      - /home/jules/infra/ai/data/syncthing/config:/config
+      - /home/jules/infra/ai/data/media:/data
+    ports:
+      - 8384:8384
+      - 22000:22000/tcp
+      - 22000:22000/udp
+    restart: unless-stopped
+    networks:
+      - npm-nw
+      - default
+
+networks:
+  npm-nw:
+    external: true

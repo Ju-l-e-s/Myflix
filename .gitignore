@@ -1,0 +1,27 @@
+# Secrets et Identités
+.env
+scripts/config.py
+scripts/users.json
+
+# --- IA & DONNÉES MASSIVES ---
+infra/ai/ollama_data/
+infra/ai/ai-env/
+**/data/
+**/database/
+**/grafana-storage/
+**/portainer-data/
+/mnt/externe/
+
+# --- AFFINAGE JSON ---
+# On ignore les JSON dans les dossiers de données, mais on garde les configs racines
+**/data/**/*.json
+**/database/**/*.json
+# On ignore spécifiquement les fichiers npm qui bloquent
+infra/npm/
+
+# --- SYSTÈME ---
+**/*.log
+**/*.pem
+__pycache__/
+.pytest_cache/
+.DS_Store

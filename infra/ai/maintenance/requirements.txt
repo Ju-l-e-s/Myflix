@@ -1,0 +1,12 @@
+pyTelegramBotAPI
+requests
+flask
+shutil
+pathlib
+logging
+json
+os
+subprocess
+re
+datetime
+threading

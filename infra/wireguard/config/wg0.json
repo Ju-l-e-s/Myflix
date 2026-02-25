@@ -1,0 +1,31 @@
+{
+  "server": {
+    "privateKey": "oBMZM4hdnZcZ+Og5SjdERjm7w36hVatFu7EPCfseZVc=",
+    "publicKey": "RD//+UhA9pS3QLMAghacVYUPbGvhzUgPbRoS1KkfBDI=",
+    "address": "10.8.0.1"
+  },
+  "clients": {
+    "595c85c8-8fb9-4606-99db-3009bb9137f0": {
+      "id": "595c85c8-8fb9-4606-99db-3009bb9137f0",
+      "name": "MacBook_Pro_Jules",
+      "address": "10.8.0.2",
+      "privateKey": "OFhJG5CjO16tN4iUVzeWLETI5fqdtUpBi2f4SBECuUg=",
+      "publicKey": "9SI8KTbh+NZ8Sl4cZXWX4EZLKbvlEKZemHIjo8ifmUg=",
+      "preSharedKey": "xh8gJ3I7Z96IxQKYFRVH3XUWouDEug3eAzWgX9JRMAw=",
+      "createdAt": "2026-02-24T17:18:01.829Z",
+      "updatedAt": "2026-02-24T17:18:01.829Z",
+      "enabled": true
+    },
+    "4384268c-f4d1-4600-840d-33d9c5ae2eec": {
+      "id": "4384268c-f4d1-4600-840d-33d9c5ae2eec",
+      "name": "Iphone Jules",
+      "address": "10.8.0.3",
+      "privateKey": "CF66bxT0Sr7SZe3PFGpt5XYFxlTE8YSYwpMy8EE9f0s=",
+      "publicKey": "P5c4iipj/zP79JItQZ8FAKtx0HEEzei3yhoDeV+wwHM=",
+      "preSharedKey": "/pplTqNvRzBiJRO41wq5zYxrAWTFJTtQDWDYMcB71lc=",
+      "createdAt": "2026-02-24T17:24:49.870Z",
+      "updatedAt": "2026-02-24T17:24:49.870Z",
+      "enabled": true
+    }
+  }
+}

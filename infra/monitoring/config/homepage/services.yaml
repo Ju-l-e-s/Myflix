@@ -1,0 +1,45 @@
+- Media:
+    - Sonarr:
+        icon: sonarr.png
+        href: http://172.23.0.12:8989
+        description: TV Series Management
+        widget:
+          type: sonarr
+          url: http://172.23.0.12:8989
+          key: dfa7da413b48480097f6a399080be393
+
+    - Radarr:
+        icon: radarr.png
+        href: http://172.23.0.8:7878
+        description: Movie Management
+        widget:
+          type: radarr
+          url: http://172.23.0.8:7878
+          key: 75ed9e2e3922442c8c1e012e47bc0906
+
+- Download:
+    - qBittorrent:
+        icon: qbittorrent.png
+        href: http://172.23.0.6:8090
+        description: Torrent Downloader
+        widget:
+          type: qbittorrent
+          url: http://172.23.0.6:8090
+          username: admin
+          password: YOUR_PASSWORD # Update this later
+
+- System:
+    - Netdata:
+        icon: netdata.png
+        href: http://192.168.1.237:19999
+        description: Real-time System Monitoring
+        widget:
+          type: netdata
+          url: http://172.23.0.6:19999
+          hide_charts: true
+          show_temp: true
+
+    - Portainer:
+        icon: portainer.png
+        href: https://192.168.1.237:9443
+        description: Docker Container Management

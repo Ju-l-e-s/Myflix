@@ -1,0 +1,12 @@
+2026-02-22 10:23:27|INFO    |root                            |Scheduler will use this timezone: Europe/Paris|
+2026-02-22 10:23:33|INFO    |root                            |Interactive jobs queue started and waiting for tasks|
+2026-02-22 10:23:33|INFO    |waitress                        |BAZARR is started and waiting for requests on: http://***.***.***.***:6767|
+2026-02-22 10:23:33|INFO    |waitress                        |BAZARR is started and waiting for requests on: http://[::]:6767|
+2026-02-22 10:35:05|INFO    |root                            |Scheduler will use this timezone: Europe/Paris|
+2026-02-22 10:35:11|INFO    |root                            |Interactive jobs queue started and waiting for tasks|
+2026-02-22 10:35:11|INFO    |waitress                        |BAZARR is started and waiting for requests on: http://***.***.***.***:6767|
+2026-02-22 10:35:11|INFO    |waitress                        |BAZARR is started and waiting for requests on: http://[::]:6767|
+2026-02-22 14:51:56|INFO    |root                            |Scheduler will use this timezone: Europe/Paris|
+2026-02-22 14:52:02|INFO    |root                            |Interactive jobs queue started and waiting for tasks|
+2026-02-22 14:52:02|INFO    |waitress                        |BAZARR is started and waiting for requests on: http://***.***.***.***:6767|
+2026-02-22 14:52:02|INFO    |waitress                        |BAZARR is started and waiting for requests on: http://[::]:6767|

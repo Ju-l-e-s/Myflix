@@ -1,0 +1,2 @@
+public_ip_info{type="host", ip="91.160.12.99"} 1
+public_ip_info{type="vpn", ip="81.22.39.36"} 1

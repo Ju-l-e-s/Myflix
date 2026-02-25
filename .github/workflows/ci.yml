@@ -26,7 +26,7 @@ jobs:
         env:
           PYTHONPATH: ${{ github.workspace }}/scripts
           OPENAI_KEY: "sk-fake"
-          TELEGRAM_TOKEN: "123:fake"
+          TELEGRAM_TOKEN: "123456789:ABCDefghIJKLmnopQRSTuvwxYZ123456789"
           RADARR_API_KEY: "fake"
           SONARR_API_KEY: "fake"
           PLEX_TOKEN: "fake"

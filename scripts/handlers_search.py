@@ -8,11 +8,22 @@ from config import *
 
 def stream_gpt_json(query):
     headers = {"Content-Type": "application/json", "Authorization": f"Bearer {OPENAI_KEY}"}
-    prompt = f"Analyse : '{query}'. Renvoie JSON : {{\"titre\": \"str\", \"type\": \"serie|film\"}}"
+    payload = {
+        "model": "gpt-4o-mini",
+        "messages": [
+            {"role": "system", "content": "Media parser. Output JSON: {titre:str, type:movie|series}"},
+            {"role": "user", "content": query}
+        ],
+        "response_format": {"type": "json_object"},
+        "temperature": 0,
+        "max_tokens": 100
+    }
     try:
-        res = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json={"model": "gpt-4o-mini", "messages": [{"role": "user", "content": prompt}], "temperature": 0.1}, timeout=10)
+        res = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload, timeout=10)
         return res.json()['choices'][0]['message']['content']
-    except: return None
+    except Exception as e:
+        logging.error(f"AI Search Error: {e}")
+        return None
 
 def register_search_handlers(bot, is_authorized):
     @bot.message_handler(commands=['get'])

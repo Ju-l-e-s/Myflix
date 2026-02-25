@@ -1,4 +1,3 @@
-import asyncio
 import logging
 import os
 import json
@@ -143,32 +142,30 @@ async def process_ai_logic(prompt):
     payload = {
         "model": "gpt-4o-mini",
         "messages": [
-            {"role": "system", "content": "Assistant média. Détecte FILM ou SÉRIE. Réponds en JSON: {\"type\": \"movie\"|\"series\"|\"chat\", \"query\": \"nom sans saison\"}"},
+            {"role": "system", "content": "Media assistant. Intent: movie|series|chat. JSON {type, query, reply?}. 'reply' only if chat."},
             {"role": "user", "content": prompt}
         ],
-        "response_format": {"type": "json_object"}
+        "response_format": {"type": "json_object"},
+        "max_tokens": 200,
+        "temperature": 0
     }
 
     async with aiohttp.ClientSession() as session:
         async with session.post(OPENAI_URL, json=payload, headers=headers) as resp:
-            intent_data = await resp.json()
-            intent = json.loads(intent_data["choices"][0]["message"]["content"])
-            return intent
+            data = await resp.json()
+            return json.loads(data["choices"][0]["message"]["content"])
 
 # --- TELEGRAM HANDLERS ---
 @restricted
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Salut ! Je suis ton assistant média (Gatekeeper activé). Envoie-moi un nom de film ou série.")
-
-@restricted
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
+    # Un seul appel IA pour tout gérer
     intent = await process_ai_logic(text)
     
     if intent["type"] in ["movie", "series"]:
         target_season = extract_season(text) if intent["type"] == "series" else None
         results = await search_media(intent["type"], intent["query"])
-        
+        # ... (reste de la logique identique)
         if not results:
             await update.message.reply_text(f"Désolé, je n'ai rien trouvé pour '{intent['query']}'.")
             return
@@ -188,7 +185,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
-        # Envoi de l'image si dispo
         poster = None
         for img in found.get('images', []):
             if img['coverType'] == 'poster':
@@ -200,14 +196,9 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             await update.message.reply_text(text=caption, parse_mode='Markdown', reply_markup=reply_markup)
     else:
-        # Chat simple
-        headers = {"Authorization": f"Bearer {OPENAI_API_KEY}", "Content-Type": "application/json"}
-        payload = {"model": "gpt-4o-mini", "messages": [{"role": "user", "content": text}]}
-        async with aiohttp.ClientSession() as session:
-            async with session.post(OPENAI_URL, json=payload, headers=headers) as resp:
-                c_data = await resp.json()
-                reply = c_data["choices"][0]["message"]["content"]
-                await update.message.reply_text(reply)
+        # Chat simple : on utilise la réponse déjà générée par le premier appel
+        reply = intent.get("reply", "Je ne suis pas sûr de comprendre.")
+        await update.message.reply_text(reply)
 
 @restricted
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):

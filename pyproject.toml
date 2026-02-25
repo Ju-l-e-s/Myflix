@@ -15,6 +15,3 @@ ignore = [
     "F841", # Unused local variable
 ]
 
-[tool.bandit]
-exclude_dirs = ["scripts/venv", "infra/ai/ai-env", "venv"]
-tests = ["B101", "B104", "B110", "B307"] # On se concentre sur les risques réels

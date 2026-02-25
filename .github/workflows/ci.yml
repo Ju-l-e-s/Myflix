@@ -1,0 +1,37 @@
+name: Infrastructure CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install -r scripts/requirements.txt
+          pip install pytest pytest-mock requests
+
+      - name: Run Architectural Tests
+        run: |
+          # On injecte des valeurs bidons pour les tests CI afin d'éviter les erreurs de NoneType
+          export OPENAI_KEY="sk-fake"
+          export TELEGRAM_TOKEN="123:fake"
+          export RADARR_API_KEY="fake"
+          export SONARR_API_KEY="fake"
+          export PLEX_TOKEN="fake"
+          pytest scripts/tests/
+
+      - name: Build Docker Image
+        run: |
+          docker build -t pi5-master-logic:latest ./scripts

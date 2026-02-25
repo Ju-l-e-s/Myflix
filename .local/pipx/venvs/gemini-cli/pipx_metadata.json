@@ -1,0 +1,88 @@
+{
+    "injected_packages": {},
+    "main_package": {
+        "app_paths": [
+            {
+                "__Path__": "/home/jules/.local/pipx/venvs/gemini-cli/bin/gemini-cli",
+                "__type__": "Path"
+            }
+        ],
+        "app_paths_of_dependencies": {
+            "charset-normalizer": [
+                {
+                    "__Path__": "/home/jules/.local/pipx/venvs/gemini-cli/bin/normalizer",
+                    "__type__": "Path"
+                }
+            ],
+            "markdown-it-py": [
+                {
+                    "__Path__": "/home/jules/.local/pipx/venvs/gemini-cli/bin/markdown-it",
+                    "__type__": "Path"
+                }
+            ],
+            "pygments": [
+                {
+                    "__Path__": "/home/jules/.local/pipx/venvs/gemini-cli/bin/pygmentize",
+                    "__type__": "Path"
+                }
+            ],
+            "rsa": [
+                {
+                    "__Path__": "/home/jules/.local/pipx/venvs/gemini-cli/bin/pyrsa-decrypt",
+                    "__type__": "Path"
+                },
+                {
+                    "__Path__": "/home/jules/.local/pipx/venvs/gemini-cli/bin/pyrsa-encrypt",
+                    "__type__": "Path"
+                },
+                {
+                    "__Path__": "/home/jules/.local/pipx/venvs/gemini-cli/bin/pyrsa-keygen",
+                    "__type__": "Path"
+                },
+                {
+                    "__Path__": "/home/jules/.local/pipx/venvs/gemini-cli/bin/pyrsa-priv2pub",
+                    "__type__": "Path"
+                },
+                {
+                    "__Path__": "/home/jules/.local/pipx/venvs/gemini-cli/bin/pyrsa-sign",
+                    "__type__": "Path"
+                },
+                {
+                    "__Path__": "/home/jules/.local/pipx/venvs/gemini-cli/bin/pyrsa-verify",
+                    "__type__": "Path"
+                }
+            ],
+            "tqdm": [
+                {
+                    "__Path__": "/home/jules/.local/pipx/venvs/gemini-cli/bin/tqdm",
+                    "__type__": "Path"
+                }
+            ]
+        },
+        "apps": [
+            "gemini-cli"
+        ],
+        "apps_of_dependencies": [
+            "pyrsa-decrypt",
+            "pyrsa-encrypt",
+            "pyrsa-keygen",
+            "pyrsa-priv2pub",
+            "pyrsa-sign",
+            "pyrsa-verify",
+            "normalizer",
+            "tqdm",
+            "markdown-it",
+            "pygmentize"
+        ],
+        "include_apps": true,
+        "include_dependencies": false,
+        "package": "gemini-cli",
+        "package_or_url": "gemini-cli",
+        "package_version": "0.2.5",
+        "pip_args": [],
+        "suffix": ""
+    },
+    "pipx_metadata_version": "0.2",
+    "python_version": "Python 3.11.2",
+    "venv_args": []
+}

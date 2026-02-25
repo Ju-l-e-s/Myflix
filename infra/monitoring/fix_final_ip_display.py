@@ -11,11 +11,13 @@ for panel in db["panels"]:
         panel["options"]["reduceOptions"] = {
             "values": False,
             "calcs": ["lastNotNull"],
-            "fields": "/^ip$/"
+            "fields": "/^ip$/",
         }
         panel["fieldConfig"]["defaults"]["displayName"] = "IP Sécurisée"
 
-res = requests.post(f"{GRAFANA_URL}/api/dashboards/db", json={"dashboard": db, "overwrite": True})
+res = requests.post(
+    f"{GRAFANA_URL}/api/dashboards/db", json={"dashboard": db, "overwrite": True}
+)
 if res.status_code == 200:
     print("VPN/Torrent IP display fixed to show only the address.")
 else:

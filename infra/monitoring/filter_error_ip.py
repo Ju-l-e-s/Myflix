@@ -10,7 +10,9 @@ for panel in db["panels"]:
         # Filter out the 'Error' series explicitly
         panel["targets"][0]["expr"] = 'vpn_public_ip_info{ip!="Error"}'
 
-res = requests.post(f"{GRAFANA_URL}/api/dashboards/db", json={"dashboard": db, "overwrite": True})
+res = requests.post(
+    f"{GRAFANA_URL}/api/dashboards/db", json={"dashboard": db, "overwrite": True}
+)
 if res.status_code == 200:
     print("Grafana VPN IP panel updated to filter out 'Error' label.")
 else:

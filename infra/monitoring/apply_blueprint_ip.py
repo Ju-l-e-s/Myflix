@@ -12,21 +12,23 @@ for panel in db["panels"]:
         # The query returns 1, but has the {ip="81..."} label
         panel["targets"][0]["expr"] = "vpn_public_ip_info"
         panel["targets"][0]["legendFormat"] = "{{ip}}"
-        
+
         # Follow the Blueprint exactly
         panel["options"]["textMode"] = "name"
-        
+
         # Reset reduce options to default
         panel["options"]["reduceOptions"] = {
             "values": False,
             "calcs": ["lastNotNull"],
-            "fields": ""
+            "fields": "",
         }
-        
+
         # Use displayName to extract the label
         panel["fieldConfig"]["defaults"]["displayName"] = "${__field.labels.ip}"
 
-res = requests.post(f"{GRAFANA_URL}/api/dashboards/db", json={"dashboard": db, "overwrite": True})
+res = requests.post(
+    f"{GRAFANA_URL}/api/dashboards/db", json={"dashboard": db, "overwrite": True}
+)
 if res.status_code == 200:
     print("Grafana VPN IP panel forced to Name mode with ${__field.labels.ip}")
 else:

@@ -9,9 +9,13 @@ db = dashboard_json["dashboard"]
 for panel in db["panels"]:
     if "IP Publique" in panel["title"]:
         # Increase the lookback window to 24h to ensure we catch the last metric point
-        panel["targets"][0]["expr"] = panel["targets"][0]["expr"].replace("[1h]", "[24h]")
-        
-res = requests.post(f"{GRAFANA_URL}/api/dashboards/db", json={"dashboard": db, "overwrite": True})
+        panel["targets"][0]["expr"] = panel["targets"][0]["expr"].replace(
+            "[1h]", "[24h]"
+        )
+
+res = requests.post(
+    f"{GRAFANA_URL}/api/dashboards/db", json={"dashboard": db, "overwrite": True}
+)
 if res.status_code == 200:
     print("IP widgets updated with 24h lookback window.")
 else:

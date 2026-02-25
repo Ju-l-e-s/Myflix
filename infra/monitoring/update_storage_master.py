@@ -14,19 +14,19 @@ db = dashboard_json["dashboard"]
 storage_panel = {
     "title": "Saturation Stockage (Architecte)",
     "type": "bargauge",
-    "gridPos": { "h": 8, "w": 24, "x": 0, "y": 18 },
-    "datasource": { "type": "prometheus", "uid": "Prometheus" },
+    "gridPos": {"h": 8, "w": 24, "x": 0, "y": 18},
+    "datasource": {"type": "prometheus", "uid": "Prometheus"},
     "targets": [
-        { 
-            "expr": "100 - ((node_filesystem_avail_bytes{mountpoint='/'} * 100) / node_filesystem_size_bytes{mountpoint='/'})", 
-            "legendFormat": "NVME (System /)", 
-            "refId": "A" 
+        {
+            "expr": "100 - ((node_filesystem_avail_bytes{mountpoint='/'} * 100) / node_filesystem_size_bytes{mountpoint='/'})",
+            "legendFormat": "NVME (System /)",
+            "refId": "A",
         },
-        { 
-            "expr": "100 - ((node_filesystem_avail_bytes{mountpoint='/mnt/externe'} * 100) / node_filesystem_size_bytes{mountpoint='/mnt/externe'})", 
-            "legendFormat": "HDD (Media /mnt/externe)", 
-            "refId": "B" 
-        }
+        {
+            "expr": "100 - ((node_filesystem_avail_bytes{mountpoint='/mnt/externe'} * 100) / node_filesystem_size_bytes{mountpoint='/mnt/externe'})",
+            "legendFormat": "HDD (Media /mnt/externe)",
+            "refId": "B",
+        },
     ],
     "fieldConfig": {
         "defaults": {
@@ -36,14 +36,18 @@ storage_panel = {
             "thresholds": {
                 "mode": "absolute",
                 "steps": [
-                    { "color": "green", "value": None },
-                    { "color": "orange", "value": 80 },
-                    { "color": "red", "value": 90 }
-                ]
-            }
+                    {"color": "green", "value": None},
+                    {"color": "orange", "value": 80},
+                    {"color": "red", "value": 90},
+                ],
+            },
         }
     },
-    "options": { "displayMode": "gradient", "orientation": "horizontal", "showUnfilled": True }
+    "options": {
+        "displayMode": "gradient",
+        "orientation": "horizontal",
+        "showUnfilled": True,
+    },
 }
 
 # Replace the old storage panel or append
@@ -51,7 +55,9 @@ storage_panel = {
 db["panels"] = [p for p in db["panels"] if p["title"] != "Saturation Disque"]
 db["panels"].append(storage_panel)
 
-res = requests.post(f"{GRAFANA_URL}/api/dashboards/db", json={"dashboard": db, "overwrite": True})
+res = requests.post(
+    f"{GRAFANA_URL}/api/dashboards/db", json={"dashboard": db, "overwrite": True}
+)
 if res.status_code == 200:
     print("Storage section updated with NVME and HDD tracking.")
 else:

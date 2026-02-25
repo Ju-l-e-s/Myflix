@@ -2,11 +2,10 @@ import os
 import shutil
 import time
 import logging
-from pathlib import Path
 
 # --- CONFIGURATION GLOBALE ---
 SHARE_DIR = "/media_share"
-NVME_PATH = "/media"       # Base NVMe pour Sonarr/Radarr (mappé vers ./data/media)
+NVME_PATH = "/media"  # Base NVMe pour Sonarr/Radarr (mappé vers ./data/media)
 HDD_PATH = "/mnt/externe"  # Base HDD d'archive
 LOG_FILE = "/tmp/cleanup_share.log"
 TARGET_NVME_PERCENT = 50.0
@@ -15,8 +14,9 @@ MAX_AGE_SECONDS = 24 * 3600  # 24 heures
 logging.basicConfig(
     filename=LOG_FILE,
     level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
+    format="%(asctime)s - %(levelname)s - %(message)s",
 )
+
 
 def purge_share_directory():
     """Supprime les fichiers et symlinks de plus de 24h dans SHARE_DIR."""
@@ -43,6 +43,7 @@ def purge_share_directory():
             except Exception as e:
                 logging.error(f"Erreur lors de la suppression de {path} : {e}")
 
+
 def get_nvme_usage_percent():
     """Retourne le pourcentage d'utilisation de la partition NVMe."""
     try:
@@ -52,20 +53,30 @@ def get_nvme_usage_percent():
         logging.error(f"Erreur lecture usage NVMe : {e}")
         return 100.0  # Failsafe pour ne pas archiver si erreur
 
+
 def is_hdd_mounted():
     """Vérifie si le HDD de destination est accessible."""
-    return os.path.ismount(HDD_PATH) or os.path.ismount("/mnt/externe") or os.path.exists(HDD_PATH)
+    return (
+        os.path.ismount(HDD_PATH)
+        or os.path.ismount("/mnt/externe")
+        or os.path.exists(HDD_PATH)
+    )
+
 
 def auto_tiering_nvme_to_hdd():
     """Déplace les fichiers les plus anciens du NVMe vers le HDD si > TARGET_NVME_PERCENT."""
     logging.info("Vérification de l'espace NVMe pour Auto-Tiering...")
-    
+
     if not is_hdd_mounted():
-        logging.error(f"Le HDD cible ({HDD_PATH}) n'est pas monté ou accessible. Abandon du Tiering.")
+        logging.error(
+            f"Le HDD cible ({HDD_PATH}) n'est pas monté ou accessible. Abandon du Tiering."
+        )
         return
 
     usage_percent = get_nvme_usage_percent()
-    logging.info(f"Utilisation NVMe actuelle : {usage_percent:.2f}% (Cible: {TARGET_NVME_PERCENT}%)")
+    logging.info(
+        f"Utilisation NVMe actuelle : {usage_percent:.2f}% (Cible: {TARGET_NVME_PERCENT}%)"
+    )
 
     if usage_percent <= TARGET_NVME_PERCENT:
         logging.info("Espace suffisant. Aucun tiering nécessaire.")
@@ -73,8 +84,8 @@ def auto_tiering_nvme_to_hdd():
 
     # Lister tous les fichiers médias sur le NVMe
     media_files = []
-    extensions = {'.mkv', '.mp4', '.avi'}
-    
+    extensions = {".mkv", ".mp4", ".avi"}
+
     try:
         for root, _, files in os.walk(NVME_PATH):
             for file in files:
@@ -102,31 +113,33 @@ def auto_tiering_nvme_to_hdd():
         dest_dir = os.path.dirname(dest_path)
 
         logging.info(f"Migration de {file_path} vers {dest_path}")
-        
+
         try:
             os.makedirs(dest_dir, exist_ok=True)
             # Déplacement physique
             shutil.move(file_path, dest_path)
-            
+
             # Création du symlink pour tromper Sonarr/Radarr
             os.symlink(dest_path, file_path)
-            logging.info(f"Migration réussie : Symlink créé sur le NVMe.")
-            
+            logging.info("Migration réussie : Symlink créé sur le NVMe.")
+
         except Exception as e:
             logging.error(f"Échec de la migration pour {file_path} : {e}")
             # Failsafe: tenter de restaurer si ça a planté en cours de route
             if os.path.exists(dest_path) and not os.path.exists(file_path):
-                 try:
-                     shutil.move(dest_path, file_path)
-                     logging.info(f"Rollback réussi pour {file_path}")
-                 except:
-                     pass
+                try:
+                    shutil.move(dest_path, file_path)
+                    logging.info(f"Rollback réussi pour {file_path}")
+                except:
+                    pass
+
 
 def main():
     logging.info("=== Lancement du Garbage Collector & Tiering ===")
     purge_share_directory()
     auto_tiering_nvme_to_hdd()
     logging.info("=== Fin de l'opération ===")
+
 
 if __name__ == "__main__":
     main()

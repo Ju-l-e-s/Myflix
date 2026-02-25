@@ -9,7 +9,9 @@ for panel in db["panels"]:
     if "IP Publique (VPN)" in panel["title"]:
         panel["targets"][0]["expr"] = "last_over_time(vpn_public_ip_info[24h])"
 
-res = requests.post(f"{GRAFANA_URL}/api/dashboards/db", json={"dashboard": db, "overwrite": True})
+res = requests.post(
+    f"{GRAFANA_URL}/api/dashboards/db", json={"dashboard": db, "overwrite": True}
+)
 if res.status_code == 200:
     print("VPN IP widget updated to use the new robust vpn_exporter metric.")
 else:

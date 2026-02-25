@@ -18,10 +18,12 @@ for panel in db["panels"]:
         panel["options"]["reduceOptions"] = {
             "values": False,
             "calcs": ["lastNotNull"],
-            "fields": ""
+            "fields": "",
         }
 
-res = requests.post(f"{GRAFANA_URL}/api/dashboards/db", json={"dashboard": db, "overwrite": True})
+res = requests.post(
+    f"{GRAFANA_URL}/api/dashboards/db", json={"dashboard": db, "overwrite": True}
+)
 if res.status_code == 200:
     print("Grafana VPN IP panel finalized with correct metric and label extraction.")
 else:

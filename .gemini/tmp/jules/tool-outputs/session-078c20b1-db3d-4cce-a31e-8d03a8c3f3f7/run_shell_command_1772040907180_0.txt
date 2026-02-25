@@ -1,0 +1,3400 @@
+Output: E501 Line too long (123 > 120)
+   --> infra/ai/app/main.py:133:121
+    |
+131 |         ]
+132 |     else:
+133 |         payload["seasons"] = [{"seasonNumber": s["seasonNumber"], "monitored": True} for s in item_data.get("seasons", [])]
+    |                                                                                                                         ^^^
+134 |
+135 |     async with aiohttp.ClientSession() as session:
+    |
+
+E501 Line too long (176 > 120)
+   --> infra/ai/app/main.py:145:121
+    |
+143 | …
+144 | …
+145 | … Réponds en JSON: {\"type\": \"movie\"|\"series\"|\"chat\", \"query\": \"nom sans saison\"}"},
+    |                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+146 | …
+147 | …
+    |
+
+E501 Line too long (131 > 120)
+   --> infra/ai/app/main.py:160:121
+    |
+158 | @restricted
+159 | async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+160 |     await update.message.reply_text("Salut ! Je suis ton assistant média (Gatekeeper activé). Envoie-moi un nom de film ou série.")
+    |                                                                                                                         ^^^^^^^^^^^
+161 |
+162 | @restricted
+    |
+
+E501 Line too long (160 > 120)
+   --> infra/ai/app/main.py:182:121
+    |
+180 | …
+181 | …
+182 | …und['year']}){season_label}\n_{overview}_\n\nEst-ce bien ce que vous voulez ajouter ?"
+    |                                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+183 | …
+184 | …
+    |
+
+E501 Line too long (125 > 120)
+   --> infra/ai/app/main.py:198:121
+    |
+197 |         if poster:
+198 |             await update.message.reply_photo(photo=poster, caption=caption, parse_mode='Markdown', reply_markup=reply_markup)
+    |                                                                                                                         ^^^^^
+199 |         else:
+200 |             await update.message.reply_text(text=caption, parse_mode='Markdown', reply_markup=reply_markup)
+    |
+
+E501 Line too long (139 > 120)
+   --> infra/ai/app/main.py:230:120
+    |
+228 | …
+229 | …season'] else ""
+230 | …'item']['title']}'{season_txt} a été ajouté et la recherche est lancée !")
+    |                                                         ^^^^^^^^^^^^^^^^^^^
+231 | …
+232 | …ors de l'ajout ou média déjà existant.")
+    |
+
+E501 Line too long (308 > 120)
+  --> infra/ai/maintenance/handlers_admin.py:56:120
+   |
+54 | …
+55 | …
+56 | …on("👥 Utilisateurs", callback_data="adm:users"), types.InlineKeyboardButton("🧹 Nettoyage SSD", callback_data="adm:clean"), types.InlineKeyboardButton("🔙 Fermer", callback_data="adm:close"))
+   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+57 | …y_markup=markup)
+58 | …
+   |
+
+E501 Line too long (130 > 120)
+  --> infra/ai/maintenance/handlers_admin.py:57:122
+   |
+55 | …         markup = types.InlineKeyboardMarkup(row_width=1)
+56 | …         markup.add(types.InlineKeyboardButton("📂 Partage", callback_data="adm:share"), types.InlineKeyboardButton("👥 Utilisateurs", …
+57 | …         bot.edit_message_text("🛠️ **Menu Administrateur**", call.message.chat.id, call.message.message_id, reply_markup=markup)
+   |                                                                                                                       ^^^^^^^^^^
+58 | …     elif cmd == "share":
+59 | …         markup = types.InlineKeyboardMarkup(row_width=1)
+   |
+
+E501 Line too long (256 > 120)
+  --> infra/ai/maintenance/handlers_admin.py:60:120
+   |
+58 | …
+59 | …
+60 | …neKeyboardButton("❌ Contenu non possédé", callback_data="adm:share_new"), types.InlineKeyboardButton("⬅️ Retour", callback_data="adm:main"))
+   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+61 | …markup=markup)
+62 | …
+   |
+
+E501 Line too long (130 > 120)
+  --> infra/ai/maintenance/handlers_admin.py:61:120
+   |
+59 | …         markup = types.InlineKeyboardMarkup(row_width=1)
+60 | …         markup.add(types.InlineKeyboardButton("✅ Contenu possédé", callback_data="adm:share_owned"), types.InlineKeyboardButton("❌  …
+61 | …         bot.edit_message_text("📂 **Gestion du Partage**", call.message.chat.id, call.message.message_id, reply_markup=markup)
+   |                                                                                                                       ^^^^^^^^^^
+62 | …     elif cmd == "users":
+63 | …         markup = types.InlineKeyboardMarkup(row_width=1)
+   |
+
+E501 Line too long (308 > 120)
+  --> infra/ai/maintenance/handlers_admin.py:64:120
+   |
+62 | …
+63 | …
+64 | …Button("➕ Ajouter", callback_data="adm:users_add"), types.InlineKeyboardButton("❌ Révoquer", callback_data="adm:users_rev"), types.InlineKeyboardButton("⬅️ Retour", callback_data="adm:main"))
+   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+65 | …reply_markup=markup)
+66 | …
+   |
+
+E501 Line too long (136 > 120)
+  --> infra/ai/maintenance/handlers_admin.py:65:120
+   |
+63 | …
+64 | …callback_data="adm:users_list"), types.InlineKeyboardButton("➕ Ajouter", callback_data="adm:users_add"), types.InlineKeyboardButton("…
+65 | …s**", call.message.chat.id, call.message.message_id, reply_markup=markup)
+   |                                                           ^^^^^^^^^^^^^^^^
+66 | …
+67 | …(f)["allowed"]
+   |
+
+E501 Line too long (223 > 120)
+  --> infra/ai/maintenance/handlers_admin.py:69:121
+   |
+67 | …
+68 | …
+69 | ….InlineKeyboardMarkup().add(types.InlineKeyboardButton("⬅️ Retour", callback_data="adm:users")), parse_mode='Markdown')
+   |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+70 | …
+71 | …
+   |
+
+E501 Line too long (135 > 120)
+  --> infra/ai/maintenance/handlers_admin.py:80:121
+   |
+78 | …", callback_data=f"adm:users_del:{u}"))
+79 | …, callback_data="adm:users"))
+80 | …er :", call.message.chat.id, call.message.message_id, reply_markup=markup)
+   |                                                             ^^^^^^^^^^^^^^^
+81 | …
+82 | …
+   |
+
+E501 Line too long (166 > 120)
+  --> infra/ai/maintenance/handlers_admin.py:88:121
+   |
+86 | …
+87 | …
+88 | …all.from_user, message=call.message, data="adm:users", chat_instance=call.chat_instance))
+   |                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+89 | …
+90 | …
+   |
+
+E501 Line too long (248 > 120)
+  --> infra/ai/maintenance/handlers_admin.py:91:120
+   |
+89 | …
+90 | …
+91 | …yboardButton("📺 Séries", callback_data="adm:list_owned:series"), types.InlineKeyboardButton("⬅️ Retour", callback_data="adm:share"))
+   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+92 | …)
+93 | …
+   |
+
+E501 Line too long (145 > 120)
+  --> infra/ai/maintenance/handlers_media.py:57:121
+   |
+55 | …)})\n"
+56 | …
+57 | …k_data=f"m_sel:{category}:{items[i-1]['id']}") for i in range(1, len(items)+1)]
+   |                                                        ^^^^^^^^^^^^^^^^^^^^^^^^^
+58 | …
+59 | …
+   |
+
+E501 Line too long (130 > 120)
+  --> infra/ai/maintenance/handlers_media.py:61:122
+   |
+59 |         nav_row = []
+60 |         if page > 0: nav_row.append(types.InlineKeyboardButton("⬅️", callback_data=f"m_pag:{category}:{page-1}"))
+61 |         if end < total: nav_row.append(types.InlineKeyboardButton(f"➡️ ({total-end})", callback_data=f"m_pag:{category}:{page+1}"))
+   |                                                                                                                         ^^^^^^^^^^
+62 |         if nav_row: markup.row(*nav_row)
+63 |         markup.add(types.InlineKeyboardButton("🏠 Menu Admin", callback_data="adm:main"))
+   |
+
+E501 Line too long (158 > 120)
+  --> infra/ai/maintenance/handlers_media.py:86:121
+   |
+84 | …
+85 | …
+86 | …, r'\bx26[45]\b', r'\bBluRay\b', r'\bWEB-DL\b', r'\bCOMPLETE\b', r'\bSeason\s*\d*\b']
+   |                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+87 | …
+88 | …RECASE)
+   |
+
+E501 Line too long (138 > 120)
+   --> infra/ai/maintenance/handlers_media.py:99:119
+    |
+ 97 | …
+ 98 | …medelta(seconds=eta_sec))
+ 99 | …d(t['progress']*100,1)}% | 📂 {round(t['size']/1024**3,2)}GB | ⏳ {eta}\n"
+    |                                                          ^^^^^^^^^^^^^^^^^^
+100 | …
+101 | …
+    |
+
+E501 Line too long (153 > 120)
+   --> infra/ai/maintenance/handlers_media.py:103:121
+    |
+101 | …
+102 | …
+103 | …("m_pag", "m_sel", "m_act", "sel", "act", "share_exec", "share_final", "cancel")))
+    |                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+104 | …
+105 | …
+    |
+
+E501 Line too long (123 > 120)
+   --> infra/ai/maintenance/handlers_media.py:116:121
+    |
+114 |             display_title = f"ID {item_id}"
+115 |             try:
+116 |                 r = requests.get(f"{cfg['url']}/api/v3/{endpoint}/{item_id}", headers={"X-Api-Key": cfg['key']}, timeout=5)
+    |                                                                                                                         ^^^
+117 |                 if r.status_code == 200: display_title = r.json().get('title', display_title)
+118 |             except: pass
+    |
+
+E501 Line too long (160 > 120)
+   --> infra/ai/maintenance/handlers_media.py:123:120
+    |
+121 | …ata=f"m_act:share:{d[1]}:{d[2]}"),
+122 | …ta=f"m_pag:{d[1]}:0"))
+123 | …message.chat.id, call.message.message_id, reply_markup=markup, parse_mode='Markdown')
+    |                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+124 | …
+125 | …
+    |
+
+E501 Line too long (127 > 120)
+   --> infra/ai/maintenance/handlers_media.py:131:121
+    |
+129 |                 endpoint = "movie" if cat == "films" else "series"
+130 |                 try:
+131 |                     r = requests.get(f"{cfg['url']}/api/v3/{endpoint}/{item_id}", headers={"X-Api-Key": cfg['key']}, timeout=5)
+    |                                                                                                                         ^^^^^^^
+132 |                     if r.status_code == 200:
+133 |                         path = r.json().get('path')
+    |
+
+E501 Line too long (127 > 120)
+   --> infra/ai/maintenance/handlers_media.py:146:121
+    |
+144 |         elif d[0] == "sel":
+145 |             try:
+146 |                 with open(CONTEXT_FILE, "r") as f: ctx = json.load(f); item = ctx[str(call.message.chat.id)]["list"][int(d[2])]
+    |                                                                                                                         ^^^^^^^
+147 |                 markup = types.InlineKeyboardMarkup(row_width=2)
+148 |                 act = "arc" if item['is_nvme'] else "res"
+    |
+
+E501 Line too long (197 > 120)
+   --> infra/ai/maintenance/handlers_media.py:149:120
+    |
+147 | …
+148 | …
+149 | …ct}:{d[1]}:{d[2]}"), types.InlineKeyboardButton("🗑️ Supprimer", callback_data=f"act:del:{d[1]}:{d[2]}"))
+    |                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+150 | … Partager", callback_data=f"share_exec:{d[2]}"))
+151 | …
+    |
+
+E501 Line too long (142 > 120)
+   --> infra/ai/maintenance/handlers_media.py:150:120
+    |
+148 | …
+149 | …est", callback_data=f"act:{act}:{d[1]}:{d[2]}"), types.InlineKeyboardButton("🗑️ Supprimer", callback_data=f"act:del:{d[1]}:{d[2]}"))
+150 | …ypes.InlineKeyboardButton("🔗 Partager", callback_data=f"share_exec:{d[2]}"))
+    |                                                         ^^^^^^^^^^^^^^^^^^^^^^
+151 | …, callback_data="cancel"))
+152 | …message.chat.id, call.message.message_id, reply_markup=markup)
+    |
+
+E501 Line too long (126 > 120)
+   --> infra/ai/maintenance/handlers_media.py:152:122
+    |
+150 | …             if call.from_user.id == SUPER_ADMIN: markup.add(types.InlineKeyboardButton("🔗 Partager", callback_data=f"share_exec:{d[…
+151 | …             markup.add(types.InlineKeyboardButton("❌ Annuler", callback_data="cancel"))
+152 | …             bot.edit_message_text(f"🛠️ {item['name']}", call.message.chat.id, call.message.message_id, reply_markup=markup)
+    |                                                                                                                       ^^^^^^
+153 | …         except: bot.answer_callback_query(call.id, "❌ Session expirée.")
+154 | …     elif d[0] == "act":
+    |
+
+E501 Line too long (127 > 120)
+   --> infra/ai/maintenance/handlers_media.py:156:121
+    |
+154 |         elif d[0] == "act":
+155 |             try:
+156 |                 with open(CONTEXT_FILE, "r") as f: ctx = json.load(f); item = ctx[str(call.message.chat.id)]["list"][int(d[3])]
+    |                                                                                                                         ^^^^^^^
+157 |                 res = subprocess.run(["python3", SCRIPT_PATH, "action", d[1], d[2], item['path']], capture_output=True, text=True)
+158 |                 bot.edit_message_text(f"✅ {item['name']}: {res.stdout.strip()}", call.message.chat.id, call.message.message_id)
+    |
+
+E501 Line too long (130 > 120)
+   --> infra/ai/maintenance/handlers_media.py:157:121
+    |
+155 |             try:
+156 |                 with open(CONTEXT_FILE, "r") as f: ctx = json.load(f); item = ctx[str(call.message.chat.id)]["list"][int(d[3])]
+157 |                 res = subprocess.run(["python3", SCRIPT_PATH, "action", d[1], d[2], item['path']], capture_output=True, text=True)
+    |                                                                                                                         ^^^^^^^^^^
+158 |                 bot.edit_message_text(f"✅ {item['name']}: {res.stdout.strip()}", call.message.chat.id, call.message.message_id)
+159 |             except: bot.answer_callback_query(call.id, "❌ Erreur.")
+    |
+
+E501 Line too long (128 > 120)
+   --> infra/ai/maintenance/handlers_media.py:158:120
+    |
+156 |                 with open(CONTEXT_FILE, "r") as f: ctx = json.load(f); item = ctx[str(call.message.chat.id)]["list"][int(d[3])]
+157 |                 res = subprocess.run(["python3", SCRIPT_PATH, "action", d[1], d[2], item['path']], capture_output=True, text=True)
+158 |                 bot.edit_message_text(f"✅ {item['name']}: {res.stdout.strip()}", call.message.chat.id, call.message.message_id)
+    |                                                                                                                         ^^^^^^^^
+159 |             except: bot.answer_callback_query(call.id, "❌ Erreur.")
+160 |         elif d[0] == "share_exec":
+    |
+
+E501 Line too long (127 > 120)
+   --> infra/ai/maintenance/handlers_media.py:162:121
+    |
+160 |         elif d[0] == "share_exec":
+161 |             try:
+162 |                 with open(CONTEXT_FILE, "r") as f: ctx = json.load(f); item = ctx[str(call.message.chat.id)]["list"][int(d[1])]
+    |                                                                                                                         ^^^^^^^
+163 |                 src = pathlib.Path(item['path']); subtitles = list(src.parent.glob(f"{src.stem}*.srt"))
+164 |                 if subtitles:
+    |
+
+E501 Line too long (263 > 120)
+   --> infra/ai/maintenance/handlers_media.py:166:120
+    |
+164 | …
+165 | …
+166 | …ypes.InlineKeyboardButton("🎬 Remux", callback_data=f"share_final:{d[1]}:remux"), types.InlineKeyboardButton("❌ Annuler", callback_data="cancel"))
+    |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+167 | …sage.chat.id, call.message.message_id, reply_markup=markup)
+168 | …message, data=f"share_final:{d[1]}:link", chat_instance=call.chat_instance))
+    |
+
+E501 Line too long (175 > 120)
+   --> infra/ai/maintenance/handlers_media.py:167:120
+    |
+165 | …
+166 | …ta=f"share_final:{d[1]}:link"), types.InlineKeyboardButton("🎬 Remux", callback_data=f"share_final:{d[1]}:remux"), types.InlineKeyboa…
+167 | …} sous-titres trouvés.", call.message.chat.id, call.message.message_id, reply_markup=markup)
+    |                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+168 | …ser=call.from_user, message=call.message, data=f"share_final:{d[1]}:link", chat_instance=call.chat_instance))
+169 | …
+    |
+
+E501 Line too long (191 > 120)
+   --> infra/ai/maintenance/handlers_media.py:168:121
+    |
+166 | …re_final:{d[1]}:link"), types.InlineKeyboardButton("🎬 Remux", callback_data=f"share_final:{d[1]}:remux"), types.InlineKeyboardButton…
+167 | …itres trouvés.", call.message.chat.id, call.message.message_id, reply_markup=markup)
+168 | ….from_user, message=call.message, data=f"share_final:{d[1]}:link", chat_instance=call.chat_instance))
+    |                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+169 | …
+170 | …
+    |
+
+E501 Line too long (127 > 120)
+   --> infra/ai/maintenance/handlers_media.py:172:121
+    |
+170 |         elif d[0] == "share_final":
+171 |             try:
+172 |                 with open(CONTEXT_FILE, "r") as f: ctx = json.load(f); item = ctx[str(call.message.chat.id)]["list"][int(d[1])]
+    |                                                                                                                         ^^^^^^^
+173 |                 remux_opt = True if d[2] == "remux" else False
+174 |                 bot.edit_message_text("⏳ Traitement...", call.message.chat.id, call.message.message_id)
+    |
+
+E501 Line too long (157 > 120)
+   --> infra/ai/maintenance/handlers_media.py:176:119
+    |
+174 | …t.id, call.message.message_id)
+175 | …mux=remux_opt)
+176 | …e.chat.id, f"✅ **Partagé**\n\n🔗 Vidéo : `{data['video']}`", parse_mode='Markdown')
+    |                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+177 | …
+178 | …rne.")
+    |
+
+E501 Line too long (204 > 120)
+  --> infra/ai/maintenance/handlers_search.py:13:121
+   |
+11 | …"}}"
+12 | …
+13 | …{"model": "gpt-4o-mini", "messages": [{"role": "user", "content": prompt}], "temperature": 0.1}, timeout=10)
+   |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+14 | …
+15 | …
+   |
+
+E501 Line too long (125 > 120)
+  --> infra/ai/maintenance/handlers_search.py:60:121
+   |
+58 |             if cat == "series": payload["languageProfileId"] = 1
+59 |
+60 |             r = requests.post(f"{cfg['url']}/api/v3/{endpoint}", headers={"X-Api-Key": cfg['key']}, json=payload, timeout=10)
+   |                                                                                                                         ^^^^^
+61 |             if r.status_code in [200, 201]:
+62 |                 bot.edit_message_text(f"✅ **Ajouté :** `{item['title']} ({item.get('year')})`", call.message.chat.id, call.message.mes…
+   |
+
+E501 Line too long (166 > 120)
+  --> infra/ai/maintenance/handlers_search.py:62:120
+   |
+60 | …Api-Key": cfg['key']}, json=payload, timeout=10)
+61 | …
+62 | …m.get('year')})`", call.message.chat.id, call.message.message_id, parse_mode='Markdown')
+   |                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+63 | …
+64 | …")
+   |
+
+E501 Line too long (150 > 120)
+  --> infra/ai/maintenance/media_manager.py:23:121
+   |
+21 | …
+22 | …
+23 | …\bx26[45]\b', r'\bBluRay\b', r'\bWEB-DL\b', r'\bCOMPLETE\b', r'\bSeason\s*\d*\b']
+   |                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+24 | …
+25 | …SE)
+   |
+
+E501 Line too long (144 > 120)
+  --> infra/ai/maintenance/media_manager.py:64:121
+   |
+62 | …
+63 | …
+64 | …: f, "size_gb": round(size / (1024**3), 2), "is_nvme": is_nvme, "path": path})
+   |                                                        ^^^^^^^^^^^^^^^^^^^^^^^^
+65 | …
+   |
+
+E501 Line too long (137 > 120)
+   --> infra/ai/maintenance/pi_bot.py:108:121
+    |
+106 | …tem['title']} ({item.get('year', '')})\n"
+107 | …
+108 | …a=f"m_sel:{category}:{items[i-1]['id']}") for i in range(1, len(items)+1)]
+    |                                                           ^^^^^^^^^^^^^^^^^
+109 | …
+110 | …
+    |
+
+E501 Line too long (204 > 120)
+   --> infra/ai/maintenance/pi_bot.py:132:121
+    |
+130 | …"}}"
+131 | …
+132 | …{"model": "gpt-4o-mini", "messages": [{"role": "user", "content": prompt}], "temperature": 0.1}, timeout=10)
+    |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+133 | …
+134 | …
+    |
+
+E501 Line too long (133 > 120)
+   --> infra/ai/maintenance/pi_bot.py:178:120
+    |
+176 | …lback_data=f"m_act:share:{d[1]}:{d[2]}"),
+177 | …back_data=f"m_pag:{d[1]}:0"))
+178 | …*", call.message.chat.id, call.message.message_id, reply_markup=markup)
+    |                                                            ^^^^^^^^^^^^^
+179 | ….id, "📥 Ajouté.")
+180 | …id, f"Action {d[1]} enregistrée.", show_alert=True)
+    |
+
+E501 Line too long (284 > 120)
+   --> infra/ai/maintenance/pi_bot.py:188:119
+    |
+186 | …
+187 | …
+188 | …ateurs", callback_data="adm:users"), InlineKeyboardButton("🧹 Nettoyage SSD", callback_data="adm:clean"), InlineKeyboardButton("🔙 Fermer", callback_data="adm:close"))
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+189 | …y_markup=markup)
+190 | …
+    |
+
+E501 Line too long (130 > 120)
+   --> infra/ai/maintenance/pi_bot.py:189:122
+    |
+187 | …         markup = InlineKeyboardMarkup(row_width=1)
+188 | …         markup.add(InlineKeyboardButton("📂 Partage", callback_data="adm:share"), InlineKeyboardButton("👥 Utilisateurs", callback_d …
+189 | …         bot.edit_message_text("🛠️ **Menu Administrateur**", call.message.chat.id, call.message.message_id, reply_markup=markup)
+    |                                                                                                                       ^^^^^^^^^^
+190 | …     elif cmd == "share":
+191 | …         markup = InlineKeyboardMarkup(row_width=1)
+    |
+
+E501 Line too long (238 > 120)
+   --> infra/ai/maintenance/pi_bot.py:192:120
+    |
+190 | …
+191 | …
+192 | …Button("❌ Contenu non possédé", callback_data="adm:share_new"), InlineKeyboardButton("⬅️ Retour", callback_data="adm:main"))
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+193 | …y_markup=markup)
+194 | …
+    |
+
+E501 Line too long (130 > 120)
+   --> infra/ai/maintenance/pi_bot.py:193:120
+    |
+191 | …         markup = InlineKeyboardMarkup(row_width=1)
+192 | …         markup.add(InlineKeyboardButton("✅ Contenu possédé", callback_data="adm:share_owned"), InlineKeyboardButton("❌ Contenu non …
+193 | …         bot.edit_message_text("📂 **Gestion du Partage**", call.message.chat.id, call.message.message_id, reply_markup=markup)
+    |                                                                                                                       ^^^^^^^^^^
+194 | …     elif cmd == "users":
+195 | …         markup = InlineKeyboardMarkup(row_width=1)
+    |
+
+E501 Line too long (284 > 120)
+   --> infra/ai/maintenance/pi_bot.py:196:119
+    |
+194 | …
+195 | …
+196 | …outer", callback_data="adm:users_add"), InlineKeyboardButton("❌ Révoquer", callback_data="adm:users_rev"), InlineKeyboardButton("⬅️ Retour", callback_data="adm:main"))
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+197 | …reply_markup=markup)
+198 | …
+    |
+
+E501 Line too long (136 > 120)
+   --> infra/ai/maintenance/pi_bot.py:197:120
+    |
+195 | …
+196 | …ck_data="adm:users_list"), InlineKeyboardButton("➕ Ajouter", callback_data="adm:users_add"), InlineKeyboardButton("❌ Révoquer", cal …
+197 | …s**", call.message.chat.id, call.message.message_id, reply_markup=markup)
+    |                                                           ^^^^^^^^^^^^^^^^
+198 | …
+199 | …eurs :**\n\n" + "\n".join([f"• `{u}`" for u in users])
+    |
+
+E501 Line too long (211 > 120)
+   --> infra/ai/maintenance/pi_bot.py:200:121
+    |
+198 | …
+199 | …for u in users])
+200 | …InlineKeyboardMarkup().add(InlineKeyboardButton("⬅️ Retour", callback_data="adm:users")), parse_mode='Markdown')
+    |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+201 | …
+202 | …
+    |
+
+E501 Line too long (135 > 120)
+   --> infra/ai/maintenance/pi_bot.py:210:121
+    |
+208 | …back_data=f"adm:users_del:{u}"))
+209 | …ack_data="adm:users"))
+210 | …r :", call.message.chat.id, call.message.message_id, reply_markup=markup)
+    |                                                            ^^^^^^^^^^^^^^^
+211 | …
+212 | …
+    |
+
+E501 Line too long (158 > 120)
+   --> infra/ai/maintenance/pi_bot.py:214:121
+    |
+212 | …
+213 | …swer_callback_query(call.id, "✅ Révoqué.")
+214 | …from_user, message=call.message, data="adm:users", chat_instance=call.chat_instance))
+    |                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+215 | …
+216 | …
+    |
+
+E501 Line too long (230 > 120)
+   --> infra/ai/maintenance/pi_bot.py:217:119
+    |
+215 | …
+216 | …
+217 | …Button("📺 Séries", callback_data="adm:list_owned:series"), InlineKeyboardButton("⬅️ Retour", callback_data="adm:share"))
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+218 | …markup)
+219 | …
+    |
+
+E501 Line too long (123 > 120)
+   --> infra/ai/maintenance/pi_bot.py:226:121
+    |
+224 |     if d[0] == "sel":
+225 |         try:
+226 |             with open(CONTEXT_FILE, "r") as f: ctx = json.load(f); item = ctx[str(call.message.chat.id)]["list"][int(d[2])]
+    |                                                                                                                         ^^^
+227 |             markup = InlineKeyboardMarkup(row_width=2)
+228 |             act = "arc" if item['is_nvme'] else "res"
+    |
+
+E501 Line too long (181 > 120)
+   --> infra/ai/maintenance/pi_bot.py:229:120
+    |
+227 | …
+228 | …
+229 | …}:{d[1]}:{d[2]}"), InlineKeyboardButton("🗑️ Supprimer", callback_data=f"act:del:{d[1]}:{d[2]}"))
+    |                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+230 | …artager", callback_data=f"share_exec:{d[2]}"))
+231 | …
+    |
+
+E501 Line too long (132 > 120)
+   --> infra/ai/maintenance/pi_bot.py:230:120
+    |
+228 | …     act = "arc" if item['is_nvme'] else "res"
+229 | …     markup.add(InlineKeyboardButton("📦 Archiv/Rest", callback_data=f"act:{act}:{d[1]}:{d[2]}"), InlineKeyboardButton("🗑️ Supprimer"…
+230 | …     if call.from_user.id == SUPER_ADMIN: markup.add(InlineKeyboardButton("🔗 Partager", callback_data=f"share_exec:{d[2]}"))
+    |                                                                                                                   ^^^^^^^^^^^^
+231 | …     markup.add(InlineKeyboardButton("❌ Annuler", callback_data="cancel"))
+232 | …     bot.edit_message_text(f"🛠️ {item['name']}", call.message.chat.id, call.message.message_id, reply_markup=markup)
+    |
+
+E501 Line too long (122 > 120)
+   --> infra/ai/maintenance/pi_bot.py:232:122
+    |
+230 |             if call.from_user.id == SUPER_ADMIN: markup.add(InlineKeyboardButton("🔗 Partager", callback_data=f"share_exec:{d[2]}"))
+231 |             markup.add(InlineKeyboardButton("❌ Annuler", callback_data="cancel"))
+232 |             bot.edit_message_text(f"🛠️ {item['name']}", call.message.chat.id, call.message.message_id, reply_markup=markup)
+    |                                                                                                                         ^^
+233 |         except: bot.answer_callback_query(call.id, "❌ Session expirée.")
+234 |     elif d[0] == "act":
+    |
+
+E501 Line too long (123 > 120)
+   --> infra/ai/maintenance/pi_bot.py:236:121
+    |
+234 |     elif d[0] == "act":
+235 |         try:
+236 |             with open(CONTEXT_FILE, "r") as f: ctx = json.load(f); item = ctx[str(call.message.chat.id)]["list"][int(d[3])]
+    |                                                                                                                         ^^^
+237 |             res = subprocess.run(["python3", SCRIPT_PATH, "action", d[1], d[2], item['path']], capture_output=True, text=True)
+238 |             bot.edit_message_text(f"✅ {item['name']}: {res.stdout.strip()}", call.message.chat.id, call.message.message_id)
+    |
+
+E501 Line too long (126 > 120)
+   --> infra/ai/maintenance/pi_bot.py:237:121
+    |
+235 |         try:
+236 |             with open(CONTEXT_FILE, "r") as f: ctx = json.load(f); item = ctx[str(call.message.chat.id)]["list"][int(d[3])]
+237 |             res = subprocess.run(["python3", SCRIPT_PATH, "action", d[1], d[2], item['path']], capture_output=True, text=True)
+    |                                                                                                                         ^^^^^^
+238 |             bot.edit_message_text(f"✅ {item['name']}: {res.stdout.strip()}", call.message.chat.id, call.message.message_id)
+239 |         except: bot.answer_callback_query(call.id, "❌ Erreur.")
+    |
+
+E501 Line too long (124 > 120)
+   --> infra/ai/maintenance/pi_bot.py:238:120
+    |
+236 |             with open(CONTEXT_FILE, "r") as f: ctx = json.load(f); item = ctx[str(call.message.chat.id)]["list"][int(d[3])]
+237 |             res = subprocess.run(["python3", SCRIPT_PATH, "action", d[1], d[2], item['path']], capture_output=True, text=True)
+238 |             bot.edit_message_text(f"✅ {item['name']}: {res.stdout.strip()}", call.message.chat.id, call.message.message_id)
+    |                                                                                                                         ^^^^
+239 |         except: bot.answer_callback_query(call.id, "❌ Erreur.")
+240 |     elif d[0] == "share_exec":
+    |
+
+E501 Line too long (123 > 120)
+   --> infra/ai/maintenance/pi_bot.py:242:121
+    |
+240 |     elif d[0] == "share_exec":
+241 |         try:
+242 |             with open(CONTEXT_FILE, "r") as f: ctx = json.load(f); item = ctx[str(call.message.chat.id)]["list"][int(d[1])]
+    |                                                                                                                         ^^^
+243 |             src = pathlib.Path(item['path']); subtitles = list(src.parent.glob(f"{src.stem}*.srt"))
+244 |             if subtitles:
+    |
+
+E501 Line too long (241 > 120)
+   --> infra/ai/maintenance/pi_bot.py:246:120
+    |
+244 | …
+245 | …
+246 | …ardButton("🎬 Remux", callback_data=f"share_final:{d[1]}:remux"), InlineKeyboardButton("❌ Annuler", callback_data="cancel"))
+    |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+247 | ….chat.id, call.message.message_id, reply_markup=markup)
+248 | …a=f"share_final:{d[1]}:link", chat_instance=call.chat_instance))
+    |
+
+E501 Line too long (171 > 120)
+   --> infra/ai/maintenance/pi_bot.py:247:120
+    |
+245 | …
+246 | …re_final:{d[1]}:link"), InlineKeyboardButton("🎬 Remux", callback_data=f"share_final:{d[1]}:remux"), InlineKeyboardButton("❌ Annuler …
+247 | …sous-titres trouvés.", call.message.chat.id, call.message.message_id, reply_markup=markup)
+    |                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+248 | …rom_user, message=call.message, data=f"share_final:{d[1]}:link", chat_instance=call.chat_instance))
+249 | …
+    |
+
+E501 Line too long (179 > 120)
+   --> infra/ai/maintenance/pi_bot.py:248:121
+    |
+246 | …inal:{d[1]}:link"), InlineKeyboardButton("🎬 Remux", callback_data=f"share_final:{d[1]}:remux"), InlineKeyboardButton("❌ Annuler", c …
+247 | …-titres trouvés.", call.message.chat.id, call.message.message_id, reply_markup=markup)
+248 | …user, message=call.message, data=f"share_final:{d[1]}:link", chat_instance=call.chat_instance))
+    |                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+249 | …
+250 | …
+    |
+
+E501 Line too long (123 > 120)
+   --> infra/ai/maintenance/pi_bot.py:252:121
+    |
+250 |     elif d[0] == "share_final":
+251 |         try:
+252 |             with open(CONTEXT_FILE, "r") as f: ctx = json.load(f); item = ctx[str(call.message.chat.id)]["list"][int(d[1])]
+    |                                                                                                                         ^^^
+253 |             remux_opt = True if d[2] == "remux" else False
+254 |             bot.edit_message_text("⏳ Traitement...", call.message.chat.id, call.message.message_id)
+    |
+
+E501 Line too long (144 > 120)
+  --> infra/ai/maintenance/pi_bot_debug.py:43:122
+   |
+41 | …
+42 | …
+43 | …entative d'accès au menu admin par {m.from_user.id} (@{m.from_user.username})")
+   |                                                         ^^^^^^^^^^^^^^^^^^^^^^^^
+44 | …
+45 | …
+   |
+
+E501 Line too long (280 > 120)
+  --> infra/ai/maintenance/pi_bot_debug.py:64:119
+   |
+62 | …
+63 | …
+64 | …rs", callback_data="adm:users"), InlineKeyboardButton("🧹 Nettoyage SSD", callback_data="adm:clean"), InlineKeyboardButton("🔙 Fermer", callback_data="adm:close"))
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+65 | …rkup=markup)
+   |
+
+E501 Line too long (126 > 120)
+  --> infra/ai/maintenance/pi_bot_debug.py:65:122
+   |
+63 |         markup = InlineKeyboardMarkup(row_width=1)
+64 |         markup.add(InlineKeyboardButton("📂 Partage", callback_data="adm:share"), InlineKeyboardButton("👥 Utilisateurs", callback_data …
+65 |         bot.edit_message_text("🛠️ **Menu Administrateur**", call.message.chat.id, call.message.message_id, reply_markup=markup)
+   |                                                                                                                         ^^^^^^
+66 |     
+67 |     elif cmd == "share":
+   |
+
+E501 Line too long (234 > 120)
+  --> infra/ai/maintenance/pi_bot_debug.py:69:119
+   |
+67 | …
+68 | …
+69 | …tton("❌ Contenu non possédé", callback_data="adm:share_new"), InlineKeyboardButton("⬅️ Retour", callback_data="adm:main"))
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+70 | …markup=markup)
+   |
+
+E501 Line too long (126 > 120)
+  --> infra/ai/maintenance/pi_bot_debug.py:70:120
+   |
+68 |         markup = InlineKeyboardMarkup(row_width=1)
+69 |         markup.add(InlineKeyboardButton("✅ Contenu possédé", callback_data="adm:share_owned"), InlineKeyboardButton("❌ Contenu non po …
+70 |         bot.edit_message_text("📂 **Gestion du Partage**", call.message.chat.id, call.message.message_id, reply_markup=markup)
+   |                                                                                                                         ^^^^^^
+71 |     
+72 |     elif cmd == "users":
+   |
+
+E501 Line too long (132 > 120)
+  --> infra/ai/maintenance/pi_bot_debug.py:78:120
+   |
+76 |                    InlineKeyboardButton("❌ Révoquer un accès", callback_data="adm:users_rev"),
+77 |                    InlineKeyboardButton("⬅️ Retour", callback_data="adm:main"))
+78 |         bot.edit_message_text("👥 **Gestion des Utilisateurs**", call.message.chat.id, call.message.message_id, reply_markup=markup)
+   |                                                                                                                         ^^^^^^^^^^^^
+79 |     
+80 |     elif cmd == "users_list":
+   |
+
+E501 Line too long (126 > 120)
+  --> infra/ai/maintenance/pi_bot_debug.py:84:121
+   |
+82 |         text = "📋 **Utilisateurs autorisés :**\n\n" + "\n".join([f"• `{u}`" for u in users])
+83 |         markup = InlineKeyboardMarkup().add(InlineKeyboardButton("⬅️ Retour", callback_data="adm:users"))
+84 |         bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=markup, parse_mode='Markdown')
+   |                                                                                                                         ^^^^^^
+85 |     
+86 |     elif cmd == "users_add":
+   |
+
+E501 Line too long (131 > 120)
+  --> infra/ai/maintenance/pi_bot_debug.py:97:121
+   |
+95 |             markup.add(InlineKeyboardButton(f"❌ {u}", callback_data=f"adm:users_del:{u}"))
+96 |         markup.add(InlineKeyboardButton("⬅️ Retour", callback_data="adm:users"))
+97 |         bot.edit_message_text("Sélectionnez l'ID à révoquer :", call.message.chat.id, call.message.message_id, reply_markup=markup)
+   |                                                                                                                         ^^^^^^^^^^^
+98 |     
+99 |     elif cmd == "users_del":
+   |
+
+E501 Line too long (226 > 120)
+   --> infra/ai/maintenance/pi_bot_debug.py:110:119
+    |
+108 | …
+109 | …
+110 | …tton("📺 Séries", callback_data="adm:list_owned:series"), InlineKeyboardButton("⬅️ Retour", callback_data="adm:share"))
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+111 | … reply_markup=markup)
+    |
+
+E501 Line too long (128 > 120)
+   --> infra/ai/maintenance/pi_bot_debug.py:111:121
+    |
+109 |         markup = InlineKeyboardMarkup(row_width=2)
+110 |         markup.add(InlineKeyboardButton("🎬 Films", callback_data="adm:list_owned:movies"), InlineKeyboardButton("📺 Séries", callback …
+111 |         bot.edit_message_text("Sélectionnez la catégorie :", call.message.chat.id, call.message.message_id, reply_markup=markup)
+    |                                                                                                                         ^^^^^^^^
+112 |     
+113 |     elif cmd == "list_owned":
+    |
+
+E501 Line too long (234 > 120)
+   --> infra/ai/maintenance/pi_bot_debug.py:117:120
+    |
+116 | …
+117 | …e vous souhaitez rechercher et partager. L'IA s'occupera de la recherche.", call.message.chat.id, call.message.message_id)
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+118 | …
+119 | …
+    |
+
+E501 Line too long (145 > 120)
+   --> infra/ai/maintenance/pi_bot_debug.py:120:120
+    |
+119 | …
+120 | …é en cours de développement.", call.message.chat.id, call.message.message_id)
+    |                                                      ^^^^^^^^^^^^^^^^^^^^^^^^^
+121 | …
+122 | …all.message.message_id)
+    |
+
+E501 Line too long (122 > 120)
+   --> infra/ai/maintenance/pi_bot_debug.py:192:121
+    |
+190 |             bot.answer_callback_query(call.id, "❌ Session expirée.")
+191 |             return
+192 |         res = subprocess.run(["python3", SCRIPT_PATH, "action", d[1], d[2], item['path']], capture_output=True, text=True)
+    |                                                                                                                         ^^
+193 |         bot.edit_message_text(f"✅ {item['name']}: {res.stdout.strip()}", call.message.chat.id, call.message.message_id)
+194 |     elif d[0] == "share_exec":
+    |
+
+E501 Line too long (174 > 120)
+   --> infra/ai/maintenance/pi_bot_debug.py:212:120
+    |
+210 | …data=f"share_final:{d[1]}:remux"),
+211 | …
+212 | …us-titre(s) trouvé(s).", call.message.chat.id, call.message.message_id, reply_markup=markup)
+    |                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+213 | …
+214 | …
+    |
+
+E501 Line too long (180 > 120)
+   --> infra/ai/maintenance/pi_bot_debug.py:215:121
+    |
+213 | …
+214 | …
+215 | …_user, message=call.message, data=f"share_final:{d[1]}:link", chat_instance=call.chat_instance))
+    |                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+216 | …
+217 | …
+    |
+
+E501 Line too long (150 > 120)
+   --> infra/ai/maintenance/pi_bot_debug.py:227:119
+    |
+226 | …
+227 | … else "⏳ Génération du lien...", call.message.chat.id, call.message.message_id)
+    |                                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+228 | …
+229 | …remux_opt)
+    |
+
+E501 Line too long (151 > 120)
+   --> infra/ai/maintenance/pi_bot_debug.py:233:118
+    |
+231 | …
+232 | …
+233 | …déo : `{data['video']}`\n\n✅ Les sous-titres ont été intégrés au fichier MKV."
+    |                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+234 | …
+235 | …{data['video']}`\n"
+    |
+
+E501 Line too long (133 > 120)
+   --> infra/ai/maintenance/pi_bot_debug.py:280:121
+    |
+279 | …     try:
+280 | …         r_add = requests.post(f"{cfg['url']}/api/v3/{endpoint}", headers={"X-Api-Key": cfg['key']}, json=payload, timeout=10)
+    |                                                                                                                   ^^^^^^^^^^^^^
+281 | …         if r_add.status_code in [200, 201]:
+282 | …             bot.edit_message_text(f"📥 **Ajouté à la file d'attente :** `{dl_data['found_title']} ({dl_data['year']})`\nLe télécharg…
+    |
+
+E501 Line too long (229 > 120)
+   --> infra/ai/maintenance/pi_bot_debug.py:282:120
+    |
+280 | …son=payload, timeout=10)
+281 | …
+282 | …_data['year']})`\nLe téléchargement va débuter.", call.message.chat.id, call.message.message_id, parse_mode='Markdown')
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+283 | …
+284 | …
+    |
+
+E501 Line too long (142 > 120)
+   --> infra/ai/maintenance/pi_bot_debug.py:285:120
+    |
+283 | …
+284 | …
+285 | …rreur {r_add.status_code}).", call.message.chat.id, call.message.message_id)
+    |                                                        ^^^^^^^^^^^^^^^^^^^^^^
+286 | …
+287 | …
+    |
+
+E501 Line too long (131 > 120)
+   --> infra/ai/maintenance/pi_bot_debug.py:288:120
+    |
+286 |             except Exception as e:
+287 |                 logging.error(f"Arr API Error: {e}")
+288 |                 bot.edit_message_text("❌ Erreur de communication avec le serveur.", call.message.chat.id, call.message.message_id)
+    |                                                                                                                         ^^^^^^^^^^^
+289 |
+290 | @bot.message_handler(commands=['status'])
+    |
+
+E501 Line too long (154 > 120)
+   --> infra/ai/maintenance/pi_bot_debug.py:344:121
+    |
+342 | …
+343 | …
+344 | …r'\bx26[45]\b', r'\bBluRay\b', r'\bWEB-DL\b', r'\bCOMPLETE\b', r'\bSeason\s*\d*\b']
+    |                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+345 | …
+346 | …CASE)
+    |
+
+E501 Line too long (453 > 120)
+   --> infra/ai/maintenance/pi_bot_debug.py:376:121
+    |
+374 | …
+375 | …
+376 | …arsing :\n'S01E01' ou 'S1E1' -> saison: 1, episode: 1\n'Saison 2' -> saison: 2, episode: null\nSi c'est un film ou incertain -> type: 'film', saison/episode: null\nSi c'est une série -> type: 'serie'\n\nRenvoie UNIQUEMENT un JSON pur : {{\"titre\": \"str\", \"saison\": \"int|null\", \"episode\": \"int|null\", \"type\": \"serie|film\"}}"
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+377 | …
+378 | …
+    |
+
+E501 Line too long (124 > 120)
+   --> infra/ai/maintenance/pi_bot_debug.py:473:120
+    |
+471 |         return
+472 |
+473 |     bot.send_message(m.chat.id, f"🔍 **Recherche en cours :** `{titre}` ({type_media.capitalize()})", parse_mode='Markdown')
+    |                                                                                                                         ^^^^
+474 |
+475 |     # 2. Phase de Routage & Vérification de Disponibilité locale
+    |
+
+E501 Line too long (133 > 120)
+   --> infra/ai/maintenance/pi_bot_debug.py:491:121
+    |
+489 |     try:
+490 |         # Recherche API Sonarr/Radarr
+491 |         r_lookup = requests.get(f"{cfg['url']}/api/v3/{endpoint}/lookup?term={titre}", headers={"X-Api-Key": cfg['key']}, timeout=10)
+    |                                                                                                                         ^^^^^^^^^^^^^
+492 |         results = r_lookup.json()
+    |
+
+E501 Line too long (172 > 120)
+   --> infra/ai/maintenance/pi_bot_debug.py:508:120
+    |
+507 | …
+508 | …ssédé ou en cours de téléchargement sur {'Radarr' if type_media == 'film' else 'Sonarr'}.")
+    |                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+509 | …
+    |
+
+E501 Line too long (126 > 120)
+  --> infra/ai/maintenance/share_engine.py:10:121
+   |
+ 9 | SHARE_DIR = "/media_share/" if os.environ.get("DOCKER_MODE") == "true" else "/home/jules/media_share/"
+10 | CONFIG_FILE = "/app/config_share.json" if os.environ.get("DOCKER_MODE") == "true" else "/home/jules/scripts/config_share.json"
+   |                                                                                                                         ^^^^^^
+11 | BASE_URL = "https://share.juleslaconfourque.fr"
+   |
+
+E501 Line too long (134 > 120)
+  --> infra/ai/maintenance/share_engine.py:39:121
+   |
+37 |                     break
+38 |         
+39 |         cmd = ["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=height", "-of", "csv=s=x:p=0", probe_path]
+   |                                                                                                                         ^^^^^^^^^^^^^^
+40 |         res = subprocess.run(cmd, capture_output=True, text=True)
+41 |         height = int(res.stdout.strip()) if res.stdout.strip().isdigit() else 0
+   |
+
+E501 Line too long (146 > 120)
+  --> infra/ai/maintenance/storage_skill.py:13:119
+   |
+11 | …ouvable."
+12 | …
+13 | …}" for i in sorted(items)]) if items else f"📂 Aucun contenu dans {category}."
+   |                                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^
+14 | …
+15 | …
+   |
+
+E501 Line too long (308 > 120)
+  --> infra/handlers_admin.py:56:120
+   |
+54 | …
+55 | …
+56 | …on("👥 Utilisateurs", callback_data="adm:users"), types.InlineKeyboardButton("🧹 Nettoyage SSD", callback_data="adm:clean"), types.InlineKeyboardButton("🔙 Fermer", callback_data="adm:close"))
+   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+57 | …y_markup=markup)
+58 | …
+   |
+
+E501 Line too long (130 > 120)
+  --> infra/handlers_admin.py:57:122
+   |
+55 | …         markup = types.InlineKeyboardMarkup(row_width=1)
+56 | …         markup.add(types.InlineKeyboardButton("📂 Partage", callback_data="adm:share"), types.InlineKeyboardButton("👥 Utilisateurs", …
+57 | …         bot.edit_message_text("🛠️ **Menu Administrateur**", call.message.chat.id, call.message.message_id, reply_markup=markup)
+   |                                                                                                                       ^^^^^^^^^^
+58 | …     elif cmd == "share":
+59 | …         markup = types.InlineKeyboardMarkup(row_width=1)
+   |
+
+E501 Line too long (256 > 120)
+  --> infra/handlers_admin.py:60:120
+   |
+58 | …
+59 | …
+60 | …neKeyboardButton("❌ Contenu non possédé", callback_data="adm:share_new"), types.InlineKeyboardButton("⬅️ Retour", callback_data="adm:main"))
+   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+61 | …markup=markup)
+62 | …
+   |
+
+E501 Line too long (130 > 120)
+  --> infra/handlers_admin.py:61:120
+   |
+59 | …         markup = types.InlineKeyboardMarkup(row_width=1)
+60 | …         markup.add(types.InlineKeyboardButton("✅ Contenu possédé", callback_data="adm:share_owned"), types.InlineKeyboardButton("❌  …
+61 | …         bot.edit_message_text("📂 **Gestion du Partage**", call.message.chat.id, call.message.message_id, reply_markup=markup)
+   |                                                                                                                       ^^^^^^^^^^
+62 | …     elif cmd == "users":
+63 | …         markup = types.InlineKeyboardMarkup(row_width=1)
+   |
+
+E501 Line too long (308 > 120)
+  --> infra/handlers_admin.py:64:120
+   |
+62 | …
+63 | …
+64 | …Button("➕ Ajouter", callback_data="adm:users_add"), types.InlineKeyboardButton("❌ Révoquer", callback_data="adm:users_rev"), types.InlineKeyboardButton("⬅️ Retour", callback_data="adm:main"))
+   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+65 | …reply_markup=markup)
+66 | …
+   |
+
+E501 Line too long (136 > 120)
+  --> infra/handlers_admin.py:65:120
+   |
+63 | …
+64 | …callback_data="adm:users_list"), types.InlineKeyboardButton("➕ Ajouter", callback_data="adm:users_add"), types.InlineKeyboardButton("…
+65 | …s**", call.message.chat.id, call.message.message_id, reply_markup=markup)
+   |                                                           ^^^^^^^^^^^^^^^^
+66 | …
+67 | …(f)["allowed"]
+   |
+
+E501 Line too long (223 > 120)
+  --> infra/handlers_admin.py:69:121
+   |
+67 | …
+68 | …
+69 | ….InlineKeyboardMarkup().add(types.InlineKeyboardButton("⬅️ Retour", callback_data="adm:users")), parse_mode='Markdown')
+   |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+70 | …
+71 | …
+   |
+
+E501 Line too long (135 > 120)
+  --> infra/handlers_admin.py:80:121
+   |
+78 | …", callback_data=f"adm:users_del:{u}"))
+79 | …, callback_data="adm:users"))
+80 | …er :", call.message.chat.id, call.message.message_id, reply_markup=markup)
+   |                                                             ^^^^^^^^^^^^^^^
+81 | …
+82 | …
+   |
+
+E501 Line too long (166 > 120)
+  --> infra/handlers_admin.py:88:121
+   |
+86 | …
+87 | …
+88 | …all.from_user, message=call.message, data="adm:users", chat_instance=call.chat_instance))
+   |                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+89 | …
+90 | …
+   |
+
+E501 Line too long (248 > 120)
+  --> infra/handlers_admin.py:91:120
+   |
+89 | …
+90 | …
+91 | …yboardButton("📺 Séries", callback_data="adm:list_owned:series"), types.InlineKeyboardButton("⬅️ Retour", callback_data="adm:share"))
+   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+92 | …)
+93 | …
+   |
+
+E501 Line too long (145 > 120)
+  --> infra/handlers_media.py:57:121
+   |
+55 | …)})\n"
+56 | …
+57 | …k_data=f"m_sel:{category}:{items[i-1]['id']}") for i in range(1, len(items)+1)]
+   |                                                        ^^^^^^^^^^^^^^^^^^^^^^^^^
+58 | …
+59 | …
+   |
+
+E501 Line too long (130 > 120)
+  --> infra/handlers_media.py:61:122
+   |
+59 |         nav_row = []
+60 |         if page > 0: nav_row.append(types.InlineKeyboardButton("⬅️", callback_data=f"m_pag:{category}:{page-1}"))
+61 |         if end < total: nav_row.append(types.InlineKeyboardButton(f"➡️ ({total-end})", callback_data=f"m_pag:{category}:{page+1}"))
+   |                                                                                                                         ^^^^^^^^^^
+62 |         if nav_row: markup.row(*nav_row)
+63 |         markup.add(types.InlineKeyboardButton("🏠 Menu Admin", callback_data="adm:main"))
+   |
+
+E501 Line too long (158 > 120)
+  --> infra/handlers_media.py:86:121
+   |
+84 | …
+85 | …
+86 | …, r'\bx26[45]\b', r'\bBluRay\b', r'\bWEB-DL\b', r'\bCOMPLETE\b', r'\bSeason\s*\d*\b']
+   |                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+87 | …
+88 | …RECASE)
+   |
+
+E501 Line too long (138 > 120)
+   --> infra/handlers_media.py:99:119
+    |
+ 97 | …
+ 98 | …medelta(seconds=eta_sec))
+ 99 | …d(t['progress']*100,1)}% | 📂 {round(t['size']/1024**3,2)}GB | ⏳ {eta}\n"
+    |                                                          ^^^^^^^^^^^^^^^^^^
+100 | …
+101 | …
+    |
+
+E501 Line too long (153 > 120)
+   --> infra/handlers_media.py:103:121
+    |
+101 | …
+102 | …
+103 | …("m_pag", "m_sel", "m_act", "sel", "act", "share_exec", "share_final", "cancel")))
+    |                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+104 | …
+105 | …
+    |
+
+E501 Line too long (123 > 120)
+   --> infra/handlers_media.py:116:121
+    |
+114 |             display_title = f"ID {item_id}"
+115 |             try:
+116 |                 r = requests.get(f"{cfg['url']}/api/v3/{endpoint}/{item_id}", headers={"X-Api-Key": cfg['key']}, timeout=5)
+    |                                                                                                                         ^^^
+117 |                 if r.status_code == 200: display_title = r.json().get('title', display_title)
+118 |             except: pass
+    |
+
+E501 Line too long (160 > 120)
+   --> infra/handlers_media.py:123:120
+    |
+121 | …ata=f"m_act:share:{d[1]}:{d[2]}"),
+122 | …ta=f"m_pag:{d[1]}:0"))
+123 | …message.chat.id, call.message.message_id, reply_markup=markup, parse_mode='Markdown')
+    |                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+124 | …
+125 | …
+    |
+
+E501 Line too long (127 > 120)
+   --> infra/handlers_media.py:131:121
+    |
+129 |                 endpoint = "movie" if cat == "films" else "series"
+130 |                 try:
+131 |                     r = requests.get(f"{cfg['url']}/api/v3/{endpoint}/{item_id}", headers={"X-Api-Key": cfg['key']}, timeout=5)
+    |                                                                                                                         ^^^^^^^
+132 |                     if r.status_code == 200:
+133 |                         path = r.json().get('path')
+    |
+
+E501 Line too long (127 > 120)
+   --> infra/handlers_media.py:146:121
+    |
+144 |         elif d[0] == "sel":
+145 |             try:
+146 |                 with open(CONTEXT_FILE, "r") as f: ctx = json.load(f); item = ctx[str(call.message.chat.id)]["list"][int(d[2])]
+    |                                                                                                                         ^^^^^^^
+147 |                 markup = types.InlineKeyboardMarkup(row_width=2)
+148 |                 act = "arc" if item['is_nvme'] else "res"
+    |
+
+E501 Line too long (197 > 120)
+   --> infra/handlers_media.py:149:120
+    |
+147 | …
+148 | …
+149 | …ct}:{d[1]}:{d[2]}"), types.InlineKeyboardButton("🗑️ Supprimer", callback_data=f"act:del:{d[1]}:{d[2]}"))
+    |                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+150 | … Partager", callback_data=f"share_exec:{d[2]}"))
+151 | …
+    |
+
+E501 Line too long (142 > 120)
+   --> infra/handlers_media.py:150:120
+    |
+148 | …
+149 | …est", callback_data=f"act:{act}:{d[1]}:{d[2]}"), types.InlineKeyboardButton("🗑️ Supprimer", callback_data=f"act:del:{d[1]}:{d[2]}"))
+150 | …ypes.InlineKeyboardButton("🔗 Partager", callback_data=f"share_exec:{d[2]}"))
+    |                                                         ^^^^^^^^^^^^^^^^^^^^^^
+151 | …, callback_data="cancel"))
+152 | …message.chat.id, call.message.message_id, reply_markup=markup)
+    |
+
+E501 Line too long (126 > 120)
+   --> infra/handlers_media.py:152:122
+    |
+150 | …             if call.from_user.id == SUPER_ADMIN: markup.add(types.InlineKeyboardButton("🔗 Partager", callback_data=f"share_exec:{d[…
+151 | …             markup.add(types.InlineKeyboardButton("❌ Annuler", callback_data="cancel"))
+152 | …             bot.edit_message_text(f"🛠️ {item['name']}", call.message.chat.id, call.message.message_id, reply_markup=markup)
+    |                                                                                                                       ^^^^^^
+153 | …         except: bot.answer_callback_query(call.id, "❌ Session expirée.")
+154 | …     elif d[0] == "act":
+    |
+
+E501 Line too long (127 > 120)
+   --> infra/handlers_media.py:156:121
+    |
+154 |         elif d[0] == "act":
+155 |             try:
+156 |                 with open(CONTEXT_FILE, "r") as f: ctx = json.load(f); item = ctx[str(call.message.chat.id)]["list"][int(d[3])]
+    |                                                                                                                         ^^^^^^^
+157 |                 res = subprocess.run(["python3", SCRIPT_PATH, "action", d[1], d[2], item['path']], capture_output=True, text=True)
+158 |                 bot.edit_message_text(f"✅ {item['name']}: {res.stdout.strip()}", call.message.chat.id, call.message.message_id)
+    |
+
+E501 Line too long (130 > 120)
+   --> infra/handlers_media.py:157:121
+    |
+155 |             try:
+156 |                 with open(CONTEXT_FILE, "r") as f: ctx = json.load(f); item = ctx[str(call.message.chat.id)]["list"][int(d[3])]
+157 |                 res = subprocess.run(["python3", SCRIPT_PATH, "action", d[1], d[2], item['path']], capture_output=True, text=True)
+    |                                                                                                                         ^^^^^^^^^^
+158 |                 bot.edit_message_text(f"✅ {item['name']}: {res.stdout.strip()}", call.message.chat.id, call.message.message_id)
+159 |             except: bot.answer_callback_query(call.id, "❌ Erreur.")
+    |
+
+E501 Line too long (128 > 120)
+   --> infra/handlers_media.py:158:120
+    |
+156 |                 with open(CONTEXT_FILE, "r") as f: ctx = json.load(f); item = ctx[str(call.message.chat.id)]["list"][int(d[3])]
+157 |                 res = subprocess.run(["python3", SCRIPT_PATH, "action", d[1], d[2], item['path']], capture_output=True, text=True)
+158 |                 bot.edit_message_text(f"✅ {item['name']}: {res.stdout.strip()}", call.message.chat.id, call.message.message_id)
+    |                                                                                                                         ^^^^^^^^
+159 |             except: bot.answer_callback_query(call.id, "❌ Erreur.")
+160 |         elif d[0] == "share_exec":
+    |
+
+E501 Line too long (127 > 120)
+   --> infra/handlers_media.py:162:121
+    |
+160 |         elif d[0] == "share_exec":
+161 |             try:
+162 |                 with open(CONTEXT_FILE, "r") as f: ctx = json.load(f); item = ctx[str(call.message.chat.id)]["list"][int(d[1])]
+    |                                                                                                                         ^^^^^^^
+163 |                 src = pathlib.Path(item['path']); subtitles = list(src.parent.glob(f"{src.stem}*.srt"))
+164 |                 if subtitles:
+    |
+
+E501 Line too long (263 > 120)
+   --> infra/handlers_media.py:166:120
+    |
+164 | …
+165 | …
+166 | …ypes.InlineKeyboardButton("🎬 Remux", callback_data=f"share_final:{d[1]}:remux"), types.InlineKeyboardButton("❌ Annuler", callback_data="cancel"))
+    |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+167 | …sage.chat.id, call.message.message_id, reply_markup=markup)
+168 | …message, data=f"share_final:{d[1]}:link", chat_instance=call.chat_instance))
+    |
+
+E501 Line too long (175 > 120)
+   --> infra/handlers_media.py:167:120
+    |
+165 | …
+166 | …ta=f"share_final:{d[1]}:link"), types.InlineKeyboardButton("🎬 Remux", callback_data=f"share_final:{d[1]}:remux"), types.InlineKeyboa…
+167 | …} sous-titres trouvés.", call.message.chat.id, call.message.message_id, reply_markup=markup)
+    |                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+168 | …ser=call.from_user, message=call.message, data=f"share_final:{d[1]}:link", chat_instance=call.chat_instance))
+169 | …
+    |
+
+E501 Line too long (191 > 120)
+   --> infra/handlers_media.py:168:121
+    |
+166 | …re_final:{d[1]}:link"), types.InlineKeyboardButton("🎬 Remux", callback_data=f"share_final:{d[1]}:remux"), types.InlineKeyboardButton…
+167 | …itres trouvés.", call.message.chat.id, call.message.message_id, reply_markup=markup)
+168 | ….from_user, message=call.message, data=f"share_final:{d[1]}:link", chat_instance=call.chat_instance))
+    |                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+169 | …
+170 | …
+    |
+
+E501 Line too long (127 > 120)
+   --> infra/handlers_media.py:172:121
+    |
+170 |         elif d[0] == "share_final":
+171 |             try:
+172 |                 with open(CONTEXT_FILE, "r") as f: ctx = json.load(f); item = ctx[str(call.message.chat.id)]["list"][int(d[1])]
+    |                                                                                                                         ^^^^^^^
+173 |                 remux_opt = True if d[2] == "remux" else False
+174 |                 bot.edit_message_text("⏳ Traitement...", call.message.chat.id, call.message.message_id)
+    |
+
+E501 Line too long (157 > 120)
+   --> infra/handlers_media.py:176:119
+    |
+174 | …t.id, call.message.message_id)
+175 | …mux=remux_opt)
+176 | …e.chat.id, f"✅ **Partagé**\n\n🔗 Vidéo : `{data['video']}`", parse_mode='Markdown')
+    |                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+177 | …
+178 | …rne.")
+    |
+
+E501 Line too long (204 > 120)
+  --> infra/handlers_search.py:13:121
+   |
+11 | …"}}"
+12 | …
+13 | …{"model": "gpt-4o-mini", "messages": [{"role": "user", "content": prompt}], "temperature": 0.1}, timeout=10)
+   |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+14 | …
+15 | …
+   |
+
+E501 Line too long (125 > 120)
+  --> infra/handlers_search.py:60:121
+   |
+58 |             if cat == "series": payload["languageProfileId"] = 1
+59 |
+60 |             r = requests.post(f"{cfg['url']}/api/v3/{endpoint}", headers={"X-Api-Key": cfg['key']}, json=payload, timeout=10)
+   |                                                                                                                         ^^^^^
+61 |             if r.status_code in [200, 201]:
+62 |                 bot.edit_message_text(f"✅ **Ajouté :** `{item['title']} ({item.get('year')})`", call.message.chat.id, call.message.mes…
+   |
+
+E501 Line too long (166 > 120)
+  --> infra/handlers_search.py:62:120
+   |
+60 | …Api-Key": cfg['key']}, json=payload, timeout=10)
+61 | …
+62 | …m.get('year')})`", call.message.chat.id, call.message.message_id, parse_mode='Markdown')
+   |                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+63 | …
+64 | …")
+   |
+
+E501 Line too long (132 > 120)
+  --> infra/monitoring/add_ip_widgets.py:21:121
+   |
+19 |         "datasource": { "type": "prometheus", "uid": "Prometheus" },
+20 |         "targets": [
+21 |             { "expr": "last_over_time(public_ip_info{type='host'}[1h])", "format": "table", "legendFormat": "{{ip}}", "refId": "A" }
+   |                                                                                                                         ^^^^^^^^^^^^
+22 |         ],
+23 |         "fieldConfig": {
+   |
+
+E501 Line too long (131 > 120)
+  --> infra/monitoring/add_ip_widgets.py:38:121
+   |
+36 |         "datasource": { "type": "prometheus", "uid": "Prometheus" },
+37 |         "targets": [
+38 |             { "expr": "last_over_time(public_ip_info{type='vpn'}[1h])", "format": "table", "legendFormat": "{{ip}}", "refId": "A" }
+   |                                                                                                                         ^^^^^^^^^^^
+39 |         ],
+40 |         "fieldConfig": {
+   |
+
+E501 Line too long (132 > 120)
+  --> infra/monitoring/create_custom_dashboard.py:47:121
+   |
+45 |         "datasource": { "type": "prometheus", "uid": "Prometheus" },
+46 |         "targets": [
+47 |           { "expr": "rate(container_network_receive_bytes_total{name=\"gluetun\"}[5m])", "legendFormat": "Download", "refId": "A" },
+   |                                                                                                                         ^^^^^^^^^^^^
+48 |           { "expr": "rate(container_network_transmit_bytes_total{name=\"gluetun\"}[5m])", "legendFormat": "Upload", "refId": "B" }
+49 |         ],
+   |
+
+E501 Line too long (130 > 120)
+  --> infra/monitoring/create_custom_dashboard.py:48:121
+   |
+46 |         "targets": [
+47 |           { "expr": "rate(container_network_receive_bytes_total{name=\"gluetun\"}[5m])", "legendFormat": "Download", "refId": "A" },
+48 |           { "expr": "rate(container_network_transmit_bytes_total{name=\"gluetun\"}[5m])", "legendFormat": "Upload", "refId": "B" }
+   |                                                                                                                         ^^^^^^^^^^
+49 |         ],
+50 |         "fieldConfig": {
+   |
+
+E501 Line too long (146 > 120)
+  --> infra/monitoring/create_custom_dashboard.py:68:121
+   |
+66 | …,
+67 | …
+68 | …=\"/\"} * 100) / node_filesystem_size_bytes{mountpoint=\"/\"})", "refId": "A" }
+   |                                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^
+69 | …
+70 | …
+   |
+
+E501 Line too long (130 > 120)
+  --> infra/monitoring/deploy_architect_master.py:87:121
+   |
+85 |         "datasource": { "type": "prometheus", "uid": "Prometheus" },
+86 |         "targets": [
+87 |           { "expr": "rate(container_network_receive_bytes_total{name='gluetun'}[5m])", "legendFormat": "Download", "refId": "A" },
+   |                                                                                                                         ^^^^^^^^^^
+88 |           { "expr": "rate(container_network_transmit_bytes_total{name='gluetun'}[5m])", "legendFormat": "Upload", "refId": "B" }
+89 |         ],
+   |
+
+E501 Line too long (128 > 120)
+  --> infra/monitoring/deploy_architect_master.py:88:121
+   |
+86 |         "targets": [
+87 |           { "expr": "rate(container_network_receive_bytes_total{name='gluetun'}[5m])", "legendFormat": "Download", "refId": "A" },
+88 |           { "expr": "rate(container_network_transmit_bytes_total{name='gluetun'}[5m])", "legendFormat": "Upload", "refId": "B" }
+   |                                                                                                                         ^^^^^^^^
+89 |         ],
+90 |         "fieldConfig": {
+   |
+
+E501 Line too long (169 > 120)
+   --> infra/monitoring/deploy_architect_master.py:103:121
+    |
+101 | …
+102 | …
+103 | … / node_filesystem_size_bytes{mountpoint='/'})", "legendFormat": "Root FS", "refId": "A" }
+    |                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+104 | …
+105 | …
+    |
+
+E501 Line too long (130 > 120)
+  --> infra/monitoring/deploy_v2_clean.py:22:121
+   |
+20 |                 "gridPos": {"h": 4, "w": 12, "x": 0, "y": 0},
+21 |                 "datasource": {"type": "prometheus", "uid": DS_UID},
+22 |                 "targets": [{"expr": "last_over_time(public_ip_info{type='host'}[24h])", "legendFormat": "{{ip}}", "refId": "A"}],
+   |                                                                                                                         ^^^^^^^^^^
+23 |                 "options": {"textMode": "name", "reduceOptions": {"calcs": ["lastNotNull"]}},
+24 |                 "fieldConfig": {"defaults": {"displayName": "${__field.labels.ip}", "color": {"mode": "fixed", "fixedColor": "blue"}}}
+   |
+
+E501 Line too long (134 > 120)
+  --> infra/monitoring/deploy_v2_clean.py:24:121
+   |
+22 |                 "targets": [{"expr": "last_over_time(public_ip_info{type='host'}[24h])", "legendFormat": "{{ip}}", "refId": "A"}],
+23 |                 "options": {"textMode": "name", "reduceOptions": {"calcs": ["lastNotNull"]}},
+24 |                 "fieldConfig": {"defaults": {"displayName": "${__field.labels.ip}", "color": {"mode": "fixed", "fixedColor": "blue"}}}
+   |                                                                                                                         ^^^^^^^^^^^^^^
+25 |             },
+26 |             {
+   |
+
+E501 Line too long (122 > 120)
+  --> infra/monitoring/deploy_v2_clean.py:31:121
+   |
+29 | …     "gridPos": {"h": 4, "w": 12, "x": 12, "y": 0},
+30 | …     "datasource": {"type": "prometheus", "uid": DS_UID},
+31 | …     "targets": [{"expr": "topk(1, vpn_public_ip_info{ip!='Error'})", "legendFormat": "{{ip}}", "refId": "A"}],
+   |                                                                                                               ^^
+32 | …     "options": {"textMode": "name", "reduceOptions": {"calcs": ["lastNotNull"]}},
+33 | …     "fieldConfig": {"defaults": {"displayName": "${__field.labels.ip}", "color": {"mode": "fixed", "fixedColor": "purple"}}}
+   |
+
+E501 Line too long (136 > 120)
+  --> infra/monitoring/deploy_v2_clean.py:33:121
+   |
+31 | …fo{ip!='Error'})", "legendFormat": "{{ip}}", "refId": "A"}],
+32 | …": {"calcs": ["lastNotNull"]}},
+33 | …{__field.labels.ip}", "color": {"mode": "fixed", "fixedColor": "purple"}}}
+   |                                                            ^^^^^^^^^^^^^^^^
+34 | …
+35 | …
+   |
+
+E501 Line too long (211 > 120)
+  --> infra/monitoring/deploy_v2_clean.py:42:121
+   |
+40 | …
+41 | …d": "A"}],
+42 | …"steps": [{"color": "green", "value": None}, {"color": "orange", "value": 65}, {"color": "red", "value": 75}]}}}
+   |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+43 | …
+44 | …
+   |
+
+E501 Line too long (131 > 120)
+  --> infra/monitoring/deploy_v2_clean.py:49:121
+   |
+47 | …         "gridPos": {"h": 6, "w": 8, "x": 8, "y": 4},
+48 | …         "datasource": {"type": "prometheus", "uid": DS_UID},
+49 | …         "targets": [{"expr": "100 - ((node_memory_MemAvailable_bytes * 100) / node_memory_MemTotal_bytes)", "refId": "A"}],
+   |                                                                                                                   ^^^^^^^^^^^
+50 | …         "fieldConfig": {"defaults": {"unit": "percent", "min": 0, "max": 100, "thresholds": {"mode": "absolute", "steps": [{"color":…
+51 | …     },
+   |
+
+E501 Line too long (233 > 120)
+  --> infra/monitoring/deploy_v2_clean.py:50:121
+   |
+48 | …
+49 | …es)", "refId": "A"}],
+50 | …absolute", "steps": [{"color": "green", "value": None}, {"color": "orange", "value": 80}, {"color": "red", "value": 90}]}}}
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+51 | …
+52 | …
+   |
+
+E501 Line too long (184 > 120)
+  --> infra/monitoring/deploy_v2_clean.py:57:121
+   |
+55 | …
+56 | …
+57 | …al{name!=''}[1m])) by (name) * 100)", "legendFormat": "{{name}}", "instant": True, "refId": "A"}],
+   |                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+58 | …,
+59 | …
+   |
+
+E501 Line too long (138 > 120)
+  --> infra/monitoring/deploy_v2_clean.py:68:121
+   |
+66 | …     "datasource": {"type": "prometheus", "uid": DS_UID},
+67 | …     "targets": [
+68 | …         {"expr": "rate(container_network_receive_bytes_total{name='gluetun'}[5m])", "legendFormat": "Download", "refId": "A"},
+   |                                                                                                               ^^^^^^^^^^^^^^^^^^
+69 | …         {"expr": "rate(container_network_transmit_bytes_total{name='gluetun'}[5m])", "legendFormat": "Upload", "refId": "B"}
+70 | …     ],
+   |
+
+E501 Line too long (136 > 120)
+  --> infra/monitoring/deploy_v2_clean.py:69:121
+   |
+67 | …     "targets": [
+68 | …         {"expr": "rate(container_network_receive_bytes_total{name='gluetun'}[5m])", "legendFormat": "Download", "refId": "A"},
+69 | …         {"expr": "rate(container_network_transmit_bytes_total{name='gluetun'}[5m])", "legendFormat": "Upload", "refId": "B"}
+   |                                                                                                               ^^^^^^^^^^^^^^^^
+70 | …     ],
+71 | …     "fieldConfig": {"defaults": {"unit": "binBps"}}
+   |
+
+E501 Line too long (162 > 120)
+  --> infra/monitoring/deploy_v2_clean.py:80:121
+   |
+78 | …
+79 | …
+80 | …node_filesystem_avail_bytes{mountpoint='/'}", "legendFormat": "Utilisé", "refId": "A"},
+   |                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+81 | …"legendFormat": "Total", "refId": "B"}
+82 | …
+   |
+
+E501 Line too long (184 > 120)
+  --> infra/monitoring/deploy_v2_clean.py:92:121
+   |
+90 | …
+91 | …
+92 | …node_filesystem_avail_bytes{mountpoint='/mnt/externe'}", "legendFormat": "Utilisé", "refId": "A"},
+   |                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+93 | …"legendFormat": "Total", "refId": "B"}
+94 | …
+   |
+
+E501 Line too long (124 > 120)
+  --> infra/monitoring/deploy_v2_clean.py:93:121
+   |
+91 | …     "targets": [
+92 | …         {"expr": "node_filesystem_size_bytes{mountpoint='/mnt/externe'} - node_filesystem_avail_bytes{mountpoint='/mnt/externe'}", "…
+93 | …         {"expr": "node_filesystem_size_bytes{mountpoint='/mnt/externe'}", "legendFormat": "Total", "refId": "B"}
+   |                                                                                                               ^^^^
+94 | …     ],
+95 | …     "options": {"textMode": "value_and_name", "colorMode": "background", "graphMode": "area"},
+   |
+
+E501 Line too long (128 > 120)
+  --> infra/monitoring/redesign_storage_clarity.py:17:121
+   |
+15 |     "targets": [
+16 |         { 
+17 |             "expr": "100 - ((node_filesystem_avail_bytes{mountpoint='/'} * 100) / node_filesystem_size_bytes{mountpoint='/'})", 
+   |                                                                                                                         ^^^^^^^^
+18 |             "legendFormat": "NVME (/) - Libre : {{value}}", 
+19 |             "refId": "A" 
+   |
+
+E501 Line too long (150 > 120)
+  --> infra/monitoring/redesign_storage_clarity.py:22:121
+   |
+20 | …
+21 | …
+22 | …/mnt/externe'} * 100) / node_filesystem_size_bytes{mountpoint='/mnt/externe'})", 
+   |                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+23 | … 
+24 | …
+   |
+
+E501 Line too long (176 > 120)
+  --> infra/monitoring/redesign_storage_clarity.py:62:121
+   |
+60 | …
+61 | …
+62 | …ilesystem_size_bytes{mountpoint='/'})", "legendFormat": "NVME Saturation (%)", "refId": "A" },
+   |                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+63 | … Libre (Go)", "refId": "B" },
+64 | …0) / node_filesystem_size_bytes{mountpoint='/mnt/externe'})", "legendFormat": "HDD Saturation (%)", "refId": "C" },
+   |
+
+E501 Line too long (197 > 120)
+  --> infra/monitoring/redesign_storage_clarity.py:64:121
+   |
+62 | …size_bytes{mountpoint='/'})", "legendFormat": "NVME Saturation (%)", "refId": "A" },
+63 | …)", "refId": "B" },
+64 | …filesystem_size_bytes{mountpoint='/mnt/externe'})", "legendFormat": "HDD Saturation (%)", "refId": "C" },
+   |                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+65 | … Libre (Go)", "refId": "D" }
+66 | …
+   |
+
+E501 Line too long (143 > 120)
+  --> infra/monitoring/redesign_storage_ratio_stat.py:17:121
+   |
+15 | …
+16 | …
+17 | …'{mountpoint}'}} - node_filesystem_avail_bytes{{mountpoint='{mountpoint}'}}", 
+   |                                                         ^^^^^^^^^^^^^^^^^^^^^^^
+18 | …
+19 | …
+   |
+
+E501 Line too long (159 > 120)
+  --> infra/monitoring/redesign_storage_ratio_stat.py:27:121
+   |
+25 | …
+26 | …
+27 | …='{mountpoint}'}} * 100) / node_filesystem_size_bytes{{mountpoint='{mountpoint}'}})", 
+   |                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+28 | …
+29 | …
+   |
+
+E501 Line too long (127 > 120)
+  --> infra/monitoring/redesign_storage_ratio_stat.py:40:121
+   |
+38 |                     "steps": [
+39 |                         { "color": "green", "value": None },
+40 |                         { "color": "yellow", "value": 70 * 1024*1024*1024 }, # Ce sera écrasé par l'override pour la saturation
+   |                                                                                                                         ^^^^^^^
+41 |                         { "color": "red", "value": 90 * 1024*1024*1024 }
+42 |                     ]
+   |
+
+E501 Line too long (151 > 120)
+  --> infra/monitoring/refactor_dashboard.py:15:121
+   |
+13 | …
+14 | …
+15 | …otal{name!=''}[1m])) by (name) * 100)", "legendFormat": "{{name}}", "refId": "A" }
+   |                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+16 | …
+17 | …
+   |
+
+E501 Line too long (145 > 120)
+  --> infra/monitoring/surgical_dashboard_update.py:83:121
+   |
+81 | …
+82 | …
+83 | …"nvme.*|sd.*"}[5m])) by (device)', "legendFormat": "{{device}}", "refId": "A" }
+   |                                                        ^^^^^^^^^^^^^^^^^^^^^^^^^
+84 | …
+85 | …
+   |
+
+E501 Line too long (124 > 120)
+  --> infra/monitoring/update_ips.py:17:121
+   |
+15 |     try:
+16 |         # Use wget as curl is missing in gluetun
+17 |         vpn_ip = subprocess.check_output("docker exec gluetun wget -qO- https://api.ipify.org", shell=True).decode().strip()
+   |                                                                                                                         ^^^^
+18 |     except:
+19 |         vpn_ip = "Unknown"
+   |
+
+E501 Line too long (128 > 120)
+  --> infra/monitoring/update_storage_master.py:21:121
+   |
+19 |     "targets": [
+20 |         { 
+21 |             "expr": "100 - ((node_filesystem_avail_bytes{mountpoint='/'} * 100) / node_filesystem_size_bytes{mountpoint='/'})", 
+   |                                                                                                                         ^^^^^^^^
+22 |             "legendFormat": "NVME (System /)", 
+23 |             "refId": "A" 
+   |
+
+E501 Line too long (150 > 120)
+  --> infra/monitoring/update_storage_master.py:26:121
+   |
+24 | …
+25 | …
+26 | …/mnt/externe'} * 100) / node_filesystem_size_bytes{mountpoint='/mnt/externe'})", 
+   |                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+27 | …
+28 | …
+   |
+
+E501 Line too long (180 > 120)
+  --> infra/monitoring/update_storage_ratio.py:17:121
+   |
+15 | …
+16 | …
+17 | …_filesystem_size_bytes{mountpoint='/'})", "legendFormat": "NVME Saturation (%)", "refId": "A" },
+   |                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+18 | …l_bytes{mountpoint='/'}", "legendFormat": "NVME Utilisé", "refId": "B" },
+19 | …E Total", "refId": "C" },
+   |
+
+E501 Line too long (157 > 120)
+  --> infra/monitoring/update_storage_ratio.py:18:121
+   |
+16 | …
+17 | … 100) / node_filesystem_size_bytes{mountpoint='/'})", "legendFormat": "NVME Saturation (%)", "refId": "A" },
+18 | …esystem_avail_bytes{mountpoint='/'}", "legendFormat": "NVME Utilisé", "refId": "B" },
+   |                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+19 | …ormat": "NVME Total", "refId": "C" },
+20 | …
+   |
+
+E501 Line too long (201 > 120)
+  --> infra/monitoring/update_storage_ratio.py:21:121
+   |
+19 | …"refId": "C" },
+20 | …
+21 | …e_filesystem_size_bytes{mountpoint='/mnt/externe'})", "legendFormat": "HDD Saturation (%)", "refId": "D" },
+   |                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+22 | …il_bytes{mountpoint='/mnt/externe'}", "legendFormat": "HDD Utilisé", "refId": "E" },
+23 | …D Total", "refId": "F" }
+   |
+
+E501 Line too long (178 > 120)
+  --> infra/monitoring/update_storage_ratio.py:22:121
+   |
+20 | …
+21 | … 100) / node_filesystem_size_bytes{mountpoint='/mnt/externe'})", "legendFormat": "HDD Saturation (%)", "refId": "D" },
+22 | …esystem_avail_bytes{mountpoint='/mnt/externe'}", "legendFormat": "HDD Utilisé", "refId": "E" },
+   |                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+23 | …ormat": "HDD Total", "refId": "F" }
+24 | …
+   |
+
+E501 Line too long (132 > 120)
+  --> infra/monitoring/update_storage_units.py:18:121
+   |
+16 |             # NVME - Percentage
+17 |             { 
+18 |                 "expr": "100 - ((node_filesystem_avail_bytes{mountpoint='/'} * 100) / node_filesystem_size_bytes{mountpoint='/'})", 
+   |                                                                                                                         ^^^^^^^^^^^^
+19 |                 "legendFormat": "NVME (%)", 
+20 |                 "refId": "A" 
+   |
+
+E501 Line too long (154 > 120)
+  --> infra/monitoring/update_storage_units.py:30:121
+   |
+28 | …
+29 | …
+30 | …='/mnt/externe'} * 100) / node_filesystem_size_bytes{mountpoint='/mnt/externe'})", 
+   |                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+31 | …
+32 | …
+   |
+
+E501 Line too long (137 > 120)
+   --> infra/pi_bot.py:108:121
+    |
+106 | …tem['title']} ({item.get('year', '')})\n"
+107 | …
+108 | …a=f"m_sel:{category}:{items[i-1]['id']}") for i in range(1, len(items)+1)]
+    |                                                           ^^^^^^^^^^^^^^^^^
+109 | …
+110 | …
+    |
+
+E501 Line too long (204 > 120)
+   --> infra/pi_bot.py:132:121
+    |
+130 | …"}}"
+131 | …
+132 | …{"model": "gpt-4o-mini", "messages": [{"role": "user", "content": prompt}], "temperature": 0.1}, timeout=10)
+    |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+133 | …
+134 | …
+    |
+
+E501 Line too long (133 > 120)
+   --> infra/pi_bot.py:178:120
+    |
+176 | …lback_data=f"m_act:share:{d[1]}:{d[2]}"),
+177 | …back_data=f"m_pag:{d[1]}:0"))
+178 | …*", call.message.chat.id, call.message.message_id, reply_markup=markup)
+    |                                                            ^^^^^^^^^^^^^
+179 | ….id, "📥 Ajouté.")
+180 | …id, f"Action {d[1]} enregistrée.", show_alert=True)
+    |
+
+E501 Line too long (284 > 120)
+   --> infra/pi_bot.py:188:119
+    |
+186 | …
+187 | …
+188 | …ateurs", callback_data="adm:users"), InlineKeyboardButton("🧹 Nettoyage SSD", callback_data="adm:clean"), InlineKeyboardButton("🔙 Fermer", callback_data="adm:close"))
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+189 | …y_markup=markup)
+190 | …
+    |
+
+E501 Line too long (130 > 120)
+   --> infra/pi_bot.py:189:122
+    |
+187 | …         markup = InlineKeyboardMarkup(row_width=1)
+188 | …         markup.add(InlineKeyboardButton("📂 Partage", callback_data="adm:share"), InlineKeyboardButton("👥 Utilisateurs", callback_d …
+189 | …         bot.edit_message_text("🛠️ **Menu Administrateur**", call.message.chat.id, call.message.message_id, reply_markup=markup)
+    |                                                                                                                       ^^^^^^^^^^
+190 | …     elif cmd == "share":
+191 | …         markup = InlineKeyboardMarkup(row_width=1)
+    |
+
+E501 Line too long (238 > 120)
+   --> infra/pi_bot.py:192:120
+    |
+190 | …
+191 | …
+192 | …Button("❌ Contenu non possédé", callback_data="adm:share_new"), InlineKeyboardButton("⬅️ Retour", callback_data="adm:main"))
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+193 | …y_markup=markup)
+194 | …
+    |
+
+E501 Line too long (130 > 120)
+   --> infra/pi_bot.py:193:120
+    |
+191 | …         markup = InlineKeyboardMarkup(row_width=1)
+192 | …         markup.add(InlineKeyboardButton("✅ Contenu possédé", callback_data="adm:share_owned"), InlineKeyboardButton("❌ Contenu non …
+193 | …         bot.edit_message_text("📂 **Gestion du Partage**", call.message.chat.id, call.message.message_id, reply_markup=markup)
+    |                                                                                                                       ^^^^^^^^^^
+194 | …     elif cmd == "users":
+195 | …         markup = InlineKeyboardMarkup(row_width=1)
+    |
+
+E501 Line too long (284 > 120)
+   --> infra/pi_bot.py:196:119
+    |
+194 | …
+195 | …
+196 | …outer", callback_data="adm:users_add"), InlineKeyboardButton("❌ Révoquer", callback_data="adm:users_rev"), InlineKeyboardButton("⬅️ Retour", callback_data="adm:main"))
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+197 | …reply_markup=markup)
+198 | …
+    |
+
+E501 Line too long (136 > 120)
+   --> infra/pi_bot.py:197:120
+    |
+195 | …
+196 | …ck_data="adm:users_list"), InlineKeyboardButton("➕ Ajouter", callback_data="adm:users_add"), InlineKeyboardButton("❌ Révoquer", cal …
+197 | …s**", call.message.chat.id, call.message.message_id, reply_markup=markup)
+    |                                                           ^^^^^^^^^^^^^^^^
+198 | …
+199 | …eurs :**\n\n" + "\n".join([f"• `{u}`" for u in users])
+    |
+
+E501 Line too long (211 > 120)
+   --> infra/pi_bot.py:200:121
+    |
+198 | …
+199 | …for u in users])
+200 | …InlineKeyboardMarkup().add(InlineKeyboardButton("⬅️ Retour", callback_data="adm:users")), parse_mode='Markdown')
+    |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+201 | …
+202 | …
+    |
+
+E501 Line too long (135 > 120)
+   --> infra/pi_bot.py:210:121
+    |
+208 | …back_data=f"adm:users_del:{u}"))
+209 | …ack_data="adm:users"))
+210 | …r :", call.message.chat.id, call.message.message_id, reply_markup=markup)
+    |                                                            ^^^^^^^^^^^^^^^
+211 | …
+212 | …
+    |
+
+E501 Line too long (158 > 120)
+   --> infra/pi_bot.py:214:121
+    |
+212 | …
+213 | …swer_callback_query(call.id, "✅ Révoqué.")
+214 | …from_user, message=call.message, data="adm:users", chat_instance=call.chat_instance))
+    |                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+215 | …
+216 | …
+    |
+
+E501 Line too long (230 > 120)
+   --> infra/pi_bot.py:217:119
+    |
+215 | …
+216 | …
+217 | …Button("📺 Séries", callback_data="adm:list_owned:series"), InlineKeyboardButton("⬅️ Retour", callback_data="adm:share"))
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+218 | …markup)
+219 | …
+    |
+
+E501 Line too long (123 > 120)
+   --> infra/pi_bot.py:226:121
+    |
+224 |     if d[0] == "sel":
+225 |         try:
+226 |             with open(CONTEXT_FILE, "r") as f: ctx = json.load(f); item = ctx[str(call.message.chat.id)]["list"][int(d[2])]
+    |                                                                                                                         ^^^
+227 |             markup = InlineKeyboardMarkup(row_width=2)
+228 |             act = "arc" if item['is_nvme'] else "res"
+    |
+
+E501 Line too long (181 > 120)
+   --> infra/pi_bot.py:229:120
+    |
+227 | …
+228 | …
+229 | …}:{d[1]}:{d[2]}"), InlineKeyboardButton("🗑️ Supprimer", callback_data=f"act:del:{d[1]}:{d[2]}"))
+    |                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+230 | …artager", callback_data=f"share_exec:{d[2]}"))
+231 | …
+    |
+
+E501 Line too long (132 > 120)
+   --> infra/pi_bot.py:230:120
+    |
+228 | …     act = "arc" if item['is_nvme'] else "res"
+229 | …     markup.add(InlineKeyboardButton("📦 Archiv/Rest", callback_data=f"act:{act}:{d[1]}:{d[2]}"), InlineKeyboardButton("🗑️ Supprimer"…
+230 | …     if call.from_user.id == SUPER_ADMIN: markup.add(InlineKeyboardButton("🔗 Partager", callback_data=f"share_exec:{d[2]}"))
+    |                                                                                                                   ^^^^^^^^^^^^
+231 | …     markup.add(InlineKeyboardButton("❌ Annuler", callback_data="cancel"))
+232 | …     bot.edit_message_text(f"🛠️ {item['name']}", call.message.chat.id, call.message.message_id, reply_markup=markup)
+    |
+
+E501 Line too long (122 > 120)
+   --> infra/pi_bot.py:232:122
+    |
+230 |             if call.from_user.id == SUPER_ADMIN: markup.add(InlineKeyboardButton("🔗 Partager", callback_data=f"share_exec:{d[2]}"))
+231 |             markup.add(InlineKeyboardButton("❌ Annuler", callback_data="cancel"))
+232 |             bot.edit_message_text(f"🛠️ {item['name']}", call.message.chat.id, call.message.message_id, reply_markup=markup)
+    |                                                                                                                         ^^
+233 |         except: bot.answer_callback_query(call.id, "❌ Session expirée.")
+234 |     elif d[0] == "act":
+    |
+
+E501 Line too long (123 > 120)
+   --> infra/pi_bot.py:236:121
+    |
+234 |     elif d[0] == "act":
+235 |         try:
+236 |             with open(CONTEXT_FILE, "r") as f: ctx = json.load(f); item = ctx[str(call.message.chat.id)]["list"][int(d[3])]
+    |                                                                                                                         ^^^
+237 |             res = subprocess.run(["python3", SCRIPT_PATH, "action", d[1], d[2], item['path']], capture_output=True, text=True)
+238 |             bot.edit_message_text(f"✅ {item['name']}: {res.stdout.strip()}", call.message.chat.id, call.message.message_id)
+    |
+
+E501 Line too long (126 > 120)
+   --> infra/pi_bot.py:237:121
+    |
+235 |         try:
+236 |             with open(CONTEXT_FILE, "r") as f: ctx = json.load(f); item = ctx[str(call.message.chat.id)]["list"][int(d[3])]
+237 |             res = subprocess.run(["python3", SCRIPT_PATH, "action", d[1], d[2], item['path']], capture_output=True, text=True)
+    |                                                                                                                         ^^^^^^
+238 |             bot.edit_message_text(f"✅ {item['name']}: {res.stdout.strip()}", call.message.chat.id, call.message.message_id)
+239 |         except: bot.answer_callback_query(call.id, "❌ Erreur.")
+    |
+
+E501 Line too long (124 > 120)
+   --> infra/pi_bot.py:238:120
+    |
+236 |             with open(CONTEXT_FILE, "r") as f: ctx = json.load(f); item = ctx[str(call.message.chat.id)]["list"][int(d[3])]
+237 |             res = subprocess.run(["python3", SCRIPT_PATH, "action", d[1], d[2], item['path']], capture_output=True, text=True)
+238 |             bot.edit_message_text(f"✅ {item['name']}: {res.stdout.strip()}", call.message.chat.id, call.message.message_id)
+    |                                                                                                                         ^^^^
+239 |         except: bot.answer_callback_query(call.id, "❌ Erreur.")
+240 |     elif d[0] == "share_exec":
+    |
+
+E501 Line too long (123 > 120)
+   --> infra/pi_bot.py:242:121
+    |
+240 |     elif d[0] == "share_exec":
+241 |         try:
+242 |             with open(CONTEXT_FILE, "r") as f: ctx = json.load(f); item = ctx[str(call.message.chat.id)]["list"][int(d[1])]
+    |                                                                                                                         ^^^
+243 |             src = pathlib.Path(item['path']); subtitles = list(src.parent.glob(f"{src.stem}*.srt"))
+244 |             if subtitles:
+    |
+
+E501 Line too long (241 > 120)
+   --> infra/pi_bot.py:246:120
+    |
+244 | …
+245 | …
+246 | …ardButton("🎬 Remux", callback_data=f"share_final:{d[1]}:remux"), InlineKeyboardButton("❌ Annuler", callback_data="cancel"))
+    |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+247 | ….chat.id, call.message.message_id, reply_markup=markup)
+248 | …a=f"share_final:{d[1]}:link", chat_instance=call.chat_instance))
+    |
+
+E501 Line too long (171 > 120)
+   --> infra/pi_bot.py:247:120
+    |
+245 | …
+246 | …re_final:{d[1]}:link"), InlineKeyboardButton("🎬 Remux", callback_data=f"share_final:{d[1]}:remux"), InlineKeyboardButton("❌ Annuler …
+247 | …sous-titres trouvés.", call.message.chat.id, call.message.message_id, reply_markup=markup)
+    |                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+248 | …rom_user, message=call.message, data=f"share_final:{d[1]}:link", chat_instance=call.chat_instance))
+249 | …
+    |
+
+E501 Line too long (179 > 120)
+   --> infra/pi_bot.py:248:121
+    |
+246 | …inal:{d[1]}:link"), InlineKeyboardButton("🎬 Remux", callback_data=f"share_final:{d[1]}:remux"), InlineKeyboardButton("❌ Annuler", c …
+247 | …-titres trouvés.", call.message.chat.id, call.message.message_id, reply_markup=markup)
+248 | …user, message=call.message, data=f"share_final:{d[1]}:link", chat_instance=call.chat_instance))
+    |                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+249 | …
+250 | …
+    |
+
+E501 Line too long (123 > 120)
+   --> infra/pi_bot.py:252:121
+    |
+250 |     elif d[0] == "share_final":
+251 |         try:
+252 |             with open(CONTEXT_FILE, "r") as f: ctx = json.load(f); item = ctx[str(call.message.chat.id)]["list"][int(d[1])]
+    |                                                                                                                         ^^^
+253 |             remux_opt = True if d[2] == "remux" else False
+254 |             bot.edit_message_text("⏳ Traitement...", call.message.chat.id, call.message.message_id)
+    |
+
+E501 Line too long (144 > 120)
+  --> infra/pi_bot_debug.py:43:122
+   |
+41 | …
+42 | …
+43 | …entative d'accès au menu admin par {m.from_user.id} (@{m.from_user.username})")
+   |                                                         ^^^^^^^^^^^^^^^^^^^^^^^^
+44 | …
+45 | …
+   |
+
+E501 Line too long (280 > 120)
+  --> infra/pi_bot_debug.py:64:119
+   |
+62 | …
+63 | …
+64 | …rs", callback_data="adm:users"), InlineKeyboardButton("🧹 Nettoyage SSD", callback_data="adm:clean"), InlineKeyboardButton("🔙 Fermer", callback_data="adm:close"))
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+65 | …rkup=markup)
+   |
+
+E501 Line too long (126 > 120)
+  --> infra/pi_bot_debug.py:65:122
+   |
+63 |         markup = InlineKeyboardMarkup(row_width=1)
+64 |         markup.add(InlineKeyboardButton("📂 Partage", callback_data="adm:share"), InlineKeyboardButton("👥 Utilisateurs", callback_data …
+65 |         bot.edit_message_text("🛠️ **Menu Administrateur**", call.message.chat.id, call.message.message_id, reply_markup=markup)
+   |                                                                                                                         ^^^^^^
+66 |     
+67 |     elif cmd == "share":
+   |
+
+E501 Line too long (234 > 120)
+  --> infra/pi_bot_debug.py:69:119
+   |
+67 | …
+68 | …
+69 | …tton("❌ Contenu non possédé", callback_data="adm:share_new"), InlineKeyboardButton("⬅️ Retour", callback_data="adm:main"))
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+70 | …markup=markup)
+   |
+
+E501 Line too long (126 > 120)
+  --> infra/pi_bot_debug.py:70:120
+   |
+68 |         markup = InlineKeyboardMarkup(row_width=1)
+69 |         markup.add(InlineKeyboardButton("✅ Contenu possédé", callback_data="adm:share_owned"), InlineKeyboardButton("❌ Contenu non po …
+70 |         bot.edit_message_text("📂 **Gestion du Partage**", call.message.chat.id, call.message.message_id, reply_markup=markup)
+   |                                                                                                                         ^^^^^^
+71 |     
+72 |     elif cmd == "users":
+   |
+
+E501 Line too long (132 > 120)
+  --> infra/pi_bot_debug.py:78:120
+   |
+76 |                    InlineKeyboardButton("❌ Révoquer un accès", callback_data="adm:users_rev"),
+77 |                    InlineKeyboardButton("⬅️ Retour", callback_data="adm:main"))
+78 |         bot.edit_message_text("👥 **Gestion des Utilisateurs**", call.message.chat.id, call.message.message_id, reply_markup=markup)
+   |                                                                                                                         ^^^^^^^^^^^^
+79 |     
+80 |     elif cmd == "users_list":
+   |
+
+E501 Line too long (126 > 120)
+  --> infra/pi_bot_debug.py:84:121
+   |
+82 |         text = "📋 **Utilisateurs autorisés :**\n\n" + "\n".join([f"• `{u}`" for u in users])
+83 |         markup = InlineKeyboardMarkup().add(InlineKeyboardButton("⬅️ Retour", callback_data="adm:users"))
+84 |         bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=markup, parse_mode='Markdown')
+   |                                                                                                                         ^^^^^^
+85 |     
+86 |     elif cmd == "users_add":
+   |
+
+E501 Line too long (131 > 120)
+  --> infra/pi_bot_debug.py:97:121
+   |
+95 |             markup.add(InlineKeyboardButton(f"❌ {u}", callback_data=f"adm:users_del:{u}"))
+96 |         markup.add(InlineKeyboardButton("⬅️ Retour", callback_data="adm:users"))
+97 |         bot.edit_message_text("Sélectionnez l'ID à révoquer :", call.message.chat.id, call.message.message_id, reply_markup=markup)
+   |                                                                                                                         ^^^^^^^^^^^
+98 |     
+99 |     elif cmd == "users_del":
+   |
+
+E501 Line too long (226 > 120)
+   --> infra/pi_bot_debug.py:110:119
+    |
+108 | …
+109 | …
+110 | …tton("📺 Séries", callback_data="adm:list_owned:series"), InlineKeyboardButton("⬅️ Retour", callback_data="adm:share"))
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+111 | … reply_markup=markup)
+    |
+
+E501 Line too long (128 > 120)
+   --> infra/pi_bot_debug.py:111:121
+    |
+109 |         markup = InlineKeyboardMarkup(row_width=2)
+110 |         markup.add(InlineKeyboardButton("🎬 Films", callback_data="adm:list_owned:movies"), InlineKeyboardButton("📺 Séries", callback …
+111 |         bot.edit_message_text("Sélectionnez la catégorie :", call.message.chat.id, call.message.message_id, reply_markup=markup)
+    |                                                                                                                         ^^^^^^^^
+112 |     
+113 |     elif cmd == "list_owned":
+    |
+
+E501 Line too long (234 > 120)
+   --> infra/pi_bot_debug.py:117:120
+    |
+116 | …
+117 | …e vous souhaitez rechercher et partager. L'IA s'occupera de la recherche.", call.message.chat.id, call.message.message_id)
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+118 | …
+119 | …
+    |
+
+E501 Line too long (145 > 120)
+   --> infra/pi_bot_debug.py:120:120
+    |
+119 | …
+120 | …é en cours de développement.", call.message.chat.id, call.message.message_id)
+    |                                                      ^^^^^^^^^^^^^^^^^^^^^^^^^
+121 | …
+122 | …all.message.message_id)
+    |
+
+E501 Line too long (122 > 120)
+   --> infra/pi_bot_debug.py:192:121
+    |
+190 |             bot.answer_callback_query(call.id, "❌ Session expirée.")
+191 |             return
+192 |         res = subprocess.run(["python3", SCRIPT_PATH, "action", d[1], d[2], item['path']], capture_output=True, text=True)
+    |                                                                                                                         ^^
+193 |         bot.edit_message_text(f"✅ {item['name']}: {res.stdout.strip()}", call.message.chat.id, call.message.message_id)
+194 |     elif d[0] == "share_exec":
+    |
+
+E501 Line too long (174 > 120)
+   --> infra/pi_bot_debug.py:212:120
+    |
+210 | …data=f"share_final:{d[1]}:remux"),
+211 | …
+212 | …us-titre(s) trouvé(s).", call.message.chat.id, call.message.message_id, reply_markup=markup)
+    |                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+213 | …
+214 | …
+    |
+
+E501 Line too long (180 > 120)
+   --> infra/pi_bot_debug.py:215:121
+    |
+213 | …
+214 | …
+215 | …_user, message=call.message, data=f"share_final:{d[1]}:link", chat_instance=call.chat_instance))
+    |                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+216 | …
+217 | …
+    |
+
+E501 Line too long (150 > 120)
+   --> infra/pi_bot_debug.py:227:119
+    |
+226 | …
+227 | … else "⏳ Génération du lien...", call.message.chat.id, call.message.message_id)
+    |                                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+228 | …
+229 | …remux_opt)
+    |
+
+E501 Line too long (151 > 120)
+   --> infra/pi_bot_debug.py:233:118
+    |
+231 | …
+232 | …
+233 | …déo : `{data['video']}`\n\n✅ Les sous-titres ont été intégrés au fichier MKV."
+    |                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+234 | …
+235 | …{data['video']}`\n"
+    |
+
+E501 Line too long (133 > 120)
+   --> infra/pi_bot_debug.py:280:121
+    |
+279 | …     try:
+280 | …         r_add = requests.post(f"{cfg['url']}/api/v3/{endpoint}", headers={"X-Api-Key": cfg['key']}, json=payload, timeout=10)
+    |                                                                                                                   ^^^^^^^^^^^^^
+281 | …         if r_add.status_code in [200, 201]:
+282 | …             bot.edit_message_text(f"📥 **Ajouté à la file d'attente :** `{dl_data['found_title']} ({dl_data['year']})`\nLe télécharg…
+    |
+
+E501 Line too long (229 > 120)
+   --> infra/pi_bot_debug.py:282:120
+    |
+280 | …son=payload, timeout=10)
+281 | …
+282 | …_data['year']})`\nLe téléchargement va débuter.", call.message.chat.id, call.message.message_id, parse_mode='Markdown')
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+283 | …
+284 | …
+    |
+
+E501 Line too long (142 > 120)
+   --> infra/pi_bot_debug.py:285:120
+    |
+283 | …
+284 | …
+285 | …rreur {r_add.status_code}).", call.message.chat.id, call.message.message_id)
+    |                                                        ^^^^^^^^^^^^^^^^^^^^^^
+286 | …
+287 | …
+    |
+
+E501 Line too long (131 > 120)
+   --> infra/pi_bot_debug.py:288:120
+    |
+286 |             except Exception as e:
+287 |                 logging.error(f"Arr API Error: {e}")
+288 |                 bot.edit_message_text("❌ Erreur de communication avec le serveur.", call.message.chat.id, call.message.message_id)
+    |                                                                                                                         ^^^^^^^^^^^
+289 |
+290 | @bot.message_handler(commands=['status'])
+    |
+
+E501 Line too long (154 > 120)
+   --> infra/pi_bot_debug.py:344:121
+    |
+342 | …
+343 | …
+344 | …r'\bx26[45]\b', r'\bBluRay\b', r'\bWEB-DL\b', r'\bCOMPLETE\b', r'\bSeason\s*\d*\b']
+    |                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+345 | …
+346 | …CASE)
+    |
+
+E501 Line too long (453 > 120)
+   --> infra/pi_bot_debug.py:376:121
+    |
+374 | …
+375 | …
+376 | …arsing :\n'S01E01' ou 'S1E1' -> saison: 1, episode: 1\n'Saison 2' -> saison: 2, episode: null\nSi c'est un film ou incertain -> type: 'film', saison/episode: null\nSi c'est une série -> type: 'serie'\n\nRenvoie UNIQUEMENT un JSON pur : {{\"titre\": \"str\", \"saison\": \"int|null\", \"episode\": \"int|null\", \"type\": \"serie|film\"}}"
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+377 | …
+378 | …
+    |
+
+E501 Line too long (124 > 120)
+   --> infra/pi_bot_debug.py:473:120
+    |
+471 |         return
+472 |
+473 |     bot.send_message(m.chat.id, f"🔍 **Recherche en cours :** `{titre}` ({type_media.capitalize()})", parse_mode='Markdown')
+    |                                                                                                                         ^^^^
+474 |
+475 |     # 2. Phase de Routage & Vérification de Disponibilité locale
+    |
+
+E501 Line too long (133 > 120)
+   --> infra/pi_bot_debug.py:491:121
+    |
+489 |     try:
+490 |         # Recherche API Sonarr/Radarr
+491 |         r_lookup = requests.get(f"{cfg['url']}/api/v3/{endpoint}/lookup?term={titre}", headers={"X-Api-Key": cfg['key']}, timeout=10)
+    |                                                                                                                         ^^^^^^^^^^^^^
+492 |         results = r_lookup.json()
+    |
+
+E501 Line too long (172 > 120)
+   --> infra/pi_bot_debug.py:508:120
+    |
+507 | …
+508 | …ssédé ou en cours de téléchargement sur {'Radarr' if type_media == 'film' else 'Sonarr'}.")
+    |                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+509 | …
+    |
+
+E501 Line too long (124 > 120)
+  --> scripts/config.py:20:121
+   |
+18 | USERS_FILE = get_env("USERS_FILE", "/app/users.json" if DOCKER_MODE else os.path.join(BASE_DIR, "users.json"))
+19 | CONTEXT_FILE = get_env("CONTEXT_FILE", "/tmp/bot_context.json")
+20 | SCRIPT_PATH = get_env("SCRIPT_PATH", "/app/media_manager.py" if DOCKER_MODE else os.path.join(BASE_DIR, "media_manager.py"))
+   |                                                                                                                         ^^^^
+21 |
+22 | # --- Services Networking ---
+   |
+
+E501 Line too long (308 > 120)
+  --> scripts/handlers_admin.py:56:120
+   |
+54 | …
+55 | …
+56 | …on("👥 Utilisateurs", callback_data="adm:users"), types.InlineKeyboardButton("🧹 Nettoyage SSD", callback_data="adm:clean"), types.InlineKeyboardButton("🔙 Fermer", callback_data="adm:close"))
+   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+57 | …y_markup=markup)
+58 | …
+   |
+
+E501 Line too long (130 > 120)
+  --> scripts/handlers_admin.py:57:122
+   |
+55 | …         markup = types.InlineKeyboardMarkup(row_width=1)
+56 | …         markup.add(types.InlineKeyboardButton("📂 Partage", callback_data="adm:share"), types.InlineKeyboardButton("👥 Utilisateurs", …
+57 | …         bot.edit_message_text("🛠️ **Menu Administrateur**", call.message.chat.id, call.message.message_id, reply_markup=markup)
+   |                                                                                                                       ^^^^^^^^^^
+58 | …     elif cmd == "share":
+59 | …         markup = types.InlineKeyboardMarkup(row_width=1)
+   |
+
+E501 Line too long (256 > 120)
+  --> scripts/handlers_admin.py:60:120
+   |
+58 | …
+59 | …
+60 | …neKeyboardButton("❌ Contenu non possédé", callback_data="adm:share_new"), types.InlineKeyboardButton("⬅️ Retour", callback_data="adm:main"))
+   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+61 | …markup=markup)
+62 | …
+   |
+
+E501 Line too long (130 > 120)
+  --> scripts/handlers_admin.py:61:120
+   |
+59 | …         markup = types.InlineKeyboardMarkup(row_width=1)
+60 | …         markup.add(types.InlineKeyboardButton("✅ Contenu possédé", callback_data="adm:share_owned"), types.InlineKeyboardButton("❌  …
+61 | …         bot.edit_message_text("📂 **Gestion du Partage**", call.message.chat.id, call.message.message_id, reply_markup=markup)
+   |                                                                                                                       ^^^^^^^^^^
+62 | …     elif cmd == "users":
+63 | …         markup = types.InlineKeyboardMarkup(row_width=1)
+   |
+
+E501 Line too long (308 > 120)
+  --> scripts/handlers_admin.py:64:120
+   |
+62 | …
+63 | …
+64 | …Button("➕ Ajouter", callback_data="adm:users_add"), types.InlineKeyboardButton("❌ Révoquer", callback_data="adm:users_rev"), types.InlineKeyboardButton("⬅️ Retour", callback_data="adm:main"))
+   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+65 | …reply_markup=markup)
+66 | …
+   |
+
+E501 Line too long (136 > 120)
+  --> scripts/handlers_admin.py:65:120
+   |
+63 | …
+64 | …callback_data="adm:users_list"), types.InlineKeyboardButton("➕ Ajouter", callback_data="adm:users_add"), types.InlineKeyboardButton("…
+65 | …s**", call.message.chat.id, call.message.message_id, reply_markup=markup)
+   |                                                           ^^^^^^^^^^^^^^^^
+66 | …
+67 | …(f)["allowed"]
+   |
+
+E501 Line too long (223 > 120)
+  --> scripts/handlers_admin.py:69:121
+   |
+67 | …
+68 | …
+69 | ….InlineKeyboardMarkup().add(types.InlineKeyboardButton("⬅️ Retour", callback_data="adm:users")), parse_mode='Markdown')
+   |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+70 | …
+71 | …
+   |
+
+E501 Line too long (135 > 120)
+  --> scripts/handlers_admin.py:80:121
+   |
+78 | …", callback_data=f"adm:users_del:{u}"))
+79 | …, callback_data="adm:users"))
+80 | …er :", call.message.chat.id, call.message.message_id, reply_markup=markup)
+   |                                                             ^^^^^^^^^^^^^^^
+81 | …
+82 | …
+   |
+
+E501 Line too long (166 > 120)
+  --> scripts/handlers_admin.py:88:121
+   |
+86 | …
+87 | …
+88 | …all.from_user, message=call.message, data="adm:users", chat_instance=call.chat_instance))
+   |                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+89 | …
+90 | …
+   |
+
+E501 Line too long (248 > 120)
+  --> scripts/handlers_admin.py:91:120
+   |
+89 | …
+90 | …
+91 | …yboardButton("📺 Séries", callback_data="adm:list_owned:series"), types.InlineKeyboardButton("⬅️ Retour", callback_data="adm:share"))
+   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+92 | …)
+93 | …
+   |
+
+E501 Line too long (145 > 120)
+  --> scripts/handlers_media.py:57:121
+   |
+55 | …)})\n"
+56 | …
+57 | …k_data=f"m_sel:{category}:{items[i-1]['id']}") for i in range(1, len(items)+1)]
+   |                                                        ^^^^^^^^^^^^^^^^^^^^^^^^^
+58 | …
+59 | …
+   |
+
+E501 Line too long (130 > 120)
+  --> scripts/handlers_media.py:61:122
+   |
+59 |         nav_row = []
+60 |         if page > 0: nav_row.append(types.InlineKeyboardButton("⬅️", callback_data=f"m_pag:{category}:{page-1}"))
+61 |         if end < total: nav_row.append(types.InlineKeyboardButton(f"➡️ ({total-end})", callback_data=f"m_pag:{category}:{page+1}"))
+   |                                                                                                                         ^^^^^^^^^^
+62 |         if nav_row: markup.row(*nav_row)
+63 |         markup.add(types.InlineKeyboardButton("🏠 Menu Admin", callback_data="adm:main"))
+   |
+
+E501 Line too long (158 > 120)
+  --> scripts/handlers_media.py:86:121
+   |
+84 | …
+85 | …
+86 | …, r'\bx26[45]\b', r'\bBluRay\b', r'\bWEB-DL\b', r'\bCOMPLETE\b', r'\bSeason\s*\d*\b']
+   |                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+87 | …
+88 | …RECASE)
+   |
+
+E501 Line too long (138 > 120)
+   --> scripts/handlers_media.py:99:119
+    |
+ 97 | …
+ 98 | …medelta(seconds=eta_sec))
+ 99 | …d(t['progress']*100,1)}% | 📂 {round(t['size']/1024**3,2)}GB | ⏳ {eta}\n"
+    |                                                          ^^^^^^^^^^^^^^^^^^
+100 | …
+101 | …
+    |
+
+E501 Line too long (153 > 120)
+   --> scripts/handlers_media.py:103:121
+    |
+101 | …
+102 | …
+103 | …("m_pag", "m_sel", "m_act", "sel", "act", "share_exec", "share_final", "cancel")))
+    |                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+104 | …
+105 | …
+    |
+
+E501 Line too long (123 > 120)
+   --> scripts/handlers_media.py:116:121
+    |
+114 |             display_title = f"ID {item_id}"
+115 |             try:
+116 |                 r = requests.get(f"{cfg['url']}/api/v3/{endpoint}/{item_id}", headers={"X-Api-Key": cfg['key']}, timeout=5)
+    |                                                                                                                         ^^^
+117 |                 if r.status_code == 200: display_title = r.json().get('title', display_title)
+118 |             except: pass
+    |
+
+E501 Line too long (160 > 120)
+   --> scripts/handlers_media.py:123:120
+    |
+121 | …ata=f"m_act:share:{d[1]}:{d[2]}"),
+122 | …ta=f"m_pag:{d[1]}:0"))
+123 | …message.chat.id, call.message.message_id, reply_markup=markup, parse_mode='Markdown')
+    |                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+124 | …
+125 | …
+    |
+
+E501 Line too long (127 > 120)
+   --> scripts/handlers_media.py:131:121
+    |
+129 |                 endpoint = "movie" if cat == "films" else "series"
+130 |                 try:
+131 |                     r = requests.get(f"{cfg['url']}/api/v3/{endpoint}/{item_id}", headers={"X-Api-Key": cfg['key']}, timeout=5)
+    |                                                                                                                         ^^^^^^^
+132 |                     if r.status_code == 200:
+133 |                         path = r.json().get('path')
+    |
+
+E501 Line too long (127 > 120)
+   --> scripts/handlers_media.py:146:121
+    |
+144 |         elif d[0] == "sel":
+145 |             try:
+146 |                 with open(CONTEXT_FILE, "r") as f: ctx = json.load(f); item = ctx[str(call.message.chat.id)]["list"][int(d[2])]
+    |                                                                                                                         ^^^^^^^
+147 |                 markup = types.InlineKeyboardMarkup(row_width=2)
+148 |                 act = "arc" if item['is_nvme'] else "res"
+    |
+
+E501 Line too long (197 > 120)
+   --> scripts/handlers_media.py:149:120
+    |
+147 | …
+148 | …
+149 | …ct}:{d[1]}:{d[2]}"), types.InlineKeyboardButton("🗑️ Supprimer", callback_data=f"act:del:{d[1]}:{d[2]}"))
+    |                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+150 | … Partager", callback_data=f"share_exec:{d[2]}"))
+151 | …
+    |
+
+E501 Line too long (142 > 120)
+   --> scripts/handlers_media.py:150:120
+    |
+148 | …
+149 | …est", callback_data=f"act:{act}:{d[1]}:{d[2]}"), types.InlineKeyboardButton("🗑️ Supprimer", callback_data=f"act:del:{d[1]}:{d[2]}"))
+150 | …ypes.InlineKeyboardButton("🔗 Partager", callback_data=f"share_exec:{d[2]}"))
+    |                                                         ^^^^^^^^^^^^^^^^^^^^^^
+151 | …, callback_data="cancel"))
+152 | …message.chat.id, call.message.message_id, reply_markup=markup)
+    |
+
+E501 Line too long (126 > 120)
+   --> scripts/handlers_media.py:152:122
+    |
+150 | …             if call.from_user.id == SUPER_ADMIN: markup.add(types.InlineKeyboardButton("🔗 Partager", callback_data=f"share_exec:{d[…
+151 | …             markup.add(types.InlineKeyboardButton("❌ Annuler", callback_data="cancel"))
+152 | …             bot.edit_message_text(f"🛠️ {item['name']}", call.message.chat.id, call.message.message_id, reply_markup=markup)
+    |                                                                                                                       ^^^^^^
+153 | …         except: bot.answer_callback_query(call.id, "❌ Session expirée.")
+154 | …     elif d[0] == "act":
+    |
+
+E501 Line too long (127 > 120)
+   --> scripts/handlers_media.py:156:121
+    |
+154 |         elif d[0] == "act":
+155 |             try:
+156 |                 with open(CONTEXT_FILE, "r") as f: ctx = json.load(f); item = ctx[str(call.message.chat.id)]["list"][int(d[3])]
+    |                                                                                                                         ^^^^^^^
+157 |                 res = subprocess.run(["python3", SCRIPT_PATH, "action", d[1], d[2], item['path']], capture_output=True, text=True)
+158 |                 bot.edit_message_text(f"✅ {item['name']}: {res.stdout.strip()}", call.message.chat.id, call.message.message_id)
+    |
+
+E501 Line too long (130 > 120)
+   --> scripts/handlers_media.py:157:121
+    |
+155 |             try:
+156 |                 with open(CONTEXT_FILE, "r") as f: ctx = json.load(f); item = ctx[str(call.message.chat.id)]["list"][int(d[3])]
+157 |                 res = subprocess.run(["python3", SCRIPT_PATH, "action", d[1], d[2], item['path']], capture_output=True, text=True)
+    |                                                                                                                         ^^^^^^^^^^
+158 |                 bot.edit_message_text(f"✅ {item['name']}: {res.stdout.strip()}", call.message.chat.id, call.message.message_id)
+159 |             except: bot.answer_callback_query(call.id, "❌ Erreur.")
+    |
+
+E501 Line too long (128 > 120)
+   --> scripts/handlers_media.py:158:120
+    |
+156 |                 with open(CONTEXT_FILE, "r") as f: ctx = json.load(f); item = ctx[str(call.message.chat.id)]["list"][int(d[3])]
+157 |                 res = subprocess.run(["python3", SCRIPT_PATH, "action", d[1], d[2], item['path']], capture_output=True, text=True)
+158 |                 bot.edit_message_text(f"✅ {item['name']}: {res.stdout.strip()}", call.message.chat.id, call.message.message_id)
+    |                                                                                                                         ^^^^^^^^
+159 |             except: bot.answer_callback_query(call.id, "❌ Erreur.")
+160 |         elif d[0] == "share_exec":
+    |
+
+E501 Line too long (127 > 120)
+   --> scripts/handlers_media.py:162:121
+    |
+160 |         elif d[0] == "share_exec":
+161 |             try:
+162 |                 with open(CONTEXT_FILE, "r") as f: ctx = json.load(f); item = ctx[str(call.message.chat.id)]["list"][int(d[1])]
+    |                                                                                                                         ^^^^^^^
+163 |                 src = pathlib.Path(item['path']); subtitles = list(src.parent.glob(f"{src.stem}*.srt"))
+164 |                 if subtitles:
+    |
+
+E501 Line too long (263 > 120)
+   --> scripts/handlers_media.py:166:120
+    |
+164 | …
+165 | …
+166 | …ypes.InlineKeyboardButton("🎬 Remux", callback_data=f"share_final:{d[1]}:remux"), types.InlineKeyboardButton("❌ Annuler", callback_data="cancel"))
+    |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+167 | …sage.chat.id, call.message.message_id, reply_markup=markup)
+168 | …message, data=f"share_final:{d[1]}:link", chat_instance=call.chat_instance))
+    |
+
+E501 Line too long (175 > 120)
+   --> scripts/handlers_media.py:167:120
+    |
+165 | …
+166 | …ta=f"share_final:{d[1]}:link"), types.InlineKeyboardButton("🎬 Remux", callback_data=f"share_final:{d[1]}:remux"), types.InlineKeyboa…
+167 | …} sous-titres trouvés.", call.message.chat.id, call.message.message_id, reply_markup=markup)
+    |                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+168 | …ser=call.from_user, message=call.message, data=f"share_final:{d[1]}:link", chat_instance=call.chat_instance))
+169 | …
+    |
+
+E501 Line too long (191 > 120)
+   --> scripts/handlers_media.py:168:121
+    |
+166 | …re_final:{d[1]}:link"), types.InlineKeyboardButton("🎬 Remux", callback_data=f"share_final:{d[1]}:remux"), types.InlineKeyboardButton…
+167 | …itres trouvés.", call.message.chat.id, call.message.message_id, reply_markup=markup)
+168 | ….from_user, message=call.message, data=f"share_final:{d[1]}:link", chat_instance=call.chat_instance))
+    |                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+169 | …
+170 | …
+    |
+
+E501 Line too long (127 > 120)
+   --> scripts/handlers_media.py:172:121
+    |
+170 |         elif d[0] == "share_final":
+171 |             try:
+172 |                 with open(CONTEXT_FILE, "r") as f: ctx = json.load(f); item = ctx[str(call.message.chat.id)]["list"][int(d[1])]
+    |                                                                                                                         ^^^^^^^
+173 |                 remux_opt = True if d[2] == "remux" else False
+174 |                 bot.edit_message_text("⏳ Traitement...", call.message.chat.id, call.message.message_id)
+    |
+
+E501 Line too long (157 > 120)
+   --> scripts/handlers_media.py:176:119
+    |
+174 | …t.id, call.message.message_id)
+175 | …mux=remux_opt)
+176 | …e.chat.id, f"✅ **Partagé**\n\n🔗 Vidéo : `{data['video']}`", parse_mode='Markdown')
+    |                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+177 | …
+178 | …rne.")
+    |
+
+E501 Line too long (204 > 120)
+  --> scripts/handlers_search.py:13:121
+   |
+11 | …"}}"
+12 | …
+13 | …{"model": "gpt-4o-mini", "messages": [{"role": "user", "content": prompt}], "temperature": 0.1}, timeout=10)
+   |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+14 | …
+15 | …
+   |
+
+E501 Line too long (125 > 120)
+  --> scripts/handlers_search.py:60:121
+   |
+58 |             if cat == "series": payload["languageProfileId"] = 1
+59 |
+60 |             r = requests.post(f"{cfg['url']}/api/v3/{endpoint}", headers={"X-Api-Key": cfg['key']}, json=payload, timeout=10)
+   |                                                                                                                         ^^^^^
+61 |             if r.status_code in [200, 201]:
+62 |                 bot.edit_message_text(f"✅ **Ajouté :** `{item['title']} ({item.get('year')})`", call.message.chat.id, call.message.mes…
+   |
+
+E501 Line too long (166 > 120)
+  --> scripts/handlers_search.py:62:120
+   |
+60 | …Api-Key": cfg['key']}, json=payload, timeout=10)
+61 | …
+62 | …m.get('year')})`", call.message.chat.id, call.message.message_id, parse_mode='Markdown')
+   |                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+63 | …
+64 | …")
+   |
+
+E501 Line too long (167 > 120)
+  --> scripts/media_manager.py:25:121
+   |
+23 | …
+24 | …
+25 | …]\b', r'\bBluRay\b', r'\bWEB-DL\b', r'\bCOMPLETE\b', r'\bSeason\s*\d*\b', r'\bS\d+E\d+\b']
+   |                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+26 | …
+27 | …
+   |
+
+E501 Line too long (144 > 120)
+  --> scripts/media_manager.py:67:121
+   |
+65 | …
+66 | …
+67 | …: f, "size_gb": round(size / (1024**3), 2), "is_nvme": is_nvme, "path": path})
+   |                                                        ^^^^^^^^^^^^^^^^^^^^^^^^
+68 | …
+   |
+
+E501 Line too long (137 > 120)
+   --> scripts/pi_bot.py:109:121
+    |
+107 | …tem['title']} ({item.get('year', '')})\n"
+108 | …
+109 | …a=f"m_sel:{category}:{items[i-1]['id']}") for i in range(1, len(items)+1)]
+    |                                                           ^^^^^^^^^^^^^^^^^
+110 | …
+111 | …
+    |
+
+E501 Line too long (204 > 120)
+   --> scripts/pi_bot.py:133:121
+    |
+131 | …"}}"
+132 | …
+133 | …{"model": "gpt-4o-mini", "messages": [{"role": "user", "content": prompt}], "temperature": 0.1}, timeout=10)
+    |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+134 | …
+135 | …
+    |
+
+E501 Line too long (133 > 120)
+   --> scripts/pi_bot.py:179:120
+    |
+177 | …lback_data=f"m_act:share:{d[1]}:{d[2]}"),
+178 | …back_data=f"m_pag:{d[1]}:0"))
+179 | …*", call.message.chat.id, call.message.message_id, reply_markup=markup)
+    |                                                            ^^^^^^^^^^^^^
+180 | ….id, "📥 Ajouté.")
+181 | …id, f"Action {d[1]} enregistrée.", show_alert=True)
+    |
+
+E501 Line too long (284 > 120)
+   --> scripts/pi_bot.py:189:119
+    |
+187 | …
+188 | …
+189 | …ateurs", callback_data="adm:users"), InlineKeyboardButton("🧹 Nettoyage SSD", callback_data="adm:clean"), InlineKeyboardButton("🔙 Fermer", callback_data="adm:close"))
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+190 | …y_markup=markup)
+191 | …
+    |
+
+E501 Line too long (130 > 120)
+   --> scripts/pi_bot.py:190:122
+    |
+188 | …         markup = InlineKeyboardMarkup(row_width=1)
+189 | …         markup.add(InlineKeyboardButton("📂 Partage", callback_data="adm:share"), InlineKeyboardButton("👥 Utilisateurs", callback_d …
+190 | …         bot.edit_message_text("🛠️ **Menu Administrateur**", call.message.chat.id, call.message.message_id, reply_markup=markup)
+    |                                                                                                                       ^^^^^^^^^^
+191 | …     elif cmd == "share":
+192 | …         markup = InlineKeyboardMarkup(row_width=1)
+    |
+
+E501 Line too long (238 > 120)
+   --> scripts/pi_bot.py:193:120
+    |
+191 | …
+192 | …
+193 | …Button("❌ Contenu non possédé", callback_data="adm:share_new"), InlineKeyboardButton("⬅️ Retour", callback_data="adm:main"))
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+194 | …y_markup=markup)
+195 | …
+    |
+
+E501 Line too long (130 > 120)
+   --> scripts/pi_bot.py:194:120
+    |
+192 | …         markup = InlineKeyboardMarkup(row_width=1)
+193 | …         markup.add(InlineKeyboardButton("✅ Contenu possédé", callback_data="adm:share_owned"), InlineKeyboardButton("❌ Contenu non …
+194 | …         bot.edit_message_text("📂 **Gestion du Partage**", call.message.chat.id, call.message.message_id, reply_markup=markup)
+    |                                                                                                                       ^^^^^^^^^^
+195 | …     elif cmd == "users":
+196 | …         markup = InlineKeyboardMarkup(row_width=1)
+    |
+
+E501 Line too long (284 > 120)
+   --> scripts/pi_bot.py:197:119
+    |
+195 | …
+196 | …
+197 | …outer", callback_data="adm:users_add"), InlineKeyboardButton("❌ Révoquer", callback_data="adm:users_rev"), InlineKeyboardButton("⬅️ Retour", callback_data="adm:main"))
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+198 | …reply_markup=markup)
+199 | …
+    |
+
+E501 Line too long (136 > 120)
+   --> scripts/pi_bot.py:198:120
+    |
+196 | …
+197 | …ck_data="adm:users_list"), InlineKeyboardButton("➕ Ajouter", callback_data="adm:users_add"), InlineKeyboardButton("❌ Révoquer", cal …
+198 | …s**", call.message.chat.id, call.message.message_id, reply_markup=markup)
+    |                                                           ^^^^^^^^^^^^^^^^
+199 | …
+200 | …eurs :**\n\n" + "\n".join([f"• `{u}`" for u in users])
+    |
+
+E501 Line too long (211 > 120)
+   --> scripts/pi_bot.py:201:121
+    |
+199 | …
+200 | …for u in users])
+201 | …InlineKeyboardMarkup().add(InlineKeyboardButton("⬅️ Retour", callback_data="adm:users")), parse_mode='Markdown')
+    |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+202 | …
+203 | …
+    |
+
+E501 Line too long (135 > 120)
+   --> scripts/pi_bot.py:211:121
+    |
+209 | …back_data=f"adm:users_del:{u}"))
+210 | …ack_data="adm:users"))
+211 | …r :", call.message.chat.id, call.message.message_id, reply_markup=markup)
+    |                                                            ^^^^^^^^^^^^^^^
+212 | …
+213 | …
+    |
+
+E501 Line too long (158 > 120)
+   --> scripts/pi_bot.py:215:121
+    |
+213 | …
+214 | …swer_callback_query(call.id, "✅ Révoqué.")
+215 | …from_user, message=call.message, data="adm:users", chat_instance=call.chat_instance))
+    |                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+216 | …
+217 | …
+    |
+
+E501 Line too long (230 > 120)
+   --> scripts/pi_bot.py:218:119
+    |
+216 | …
+217 | …
+218 | …Button("📺 Séries", callback_data="adm:list_owned:series"), InlineKeyboardButton("⬅️ Retour", callback_data="adm:share"))
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+219 | …markup)
+220 | …
+    |
+
+E501 Line too long (123 > 120)
+   --> scripts/pi_bot.py:227:121
+    |
+225 |     if d[0] == "sel":
+226 |         try:
+227 |             with open(CONTEXT_FILE, "r") as f: ctx = json.load(f); item = ctx[str(call.message.chat.id)]["list"][int(d[2])]
+    |                                                                                                                         ^^^
+228 |             markup = InlineKeyboardMarkup(row_width=2)
+229 |             act = "arc" if item['is_nvme'] else "res"
+    |
+
+E501 Line too long (181 > 120)
+   --> scripts/pi_bot.py:230:120
+    |
+228 | …
+229 | …
+230 | …}:{d[1]}:{d[2]}"), InlineKeyboardButton("🗑️ Supprimer", callback_data=f"act:del:{d[1]}:{d[2]}"))
+    |                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+231 | …artager", callback_data=f"share_exec:{d[2]}"))
+232 | …
+    |
+
+E501 Line too long (132 > 120)
+   --> scripts/pi_bot.py:231:120
+    |
+229 | …     act = "arc" if item['is_nvme'] else "res"
+230 | …     markup.add(InlineKeyboardButton("📦 Archiv/Rest", callback_data=f"act:{act}:{d[1]}:{d[2]}"), InlineKeyboardButton("🗑️ Supprimer"…
+231 | …     if call.from_user.id == SUPER_ADMIN: markup.add(InlineKeyboardButton("🔗 Partager", callback_data=f"share_exec:{d[2]}"))
+    |                                                                                                                   ^^^^^^^^^^^^
+232 | …     markup.add(InlineKeyboardButton("❌ Annuler", callback_data="cancel"))
+233 | …     bot.edit_message_text(f"🛠️ {item['name']}", call.message.chat.id, call.message.message_id, reply_markup=markup)
+    |
+
+E501 Line too long (122 > 120)
+   --> scripts/pi_bot.py:233:122
+    |
+231 |             if call.from_user.id == SUPER_ADMIN: markup.add(InlineKeyboardButton("🔗 Partager", callback_data=f"share_exec:{d[2]}"))
+232 |             markup.add(InlineKeyboardButton("❌ Annuler", callback_data="cancel"))
+233 |             bot.edit_message_text(f"🛠️ {item['name']}", call.message.chat.id, call.message.message_id, reply_markup=markup)
+    |                                                                                                                         ^^
+234 |         except: bot.answer_callback_query(call.id, "❌ Session expirée.")
+235 |     elif d[0] == "act":
+    |
+
+E501 Line too long (123 > 120)
+   --> scripts/pi_bot.py:237:121
+    |
+235 |     elif d[0] == "act":
+236 |         try:
+237 |             with open(CONTEXT_FILE, "r") as f: ctx = json.load(f); item = ctx[str(call.message.chat.id)]["list"][int(d[3])]
+    |                                                                                                                         ^^^
+238 |             res = subprocess.run(["python3", SCRIPT_PATH, "action", d[1], d[2], item['path']], capture_output=True, text=True)
+239 |             bot.edit_message_text(f"✅ {item['name']}: {res.stdout.strip()}", call.message.chat.id, call.message.message_id)
+    |
+
+E501 Line too long (126 > 120)
+   --> scripts/pi_bot.py:238:121
+    |
+236 |         try:
+237 |             with open(CONTEXT_FILE, "r") as f: ctx = json.load(f); item = ctx[str(call.message.chat.id)]["list"][int(d[3])]
+238 |             res = subprocess.run(["python3", SCRIPT_PATH, "action", d[1], d[2], item['path']], capture_output=True, text=True)
+    |                                                                                                                         ^^^^^^
+239 |             bot.edit_message_text(f"✅ {item['name']}: {res.stdout.strip()}", call.message.chat.id, call.message.message_id)
+240 |         except: bot.answer_callback_query(call.id, "❌ Erreur.")
+    |
+
+E501 Line too long (124 > 120)
+   --> scripts/pi_bot.py:239:120
+    |
+237 |             with open(CONTEXT_FILE, "r") as f: ctx = json.load(f); item = ctx[str(call.message.chat.id)]["list"][int(d[3])]
+238 |             res = subprocess.run(["python3", SCRIPT_PATH, "action", d[1], d[2], item['path']], capture_output=True, text=True)
+239 |             bot.edit_message_text(f"✅ {item['name']}: {res.stdout.strip()}", call.message.chat.id, call.message.message_id)
+    |                                                                                                                         ^^^^
+240 |         except: bot.answer_callback_query(call.id, "❌ Erreur.")
+241 |     elif d[0] == "share_exec":
+    |
+
+E501 Line too long (123 > 120)
+   --> scripts/pi_bot.py:243:121
+    |
+241 |     elif d[0] == "share_exec":
+242 |         try:
+243 |             with open(CONTEXT_FILE, "r") as f: ctx = json.load(f); item = ctx[str(call.message.chat.id)]["list"][int(d[1])]
+    |                                                                                                                         ^^^
+244 |             src = pathlib.Path(item['path']); subtitles = list(src.parent.glob(f"{src.stem}*.srt"))
+245 |             if subtitles:
+    |
+
+E501 Line too long (241 > 120)
+   --> scripts/pi_bot.py:247:120
+    |
+245 | …
+246 | …
+247 | …ardButton("🎬 Remux", callback_data=f"share_final:{d[1]}:remux"), InlineKeyboardButton("❌ Annuler", callback_data="cancel"))
+    |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+248 | ….chat.id, call.message.message_id, reply_markup=markup)
+249 | …a=f"share_final:{d[1]}:link", chat_instance=call.chat_instance))
+    |
+
+E501 Line too long (171 > 120)
+   --> scripts/pi_bot.py:248:120
+    |
+246 | …
+247 | …re_final:{d[1]}:link"), InlineKeyboardButton("🎬 Remux", callback_data=f"share_final:{d[1]}:remux"), InlineKeyboardButton("❌ Annuler …
+248 | …sous-titres trouvés.", call.message.chat.id, call.message.message_id, reply_markup=markup)
+    |                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+249 | …rom_user, message=call.message, data=f"share_final:{d[1]}:link", chat_instance=call.chat_instance))
+250 | …
+    |
+
+E501 Line too long (179 > 120)
+   --> scripts/pi_bot.py:249:121
+    |
+247 | …inal:{d[1]}:link"), InlineKeyboardButton("🎬 Remux", callback_data=f"share_final:{d[1]}:remux"), InlineKeyboardButton("❌ Annuler", c …
+248 | …-titres trouvés.", call.message.chat.id, call.message.message_id, reply_markup=markup)
+249 | …user, message=call.message, data=f"share_final:{d[1]}:link", chat_instance=call.chat_instance))
+    |                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+250 | …
+251 | …
+    |
+
+E501 Line too long (123 > 120)
+   --> scripts/pi_bot.py:253:121
+    |
+251 |     elif d[0] == "share_final":
+252 |         try:
+253 |             with open(CONTEXT_FILE, "r") as f: ctx = json.load(f); item = ctx[str(call.message.chat.id)]["list"][int(d[1])]
+    |                                                                                                                         ^^^
+254 |             remux_opt = True if d[2] == "remux" else False
+255 |             bot.edit_message_text("⏳ Traitement...", call.message.chat.id, call.message.message_id)
+    |
+
+E501 Line too long (144 > 120)
+  --> scripts/pi_bot_debug.py:44:122
+   |
+42 | …
+43 | …
+44 | …entative d'accès au menu admin par {m.from_user.id} (@{m.from_user.username})")
+   |                                                         ^^^^^^^^^^^^^^^^^^^^^^^^
+45 | …
+46 | …
+   |
+
+E501 Line too long (280 > 120)
+  --> scripts/pi_bot_debug.py:65:119
+   |
+63 | …
+64 | …
+65 | …rs", callback_data="adm:users"), InlineKeyboardButton("🧹 Nettoyage SSD", callback_data="adm:clean"), InlineKeyboardButton("🔙 Fermer", callback_data="adm:close"))
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+66 | …rkup=markup)
+   |
+
+E501 Line too long (126 > 120)
+  --> scripts/pi_bot_debug.py:66:122
+   |
+64 |         markup = InlineKeyboardMarkup(row_width=1)
+65 |         markup.add(InlineKeyboardButton("📂 Partage", callback_data="adm:share"), InlineKeyboardButton("👥 Utilisateurs", callback_data …
+66 |         bot.edit_message_text("🛠️ **Menu Administrateur**", call.message.chat.id, call.message.message_id, reply_markup=markup)
+   |                                                                                                                         ^^^^^^
+67 |     
+68 |     elif cmd == "share":
+   |
+
+E501 Line too long (234 > 120)
+  --> scripts/pi_bot_debug.py:70:119
+   |
+68 | …
+69 | …
+70 | …tton("❌ Contenu non possédé", callback_data="adm:share_new"), InlineKeyboardButton("⬅️ Retour", callback_data="adm:main"))
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+71 | …markup=markup)
+   |
+
+E501 Line too long (126 > 120)
+  --> scripts/pi_bot_debug.py:71:120
+   |
+69 |         markup = InlineKeyboardMarkup(row_width=1)
+70 |         markup.add(InlineKeyboardButton("✅ Contenu possédé", callback_data="adm:share_owned"), InlineKeyboardButton("❌ Contenu non po …
+71 |         bot.edit_message_text("📂 **Gestion du Partage**", call.message.chat.id, call.message.message_id, reply_markup=markup)
+   |                                                                                                                         ^^^^^^
+72 |     
+73 |     elif cmd == "users":
+   |
+
+E501 Line too long (132 > 120)
+  --> scripts/pi_bot_debug.py:79:120
+   |
+77 |                    InlineKeyboardButton("❌ Révoquer un accès", callback_data="adm:users_rev"),
+78 |                    InlineKeyboardButton("⬅️ Retour", callback_data="adm:main"))
+79 |         bot.edit_message_text("👥 **Gestion des Utilisateurs**", call.message.chat.id, call.message.message_id, reply_markup=markup)
+   |                                                                                                                         ^^^^^^^^^^^^
+80 |     
+81 |     elif cmd == "users_list":
+   |
+
+E501 Line too long (126 > 120)
+  --> scripts/pi_bot_debug.py:85:121
+   |
+83 |         text = "📋 **Utilisateurs autorisés :**\n\n" + "\n".join([f"• `{u}`" for u in users])
+84 |         markup = InlineKeyboardMarkup().add(InlineKeyboardButton("⬅️ Retour", callback_data="adm:users"))
+85 |         bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=markup, parse_mode='Markdown')
+   |                                                                                                                         ^^^^^^
+86 |     
+87 |     elif cmd == "users_add":
+   |
+
+E501 Line too long (131 > 120)
+   --> scripts/pi_bot_debug.py:98:121
+    |
+ 96 |             markup.add(InlineKeyboardButton(f"❌ {u}", callback_data=f"adm:users_del:{u}"))
+ 97 |         markup.add(InlineKeyboardButton("⬅️ Retour", callback_data="adm:users"))
+ 98 |         bot.edit_message_text("Sélectionnez l'ID à révoquer :", call.message.chat.id, call.message.message_id, reply_markup=markup)
+    |                                                                                                                         ^^^^^^^^^^^
+ 99 |     
+100 |     elif cmd == "users_del":
+    |
+
+E501 Line too long (226 > 120)
+   --> scripts/pi_bot_debug.py:111:119
+    |
+109 | …
+110 | …
+111 | …tton("📺 Séries", callback_data="adm:list_owned:series"), InlineKeyboardButton("⬅️ Retour", callback_data="adm:share"))
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+112 | … reply_markup=markup)
+    |
+
+E501 Line too long (128 > 120)
+   --> scripts/pi_bot_debug.py:112:121
+    |
+110 |         markup = InlineKeyboardMarkup(row_width=2)
+111 |         markup.add(InlineKeyboardButton("🎬 Films", callback_data="adm:list_owned:movies"), InlineKeyboardButton("📺 Séries", callback …
+112 |         bot.edit_message_text("Sélectionnez la catégorie :", call.message.chat.id, call.message.message_id, reply_markup=markup)
+    |                                                                                                                         ^^^^^^^^
+113 |     
+114 |     elif cmd == "list_owned":
+    |
+
+E501 Line too long (234 > 120)
+   --> scripts/pi_bot_debug.py:118:120
+    |
+117 | …
+118 | …e vous souhaitez rechercher et partager. L'IA s'occupera de la recherche.", call.message.chat.id, call.message.message_id)
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+119 | …
+120 | …
+    |
+
+E501 Line too long (145 > 120)
+   --> scripts/pi_bot_debug.py:121:120
+    |
+120 | …
+121 | …é en cours de développement.", call.message.chat.id, call.message.message_id)
+    |                                                      ^^^^^^^^^^^^^^^^^^^^^^^^^
+122 | …
+123 | …all.message.message_id)
+    |
+
+E501 Line too long (122 > 120)
+   --> scripts/pi_bot_debug.py:193:121
+    |
+191 |             bot.answer_callback_query(call.id, "❌ Session expirée.")
+192 |             return
+193 |         res = subprocess.run(["python3", SCRIPT_PATH, "action", d[1], d[2], item['path']], capture_output=True, text=True)
+    |                                                                                                                         ^^
+194 |         bot.edit_message_text(f"✅ {item['name']}: {res.stdout.strip()}", call.message.chat.id, call.message.message_id)
+195 |     elif d[0] == "share_exec":
+    |
+
+E501 Line too long (174 > 120)
+   --> scripts/pi_bot_debug.py:213:120
+    |
+211 | …data=f"share_final:{d[1]}:remux"),
+212 | …
+213 | …us-titre(s) trouvé(s).", call.message.chat.id, call.message.message_id, reply_markup=markup)
+    |                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+214 | …
+215 | …
+    |
+
+E501 Line too long (180 > 120)
+   --> scripts/pi_bot_debug.py:216:121
+    |
+214 | …
+215 | …
+216 | …_user, message=call.message, data=f"share_final:{d[1]}:link", chat_instance=call.chat_instance))
+    |                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+217 | …
+218 | …
+    |
+
+E501 Line too long (150 > 120)
+   --> scripts/pi_bot_debug.py:228:119
+    |
+227 | …
+228 | … else "⏳ Génération du lien...", call.message.chat.id, call.message.message_id)
+    |                                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+229 | …
+230 | …remux_opt)
+    |
+
+E501 Line too long (151 > 120)
+   --> scripts/pi_bot_debug.py:234:118
+    |
+232 | …
+233 | …
+234 | …déo : `{data['video']}`\n\n✅ Les sous-titres ont été intégrés au fichier MKV."
+    |                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+235 | …
+236 | …{data['video']}`\n"
+    |
+
+E501 Line too long (133 > 120)
+   --> scripts/pi_bot_debug.py:281:121
+    |
+280 | …     try:
+281 | …         r_add = requests.post(f"{cfg['url']}/api/v3/{endpoint}", headers={"X-Api-Key": cfg['key']}, json=payload, timeout=10)
+    |                                                                                                                   ^^^^^^^^^^^^^
+282 | …         if r_add.status_code in [200, 201]:
+283 | …             bot.edit_message_text(f"📥 **Ajouté à la file d'attente :** `{dl_data['found_title']} ({dl_data['year']})`\nLe télécharg…
+    |
+
+E501 Line too long (229 > 120)
+   --> scripts/pi_bot_debug.py:283:120
+    |
+281 | …son=payload, timeout=10)
+282 | …
+283 | …_data['year']})`\nLe téléchargement va débuter.", call.message.chat.id, call.message.message_id, parse_mode='Markdown')
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+284 | …
+285 | …
+    |
+
+E501 Line too long (142 > 120)
+   --> scripts/pi_bot_debug.py:286:120
+    |
+284 | …
+285 | …
+286 | …rreur {r_add.status_code}).", call.message.chat.id, call.message.message_id)
+    |                                                        ^^^^^^^^^^^^^^^^^^^^^^
+287 | …
+288 | …
+    |
+
+E501 Line too long (131 > 120)
+   --> scripts/pi_bot_debug.py:289:120
+    |
+287 |             except Exception as e:
+288 |                 logging.error(f"Arr API Error: {e}")
+289 |                 bot.edit_message_text("❌ Erreur de communication avec le serveur.", call.message.chat.id, call.message.message_id)
+    |                                                                                                                         ^^^^^^^^^^^
+290 |
+291 | @bot.message_handler(commands=['status'])
+    |
+
+E501 Line too long (154 > 120)
+   --> scripts/pi_bot_debug.py:345:121
+    |
+343 | …
+344 | …
+345 | …r'\bx26[45]\b', r'\bBluRay\b', r'\bWEB-DL\b', r'\bCOMPLETE\b', r'\bSeason\s*\d*\b']
+    |                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+346 | …
+347 | …CASE)
+    |
+
+E501 Line too long (453 > 120)
+   --> scripts/pi_bot_debug.py:377:121
+    |
+375 | …
+376 | …
+377 | …arsing :\n'S01E01' ou 'S1E1' -> saison: 1, episode: 1\n'Saison 2' -> saison: 2, episode: null\nSi c'est un film ou incertain -> type: 'film', saison/episode: null\nSi c'est une série -> type: 'serie'\n\nRenvoie UNIQUEMENT un JSON pur : {{\"titre\": \"str\", \"saison\": \"int|null\", \"episode\": \"int|null\", \"type\": \"serie|film\"}}"
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+378 | …
+379 | …
+    |
+
+E501 Line too long (124 > 120)
+   --> scripts/pi_bot_debug.py:474:120
+    |
+472 |         return
+473 |
+474 |     bot.send_message(m.chat.id, f"🔍 **Recherche en cours :** `{titre}` ({type_media.capitalize()})", parse_mode='Markdown')
+    |                                                                                                                         ^^^^
+475 |
+476 |     # 2. Phase de Routage & Vérification de Disponibilité locale
+    |
+
+E501 Line too long (133 > 120)
+   --> scripts/pi_bot_debug.py:492:121
+    |
+490 |     try:
+491 |         # Recherche API Sonarr/Radarr
+492 |         r_lookup = requests.get(f"{cfg['url']}/api/v3/{endpoint}/lookup?term={titre}", headers={"X-Api-Key": cfg['key']}, timeout=10)
+    |                                                                                                                         ^^^^^^^^^^^^^
+493 |         results = r_lookup.json()
+    |
+
+E501 Line too long (172 > 120)
+   --> scripts/pi_bot_debug.py:509:120
+    |
+508 | …
+509 | …ssédé ou en cours de téléchargement sur {'Radarr' if type_media == 'film' else 'Sonarr'}.")
+    |                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+510 | …
+    |
+
+E501 Line too long (134 > 120)
+  --> scripts/share_engine.py:42:121
+   |
+40 |                     break
+41 |         
+42 |         cmd = ["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=height", "-of", "csv=s=x:p=0", probe_path]
+   |                                                                                                                         ^^^^^^^^^^^^^^
+43 |         try:
+44 |             res = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
+   |
+
+E501 Line too long (146 > 120)
+  --> scripts/storage_skill.py:13:119
+   |
+11 | …ouvable."
+12 | …
+13 | …}" for i in sorted(items)]) if items else f"📂 Aucun contenu dans {category}."
+   |                                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^
+14 | …
+15 | …
+   |
+
+E712 Avoid equality comparisons to `True`; use `config.is_authorized(config.SUPER_ADMIN):` for truth checks
+  --> scripts/tests/test_config.py:31:12
+   |
+29 | def test_is_authorized_super_admin():
+30 |     import config
+31 |     assert config.is_authorized(config.SUPER_ADMIN) == True
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: Replace with `config.is_authorized(config.SUPER_ADMIN)`
+
+E501 Line too long (126 > 120)
+   --> scripts/tests/test_search.py:113:121
+    |
+111 |         "456_search": {
+112 |             "cat": "movie",
+113 |             "results": [{"title": "Titanic", "year": 1997, "titleSlug": "titanic-1997", "tmdbId": 597, "images": [], "id": 0}]
+    |                                                                                                                         ^^^^^^
+114 |         }
+115 |     }
+    |
+
+Found 312 errors.
+No fixes available (1 hidden fix can be enabled with the `--unsafe-fixes` option).
+Exit Code: 1
+Process Group PGID: 321448

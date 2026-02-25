@@ -10,12 +10,14 @@ for panel in db["panels"]:
     # Cleanup Temperature Legend
     if "Température CPU" in panel["title"]:
         panel["targets"][0]["legendFormat"] = "Temp {{sensor}}"
-    
+
     # Cleanup RAM Legend (if it shows raw labels)
     if "Saturation RAM" in panel["title"]:
         panel["targets"][0]["legendFormat"] = "Usage RAM"
 
-res = requests.post(f"{GRAFANA_URL}/api/dashboards/db", json={"dashboard": db, "overwrite": True})
+res = requests.post(
+    f"{GRAFANA_URL}/api/dashboards/db", json={"dashboard": db, "overwrite": True}
+)
 if res.status_code == 200:
     print("Legends cleaned up: CPU and RAM names are now concise.")
 else:

@@ -10,17 +10,21 @@ for panel in db["panels"]:
         # Application de la solution définitive : topk(1) et filtres de labels
         panel["targets"][0]["expr"] = 'topk(1, vpn_public_ip_info{ip!="Error", ip!=""})'
         panel["targets"][0]["format"] = "time_series"
-        
+
         panel["options"]["reduceOptions"] = {
             "values": False,
             "calcs": ["lastNotNull"],
-            "fields": ""
+            "fields": "",
         }
         panel["options"]["textMode"] = "name"
         panel["fieldConfig"]["defaults"]["displayName"] = "${__field.labels.ip}"
 
-res = requests.post(f"{GRAFANA_URL}/api/dashboards/db", json={"dashboard": db, "overwrite": True})
+res = requests.post(
+    f"{GRAFANA_URL}/api/dashboards/db", json={"dashboard": db, "overwrite": True}
+)
 if res.status_code == 200:
-    print("Architectural fix applied: topk(1) filter and label extraction are now active.")
+    print(
+        "Architectural fix applied: topk(1) filter and label extraction are now active."
+    )
 else:
     print(f"Error: {res.status_code} {res.text}")

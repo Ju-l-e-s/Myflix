@@ -17,14 +17,16 @@ for panel in db["panels"]:
             panel["options"]["reduceOptions"] = {
                 "values": False,
                 "calcs": ["lastNotNull"],
-                "fields": ""
+                "fields": "",
             }
-        
+
         # Set fields to target the 'ip' label from Prometheus
         panel["options"]["reduceOptions"]["fields"] = "/^ip$/"
         panel["options"]["textMode"] = "value"
 
-res = requests.post(f"{GRAFANA_URL}/api/dashboards/db", json={"dashboard": db, "overwrite": True})
+res = requests.post(
+    f"{GRAFANA_URL}/api/dashboards/db", json={"dashboard": db, "overwrite": True}
+)
 if res.status_code == 200:
     print("IP widgets fixed to show labels.")
 else:

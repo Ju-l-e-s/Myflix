@@ -12,7 +12,7 @@ for panel in db["panels"]:
         panel["options"]["reduceOptions"] = {
             "values": False,
             "calcs": ["lastNotNull"],
-            "fields": "/^ip$/" # Select only the 'ip' field/label
+            "fields": "/^ip$/",  # Select only the 'ip' field/label
         }
         # Clear specific display names that might conflict
         panel["fieldConfig"]["defaults"]["displayName"] = ""
@@ -20,7 +20,9 @@ for panel in db["panels"]:
         panel["targets"][0]["format"] = "table"
         panel["targets"][0]["legendFormat"] = "{{ip}}"
 
-res = requests.post(f"{GRAFANA_URL}/api/dashboards/db", json={"dashboard": db, "overwrite": True})
+res = requests.post(
+    f"{GRAFANA_URL}/api/dashboards/db", json={"dashboard": db, "overwrite": True}
+)
 if res.status_code == 200:
     print("IP widgets updated: switched to label-based value display.")
 else:

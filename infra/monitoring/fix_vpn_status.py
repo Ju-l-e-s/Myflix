@@ -20,7 +20,7 @@ db = dashboard_json["dashboard"]
 # Update VPN Status Panel (ID 3)
 for panel in db["panels"]:
     if panel["title"] == "Statut VPN (Disponibilité)":
-        # We calculate the age in seconds. 
+        # We calculate the age in seconds.
         # If age < 60s, container is Up.
         panel["targets"][0]["expr"] = "time() - container_last_seen{name='gluetun'}"
         panel["fieldConfig"]["defaults"]["unit"] = "s"
@@ -29,16 +29,18 @@ for panel in db["panels"]:
         panel["fieldConfig"]["defaults"]["thresholds"] = {
             "mode": "absolute",
             "steps": [
-                { "color": "green", "value": None },
-                { "color": "orange", "value": 45 },
-                { "color": "red", "value": 60 }
-            ]
+                {"color": "green", "value": None},
+                {"color": "orange", "value": 45},
+                {"color": "red", "value": 60},
+            ],
         }
         panel["title"] = "VPN Heartbeat (Liveness)"
         # Use a simpler Stat or Gauge that shows "Last seen X seconds ago"
 
 # Save updated dashboard
-res = requests.post(f"{GRAFANA_URL}/api/dashboards/db", json={"dashboard": db, "overwrite": True})
+res = requests.post(
+    f"{GRAFANA_URL}/api/dashboards/db", json={"dashboard": db, "overwrite": True}
+)
 if res.status_code == 200:
     print("VPN Status panel fixed: switched to Liveness (seconds since last seen).")
 else:

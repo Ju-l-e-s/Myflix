@@ -10,16 +10,18 @@ for panel in db["panels"]:
         # Configuration stricte selon le protocole Architecte
         panel["targets"][0]["expr"] = "vpn_public_ip_info"
         panel["targets"][0]["format"] = "time_series"
-        
+
         panel["options"]["reduceOptions"] = {
             "values": False,
             "calcs": ["lastNotNull"],
-            "fields": "" 
+            "fields": "",
         }
         panel["options"]["textMode"] = "name"
         panel["fieldConfig"]["defaults"]["displayName"] = "${__field.labels.ip}"
 
-res = requests.post(f"{GRAFANA_URL}/api/dashboards/db", json={"dashboard": db, "overwrite": True})
+res = requests.post(
+    f"{GRAFANA_URL}/api/dashboards/db", json={"dashboard": db, "overwrite": True}
+)
 if res.status_code == 200:
     print("Dashboard VPN IP panel strictly configured via the Architect Protocol.")
 else:

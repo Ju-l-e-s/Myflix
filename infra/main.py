@@ -1,4 +1,6 @@
-import telebot, threading, logging
+import telebot
+import threading
+import logging
 from flask import Flask
 from config import *
 from handlers_admin import register_admin_handlers

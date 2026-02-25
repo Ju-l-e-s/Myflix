@@ -1,5 +1,4 @@
 import requests
-import json
 
 GRAFANA_URL = "http://admin:Japlcdb33@localhost:3100"
 

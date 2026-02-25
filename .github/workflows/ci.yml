@@ -7,7 +7,33 @@ on:
     branches: [ main ]
 
 jobs:
-  validate:
+  lint-and-security:
+    name: Code Quality & Security
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Linting Tools
+        run: |
+          pip install ruff bandit
+
+      - name: Run Ruff (Linter & Formatter)
+        run: |
+          ruff check .
+          ruff format --check .
+
+      - name: Run Bandit (Security Audit)
+        run: |
+          bandit -r . -ll -x "./**/venv/**,./**/__pycache__/**,./infra/ai/ai-env/**"
+
+  test-and-build:
+    name: Unit Tests & Build
+    needs: lint-and-security
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -30,6 +56,7 @@ jobs:
           RADARR_API_KEY: "fake"
           SONARR_API_KEY: "fake"
           PLEX_TOKEN: "fake"
+          SUPER_ADMIN_ID: "6721936515"
         run: |
           pytest scripts/tests/
 

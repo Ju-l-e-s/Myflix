@@ -1,7 +1,16 @@
-import telebot, subprocess, os, json, requests, logging, re, time, threading, shutil, pathlib
-from datetime import datetime, timedelta
-from telebot.types import BotCommand, BotCommandScopeChat, BotCommandScopeDefault, InlineKeyboardMarkup, InlineKeyboardButton
-from flask import Flask, request
+import telebot
+import subprocess
+import os
+import json
+import requests
+import logging
+import re
+import threading
+import shutil
+import pathlib
+from datetime import timedelta
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
+from flask import Flask
 import share_engine
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -244,7 +253,7 @@ def media_callbacks(call):
                 if not dl_data:
                     bot.answer_callback_query(call.id, "❌ Session expirée.")
                     return
-            except Exception as e:
+            except Exception:
                 bot.answer_callback_query(call.id, "❌ Erreur de session.")
                 return
 
@@ -289,7 +298,7 @@ def status_command(m):
             return f"{u.used/(1024**3):.1f}/{u.total/(1024**3):.1f}Go ({(u.used/u.total)*100:.1f}%)"
         msg = f"📊 **Stockage Temps Réel**\n\n🚀 **NVMe** : `{fmt(nvme)}`\n📚 **HDD** : `{fmt(hdd)}`"
         bot.reply_to(m, msg, parse_mode='Markdown')
-    except Exception as e:
+    except Exception:
         bot.reply_to(m, "❌ Erreur de lecture disque temps réel.")
 
 @bot.message_handler(commands=['films'])
@@ -306,7 +315,7 @@ def films_command(m):
         text = f"🎬 **Bibliothèque Radarr ({len(owned)} films)**\n\n"
         text += "\n".join([f"• {f['title']} ({f['year']})" for f in owned[:50]])
         bot.reply_to(m, text, parse_mode='Markdown')
-    except Exception as e:
+    except Exception:
         bot.reply_to(m, "❌ Erreur API Radarr (Consultez les logs).")
 
 @bot.message_handler(commands=['series'])
@@ -320,7 +329,7 @@ def series_command(m):
         text = f"📺 **Bibliothèque Sonarr ({len(owned)} séries)**\n\n"
         text += "\n".join([f"• {s['title']} — `{s['statistics']['episodeFileCount']}` épisodes" for s in owned])
         bot.reply_to(m, text, parse_mode='Markdown')
-    except Exception as e:
+    except Exception:
         bot.reply_to(m, "❌ Erreur API Sonarr (Consultez les logs).")
 
 @bot.message_handler(commands=['queue'])

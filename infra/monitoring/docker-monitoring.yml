@@ -1,25 +1,4 @@
 services:
-  netdata:
-    image: netdata/netdata:latest
-    container_name: netdata
-    ports:
-      - 19999:19999
-    cap_add:
-      - SYS_PTRACE
-    security_opt:
-      - apparmor:unconfined
-    volumes:
-      - netdataconfig:/etc/netdata
-      - netdatalib:/var/lib/netdata
-      - netdatacache:/var/cache/netdata
-      - /etc/passwd:/host/etc/passwd:ro
-      - /etc/group:/host/etc/group:ro
-      - /proc:/host/proc:ro
-      - /sys:/host/sys:ro
-      - /etc/os-release:/host/etc/os-release:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    restart: unless-stopped
-
   homepage:
     image: ghcr.io/gethomepage/homepage:latest
     container_name: homepage
@@ -93,13 +72,14 @@ services:
       - /dev/disk/:/dev/disk:ro
     ports:
       - 8081:8080
+    command:
+      - '--housekeeping_interval=15s'
+      - '--disable_metrics=diskIO,udp,percpu'
+      - '--storage_duration=1m0s'
 
 networks:
   npm-nw:
     external: true
 
 volumes:
-  netdataconfig:
-  netdatalib:
-  netdatacache:
   grafana-storage:

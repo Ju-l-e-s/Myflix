@@ -1,4 +1,8 @@
-import os, shutil, sys, json, re, subprocess
+import os
+import shutil
+import sys
+import json
+import re
 
 DOCKER_MODE = os.environ.get("DOCKER_MODE") == "true"
 HOME = os.path.expanduser("~")
@@ -27,7 +31,7 @@ def get_size(p):
     try:
         if os.path.isfile(p): return os.path.getsize(p)
         return sum(os.path.getsize(os.path.join(r, f)) for r, d, fs in os.walk(p) for f in fs)
-    except Exception as e:
+    except Exception:
         return 0
 
 def find_local_media(query):

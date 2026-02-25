@@ -1,4 +1,6 @@
-import telebot, os, shutil, json, logging
+import os
+import shutil
+import json
 from telebot import types
 from config import *
 
@@ -18,7 +20,7 @@ def register_admin_handlers(bot, is_authorized):
                 hdd = shutil.disk_usage('/mnt/externe')
                 msg += f"\n📚 **HDD** : `{fmt(hdd)}`"
             else:
-                msg += f"\n⚠️ **HDD** : `Non détecté sur /mnt/externe`"
+                msg += "\n⚠️ **HDD** : `Non détecté sur /mnt/externe`"
             bot.reply_to(m, msg, parse_mode='Markdown')
         except Exception as e:
             bot.reply_to(m, f"❌ Erreur lecture disques : {e}")
@@ -82,7 +84,7 @@ def register_admin_handlers(bot, is_authorized):
             if uid in users:
                 users.remove(uid)
                 save_users(users)
-                bot.answer_callback_query(call.id, f"✅ Révoqué.")
+                bot.answer_callback_query(call.id, "✅ Révoqué.")
             admin_callback_router(types.CallbackQuery(id=call.id, from_user=call.from_user, message=call.message, data="adm:users", chat_instance=call.chat_instance))
         elif cmd == "share_owned":
             markup = types.InlineKeyboardMarkup(row_width=2)

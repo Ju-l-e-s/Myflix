@@ -1,4 +1,8 @@
-import telebot, json, requests, re, logging, os
+import json
+import requests
+import re
+import logging
+import os
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from config import *
 

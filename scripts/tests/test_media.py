@@ -1,8 +1,7 @@
 import pytest
 import os
 import sys
-import json
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 # Add scripts to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -37,7 +36,6 @@ def mock_is_authorized():
 
 def test_show_media_list_radarr(mock_bot, mocker):
     import handlers_media
-    from config import RADARR_CFG
     
     # Mock requests.get
     mock_data = [

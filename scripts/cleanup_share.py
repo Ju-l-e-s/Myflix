@@ -2,7 +2,6 @@ import os
 import shutil
 import time
 import logging
-from pathlib import Path
 
 # --- CONFIGURATION GLOBALE ---
 HOME = os.path.expanduser("~")
@@ -111,7 +110,7 @@ def auto_tiering_nvme_to_hdd():
             
             # Création du symlink pour tromper Sonarr/Radarr
             os.symlink(dest_path, file_path)
-            logging.info(f"Migration réussie : Symlink créé sur le NVMe.")
+            logging.info("Migration réussie : Symlink créé sur le NVMe.")
             
         except Exception as e:
             logging.error(f"Échec de la migration pour {file_path} : {e}")

@@ -18,7 +18,7 @@ class VPNHandler(http.server.BaseHTTPRequestHandler):
                 
                 metric_line = 'vpn_public_ip_info{ip="' + str(ip) + '"} 1\n'
                 self.wfile.write(metric_line.encode('utf-8'))
-            except Exception as e:
+            except Exception:
                 # In case of error, we return 200 but NO metrics, or a 503.
                 # Returning 200 with no metrics is cleaner for Prometheus (target stays UP but no data).
                 self.send_response(200)

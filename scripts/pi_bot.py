@@ -1,8 +1,16 @@
-import telebot, subprocess, os, json, requests, logging, re, time, threading, shutil, pathlib
-from datetime import datetime, timedelta
+import telebot
+import subprocess
+import os
+import json
+import requests
+import logging
+import re
+import threading
+import shutil
+import pathlib
 from telebot import types
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
-from flask import Flask, request
+from flask import Flask
 import share_engine
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -203,7 +211,7 @@ def master_router(call):
             bot.edit_message_text("Sélectionnez l'ID à révoquer :", call.message.chat.id, call.message.message_id, reply_markup=markup)
         elif cmd == "users_del":
             uid = int(d[2]); users = load_allowed_users()
-            if uid in users: users.remove(uid); save_users(users); bot.answer_callback_query(call.id, f"✅ Révoqué.")
+            if uid in users: users.remove(uid); save_users(users); bot.answer_callback_query(call.id, "✅ Révoqué.")
             master_router(types.CallbackQuery(id=call.id, from_user=call.from_user, message=call.message, data="adm:users", chat_instance=call.chat_instance))
         elif cmd == "share_owned":
             markup = InlineKeyboardMarkup(row_width=2)

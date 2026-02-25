@@ -1,4 +1,5 @@
-import os, shutil, sys
+import os
+import sys
 
 NVME_DIR = "/data/media/films"
 HDD_DIR = "/mnt/externe/Films"

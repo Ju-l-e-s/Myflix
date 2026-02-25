@@ -1,5 +1,6 @@
 {
-  "id": 32438188105728,
+  "uid": "pi5-master-v2",
+  "title": "Architecture Système v2",
   "panels": [
     {
       "datasource": {
@@ -518,7 +519,7 @@
       "type": "stat"
     }
   ],
-  "refresh": "5s",
+  "refresh": "30s",
   "schemaVersion": 38,
   "tags": [
     "architect",

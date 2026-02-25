@@ -28,4 +28,4 @@ def test_config_urls():
 
 def test_is_authorized_super_admin():
     import config
-    assert config.is_authorized(config.SUPER_ADMIN) == True
+    assert config.is_authorized(config.SUPER_ADMIN)

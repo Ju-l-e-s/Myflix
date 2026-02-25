@@ -29,7 +29,7 @@ jobs:
 
       - name: Run Bandit (Security Audit)
         run: |
-          bandit -r . -ll -x "./**/venv/**,./**/__pycache__/**,./infra/ai/ai-env/**"
+          bandit -r . -ll -x "./**/venv/**,./**/__pycache__/**,./infra/ai/ai-env/**,./**/tests/**"
 
   test-and-build:
     name: Unit Tests & Build

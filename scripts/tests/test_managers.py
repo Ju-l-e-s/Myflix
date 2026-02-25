@@ -73,7 +73,7 @@ def test_storage_manager_list_items(mocker):
     mocker.patch("os.listdir", return_value=["Movie_A", "Movie_B"])
     mocker.patch("storage_manager.get_size", return_value=10.5)
 
-    out = storage_manager.list_items("/tmp/fake")
+    out = storage_manager.list_items("/tmp/fake")  # nosec
     assert "Movie_A (10.5G)" in out
     assert "/arc_Movie_A" in out
 

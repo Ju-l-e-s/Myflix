@@ -3,8 +3,10 @@ from pathlib import Path
 from datetime import datetime
 from config import DOCKER_MODE
 
-SHARE_DIR = "/media_share/" if DOCKER_MODE else "/home/jules/media_share/"
-CONFIG_FILE = "/app/config_share.json" if DOCKER_MODE else "/home/jules/scripts/config_share.json"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+HOME = os.path.expanduser("~")
+SHARE_DIR = "/media_share/" if DOCKER_MODE else os.path.join(HOME, "media_share/")
+CONFIG_FILE = "/app/config_share.json" if DOCKER_MODE else os.path.join(BASE_DIR, "config_share.json")
 BASE_URL = "https://share.juleslaconfourque.fr"
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')

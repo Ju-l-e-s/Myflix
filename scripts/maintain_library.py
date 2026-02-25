@@ -1,13 +1,14 @@
 import requests
 import time
 import logging
+import os
 from datetime import datetime
 
 # Configuration
 BAZARR_URL = "http://localhost:6767"
 API_KEY = "1f875e27320201d7671e1d9a9f2d7983"
 LANG_FILTER = "fr"  # Focus on French subtitles
-REPORT_PATH = "/home/jules/scripts/library_integrity_report.log"
+REPORT_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "library_integrity_report.log")
 
 logging.basicConfig(
     level=logging.INFO,

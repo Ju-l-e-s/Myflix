@@ -1,8 +1,9 @@
 import os, shutil, sys, json, re, subprocess
 
 DOCKER_MODE = os.environ.get("DOCKER_MODE") == "true"
-NVME_MOVIES = "/data/internal/media/movies" if DOCKER_MODE else "/home/jules/infra/ai/data/media/movies"
-NVME_TV = "/data/internal/media/tv" if DOCKER_MODE else "/home/jules/infra/ai/data/media/tv"
+HOME = os.path.expanduser("~")
+NVME_MOVIES = "/data/internal/media/movies" if DOCKER_MODE else os.path.join(HOME, "infra/ai/data/media/movies")
+NVME_TV = "/data/internal/media/tv" if DOCKER_MODE else os.path.join(HOME, "infra/ai/data/media/tv")
 HDD_ROOT = "/data/external" if DOCKER_MODE else "/mnt/externe"
 
 PATHS = {

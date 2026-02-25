@@ -10,9 +10,10 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 # --- CONFIGURATION ---
 TOKEN = os.getenv("TELEGRAM_TOKEN")
 SUPER_ADMIN = 6721936515
-USERS_FILE = "/home/jules/scripts/users.json"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+USERS_FILE = os.path.join(BASE_DIR, "users.json")
 CONTEXT_FILE = "/tmp/bot_context.json"
-SCRIPT_PATH = "/home/jules/scripts/media_manager.py"
+SCRIPT_PATH = os.path.join(BASE_DIR, "media_manager.py")
 RADARR_CFG = {"url": "http://localhost:7878", "key": os.getenv("RADARR_API_KEY")}
 SONARR_CFG = {"url": "http://localhost:8989", "key": os.getenv("SONARR_API_KEY")}
 OPENAI_KEY = os.getenv("OPENAI_KEY")

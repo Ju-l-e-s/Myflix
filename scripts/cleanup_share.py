@@ -5,8 +5,9 @@ import logging
 from pathlib import Path
 
 # --- CONFIGURATION GLOBALE ---
-SHARE_DIR = "/home/jules/media_share"
-NVME_PATH = "/home/jules/infra/ai/data/media"  # Base NVMe pour Sonarr/Radarr
+HOME = os.path.expanduser("~")
+SHARE_DIR = os.path.join(HOME, "media_share")
+NVME_PATH = os.path.join(HOME, "infra/ai/data/media")  # Base NVMe pour Sonarr/Radarr
 HDD_PATH = "/mnt/externe"                      # Base HDD d'archive
 LOG_FILE = "/tmp/cleanup_share.log"
 TARGET_NVME_PERCENT = 50.0

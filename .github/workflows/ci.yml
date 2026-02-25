@@ -24,7 +24,7 @@ jobs:
 
       - name: Run Architectural Tests
         run: |
-          # On injecte des valeurs bidons pour les tests CI afin d'éviter les erreurs de NoneType
+          export PYTHONPATH=$PYTHONPATH:$(pwd)/scripts
           export OPENAI_KEY="sk-fake"
           export TELEGRAM_TOKEN="123:fake"
           export RADARR_API_KEY="fake"

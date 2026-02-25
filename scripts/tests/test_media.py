@@ -108,8 +108,8 @@ def test_get_storage_emoji():
     item_hdd = {'path': '/mnt/externe/media/movie.mkv', 'hasFile': True}
     assert handlers_media.get_storage_emoji(item_hdd) == "📚"
     
-    # Case 2: NVMe
-    item_nvme = {'path': '/home/jules/media/movie.mkv', 'hasFile': True}
+    # Case 2: NVMe (Path agnostique)
+    item_nvme = {'path': 'media/movie.mkv', 'hasFile': True}
     assert handlers_media.get_storage_emoji(item_nvme) == "🚀"
     
     # Case 3: Missing

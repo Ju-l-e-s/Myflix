@@ -7113,3 +7113,135 @@ FeedUrl: https://1337x.to/cat/Movies/1/
 2026-02-25 17:07:56.5|Info|ReleaseSearchService|Searching indexer(s): [The Pirate Bay] for Term: [] for Season / Episode:[], Offset: 0, Limit: 100, Categories: [5000, 5050, 5040, 5045]
 2026-02-25 17:07:56.5|Debug|Cardigann|Adding request for The Pirate Bay: https://apibay.org/precompiled/data_top100_recent.json
 2026-02-25 17:07:56.5|Debug|Cardigann|Downloading Feed https://apibay.org/precompiled/data_top100_recent.json
+2026-02-25 17:08:02.2|Debug|ReleaseSearchService|Total of 49 reports were found for Term: [] for Season / Episode:[], Offset: 0, Limit: 100, Categories: [5000, 5070] from 1 indexer(s)
+2026-02-25 17:08:02.4|Debug|ReleaseSearchService|Total of 11 reports were found for Term: [] for Season / Episode:[], Offset: 0, Limit: 100, Categories: [5000, 5050, 5040, 5045] from 1 indexer(s)
+2026-02-25 17:08:02.5|Debug|ReleaseSearchService|Total of 15 reports were found for Term: [] for Season / Episode:[], Offset: 0, Limit: 100, Categories: [5000] from 1 indexer(s)
+2026-02-25 17:08:03.3|Debug|Cardigann|Adding request for Nyaa.si: https://nyaa.si/?f=0&c=0_0&s=id&o=desc&p=2
+2026-02-25 17:08:03.3|Debug|Cardigann|Downloading Feed https://nyaa.si/?f=0&c=0_0&s=id&o=desc&p=2
+2026-02-25 17:08:03.9|Debug|ReleaseSearchService|Total of 145 reports were found for Term: [] for Season / Episode:[], Offset: 0, Limit: 100, Categories: [5000, 5070] from 1 indexer(s)
+2026-02-25 17:08:08.5|Debug|ReleaseSearchService|Total of 100 reports were found for Term: [] for Season / Episode:[], Offset: 0, Limit: 100, Categories: [5000, 5030, 5040] from 1 indexer(s)
+2026-02-25 17:23:26.5|Debug|IndexerFactory|Temporarily ignoring indexer 1337x till 02/26/2026 15:05:51 due to recent failures.
+2026-02-25 17:23:26.5|Info|ReleaseSearchService|Searching indexer(s): [Nyaa.si] for Term: [] for Season / Episode:[], Offset: 0, Limit: 100, Categories: [5000, 5070]
+2026-02-25 17:23:26.5|Debug|IndexerFactory|Temporarily ignoring indexer 1337x till 02/26/2026 15:05:51 due to recent failures.
+2026-02-25 17:23:26.5|Debug|Cardigann|Adding request for Nyaa.si: https://nyaa.si/?f=0&c=0_0&s=id&o=desc
+2026-02-25 17:23:26.5|Debug|Cardigann|Downloading Feed https://nyaa.si/?f=0&c=0_0&s=id&o=desc
+2026-02-25 17:23:26.5|Info|ReleaseSearchService|Searching indexer(s): [showRSS] for Term: [] for Season / Episode:[], Offset: 0, Limit: 100, Categories: [5000, 5030, 5040]
+2026-02-25 17:23:26.5|Debug|Cardigann|Adding request for showRSS: https://showrss.info/other/all.rss
+2026-02-25 17:23:26.5|Debug|Cardigann|Downloading Feed https://showrss.info/other/all.rss
+2026-02-25 17:23:26.5|Debug|IndexerFactory|Temporarily ignoring indexer 1337x till 02/26/2026 15:05:51 due to recent failures.
+2026-02-25 17:23:26.5|Info|ReleaseSearchService|Searching indexer(s): [The Pirate Bay] for Term: [] for Season / Episode:[], Offset: 0, Limit: 100, Categories: [5000, 5050, 5040, 5045]
+2026-02-25 17:23:26.5|Debug|Cardigann|Adding request for The Pirate Bay: https://apibay.org/precompiled/data_top100_recent.json
+2026-02-25 17:23:26.5|Debug|Cardigann|Downloading Feed https://apibay.org/precompiled/data_top100_recent.json
+2026-02-25 17:23:26.5|Debug|IndexerFactory|Temporarily ignoring indexer 1337x till 02/26/2026 15:05:51 due to recent failures.
+2026-02-25 17:23:26.5|Info|ReleaseSearchService|Searching indexer(s): [LimeTorrents] for Term: [] for Season / Episode:[], Offset: 0, Limit: 100, Categories: [5000, 5070]
+2026-02-25 17:23:26.5|Debug|Cardigann|Adding request for LimeTorrents: https://www.limetorrents.fun/latest100
+2026-02-25 17:23:26.5|Debug|Cardigann|Downloading Feed https://www.limetorrents.fun/latest100
+2026-02-25 17:23:27.5|Debug|IndexerFactory|Temporarily ignoring indexer 1337x till 02/26/2026 15:05:51 due to recent failures.
+2026-02-25 17:23:27.5|Info|ReleaseSearchService|Searching indexer(s): [Torrent9] for Term: [] for Season / Episode:[], Offset: 0, Limit: 100, Categories: [5000]
+2026-02-25 17:23:27.5|Debug|Cardigann|Adding request for Torrent9: https://www5.torrent9.to/home/
+2026-02-25 17:23:27.5|Debug|Cardigann|Downloading Feed https://www5.torrent9.to/home/
+2026-02-25 17:23:30.7|Debug|ReleaseSearchService|Total of 11 reports were found for Term: [] for Season / Episode:[], Offset: 0, Limit: 100, Categories: [5000, 5050, 5040, 5045] from 1 indexer(s)
+2026-02-25 17:23:31.2|Debug|ReleaseSearchService|Total of 51 reports were found for Term: [] for Season / Episode:[], Offset: 0, Limit: 100, Categories: [5000, 5070] from 1 indexer(s)
+2026-02-25 17:23:31.2|Debug|Cardigann|Adding request for Nyaa.si: https://nyaa.si/?f=0&c=0_0&s=id&o=desc&p=2
+2026-02-25 17:23:31.2|Debug|Cardigann|Downloading Feed https://nyaa.si/?f=0&c=0_0&s=id&o=desc&p=2
+2026-02-25 17:23:31.8|Debug|ReleaseSearchService|Total of 145 reports were found for Term: [] for Season / Episode:[], Offset: 0, Limit: 100, Categories: [5000, 5070] from 1 indexer(s)
+2026-02-25 17:23:32.1|Debug|ReleaseSearchService|Total of 15 reports were found for Term: [] for Season / Episode:[], Offset: 0, Limit: 100, Categories: [5000] from 1 indexer(s)
+2026-02-25 17:23:35.6|Debug|ReleaseSearchService|Total of 100 reports were found for Term: [] for Season / Episode:[], Offset: 0, Limit: 100, Categories: [5000, 5030, 5040] from 1 indexer(s)
+2026-02-25 17:29:56.6|Debug|IndexerFactory|Temporarily ignoring indexer 1337x till 02/26/2026 15:05:51 due to recent failures.
+2026-02-25 17:29:56.6|Debug|IndexerFactory|Temporarily ignoring indexer 1337x till 02/26/2026 15:05:51 due to recent failures.
+2026-02-25 17:29:56.6|Debug|IndexerFactory|Temporarily ignoring indexer 1337x till 02/26/2026 15:05:51 due to recent failures.
+2026-02-25 17:29:56.6|Info|ReleaseSearchService|Searching indexer(s): [Nyaa.si] for Term: [], Offset: 0, Limit: 100, Categories: [2000, 2020]
+2026-02-25 17:29:56.6|Info|ReleaseSearchService|Searching indexer(s): [YTS] for Term: [], Offset: 0, Limit: 100, Categories: [2000, 2040, 2045, 2060]
+2026-02-25 17:29:56.6|Info|ReleaseSearchService|Searching indexer(s): [Torrent9] for Term: [], Offset: 0, Limit: 100, Categories: [2000]
+2026-02-25 17:29:56.6|Debug|Cardigann|Adding request for YTS: https://yts.bz/api/v2/list_movies.json?limit=50&sort_by=date_added&order_by=desc
+2026-02-25 17:29:56.6|Debug|Cardigann|Adding request for Torrent9: https://www5.torrent9.to/home/
+2026-02-25 17:29:56.6|Debug|Cardigann|Downloading Feed https://yts.bz/api/v2/list_movies.json?limit=50&sort_by=date_added&order_by=desc
+2026-02-25 17:29:56.6|Debug|Cardigann|Downloading Feed https://www5.torrent9.to/home/
+2026-02-25 17:29:56.6|Debug|Cardigann|Adding request for Nyaa.si: https://nyaa.si/?f=0&c=0_0&s=id&o=desc
+2026-02-25 17:29:56.6|Debug|Cardigann|Downloading Feed https://nyaa.si/?f=0&c=0_0&s=id&o=desc
+2026-02-25 17:29:56.6|Debug|IndexerFactory|Temporarily ignoring indexer 1337x till 02/26/2026 15:05:51 due to recent failures.
+2026-02-25 17:29:56.6|Info|ReleaseSearchService|Searching indexer(s): [The Pirate Bay] for Term: [], Offset: 0, Limit: 100, Categories: [2000, 2020, 2040, 2060, 2030, 2045]
+2026-02-25 17:29:56.6|Debug|Cardigann|Adding request for The Pirate Bay: https://apibay.org/precompiled/data_top100_recent.json
+2026-02-25 17:29:56.6|Debug|Cardigann|Downloading Feed https://apibay.org/precompiled/data_top100_recent.json
+2026-02-25 17:30:00.9|Debug|ReleaseSearchService|Total of 17 reports were found for Term: [], Offset: 0, Limit: 100, Categories: [2000, 2020, 2040, 2060, 2030, 2045] from 1 indexer(s)
+2026-02-25 17:30:01.1|Debug|ReleaseSearchService|Total of 82 reports were found for Term: [], Offset: 0, Limit: 100, Categories: [2000, 2040, 2045, 2060] from 1 indexer(s)
+2026-02-25 17:30:01.4|Debug|Cardigann|Adding request for Nyaa.si: https://nyaa.si/?f=0&c=0_0&s=id&o=desc&p=2
+2026-02-25 17:30:01.4|Debug|Cardigann|Downloading Feed https://nyaa.si/?f=0&c=0_0&s=id&o=desc&p=2
+2026-02-25 17:30:01.4|Debug|ReleaseSearchService|Total of 15 reports were found for Term: [], Offset: 0, Limit: 100, Categories: [2000] from 1 indexer(s)
+2026-02-25 17:30:01.8|Debug|ReleaseSearchService|Total of 145 reports were found for Term: [], Offset: 0, Limit: 100, Categories: [2000, 2020] from 1 indexer(s)
+2026-02-25 17:38:56.7|Debug|IndexerFactory|Temporarily ignoring indexer 1337x till 02/26/2026 15:05:51 due to recent failures.
+2026-02-25 17:38:56.7|Debug|IndexerFactory|Temporarily ignoring indexer 1337x till 02/26/2026 15:05:51 due to recent failures.
+2026-02-25 17:38:56.7|Info|ReleaseSearchService|Searching indexer(s): [The Pirate Bay] for Term: [] for Season / Episode:[], Offset: 0, Limit: 100, Categories: [5000, 5050, 5040, 5045]
+2026-02-25 17:38:56.7|Info|ReleaseSearchService|Searching indexer(s): [LimeTorrents] for Term: [] for Season / Episode:[], Offset: 0, Limit: 100, Categories: [5000, 5070]
+2026-02-25 17:38:56.7|Debug|Cardigann|Adding request for LimeTorrents: https://www.limetorrents.fun/latest100
+2026-02-25 17:38:56.7|Debug|IndexerFactory|Temporarily ignoring indexer 1337x till 02/26/2026 15:05:51 due to recent failures.
+2026-02-25 17:38:56.7|Debug|Cardigann|Adding request for The Pirate Bay: https://apibay.org/precompiled/data_top100_recent.json
+2026-02-25 17:38:56.7|Debug|Cardigann|Downloading Feed https://www.limetorrents.fun/latest100
+2026-02-25 17:38:56.7|Debug|Cardigann|Downloading Feed https://apibay.org/precompiled/data_top100_recent.json
+2026-02-25 17:38:56.7|Info|ReleaseSearchService|Searching indexer(s): [Nyaa.si] for Term: [] for Season / Episode:[], Offset: 0, Limit: 100, Categories: [5000, 5070]
+2026-02-25 17:38:56.7|Debug|Cardigann|Adding request for Nyaa.si: https://nyaa.si/?f=0&c=0_0&s=id&o=desc
+2026-02-25 17:38:56.7|Debug|Cardigann|Downloading Feed https://nyaa.si/?f=0&c=0_0&s=id&o=desc
+2026-02-25 17:38:56.7|Debug|IndexerFactory|Temporarily ignoring indexer 1337x till 02/26/2026 15:05:51 due to recent failures.
+2026-02-25 17:38:56.7|Info|ReleaseSearchService|Searching indexer(s): [showRSS] for Term: [] for Season / Episode:[], Offset: 0, Limit: 100, Categories: [5000, 5030, 5040]
+2026-02-25 17:38:56.7|Debug|Cardigann|Adding request for showRSS: https://showrss.info/other/all.rss
+2026-02-25 17:38:56.7|Debug|Cardigann|Downloading Feed https://showrss.info/other/all.rss
+2026-02-25 17:38:56.7|Debug|IndexerFactory|Temporarily ignoring indexer 1337x till 02/26/2026 15:05:51 due to recent failures.
+2026-02-25 17:38:56.7|Info|ReleaseSearchService|Searching indexer(s): [Torrent9] for Term: [] for Season / Episode:[], Offset: 0, Limit: 100, Categories: [5000]
+2026-02-25 17:38:56.7|Debug|Cardigann|Adding request for Torrent9: https://www5.torrent9.to/home/
+2026-02-25 17:38:56.7|Debug|Cardigann|Downloading Feed https://www5.torrent9.to/home/
+2026-02-25 17:39:00.9|Debug|ReleaseSearchService|Total of 48 reports were found for Term: [] for Season / Episode:[], Offset: 0, Limit: 100, Categories: [5000, 5070] from 1 indexer(s)
+2026-02-25 17:39:01.7|Debug|ReleaseSearchService|Total of 11 reports were found for Term: [] for Season / Episode:[], Offset: 0, Limit: 100, Categories: [5000, 5050, 5040, 5045] from 1 indexer(s)
+2026-02-25 17:39:01.7|Debug|ReleaseSearchService|Total of 15 reports were found for Term: [] for Season / Episode:[], Offset: 0, Limit: 100, Categories: [5000] from 1 indexer(s)
+2026-02-25 17:39:01.7|Debug|Cardigann|Adding request for Nyaa.si: https://nyaa.si/?f=0&c=0_0&s=id&o=desc&p=2
+2026-02-25 17:39:01.7|Debug|Cardigann|Downloading Feed https://nyaa.si/?f=0&c=0_0&s=id&o=desc&p=2
+2026-02-25 17:39:02.2|Debug|ReleaseSearchService|Total of 145 reports were found for Term: [] for Season / Episode:[], Offset: 0, Limit: 100, Categories: [5000, 5070] from 1 indexer(s)
+2026-02-25 17:39:05.9|Debug|ReleaseSearchService|Total of 100 reports were found for Term: [] for Season / Episode:[], Offset: 0, Limit: 100, Categories: [5000, 5030, 5040] from 1 indexer(s)
+2026-02-25 17:54:26.9|Debug|IndexerFactory|Temporarily ignoring indexer 1337x till 02/26/2026 15:05:51 due to recent failures.
+2026-02-25 17:54:26.9|Info|ReleaseSearchService|Searching indexer(s): [showRSS] for Term: [] for Season / Episode:[], Offset: 0, Limit: 100, Categories: [5000, 5030, 5040]
+2026-02-25 17:54:26.9|Debug|IndexerFactory|Temporarily ignoring indexer 1337x till 02/26/2026 15:05:51 due to recent failures.
+2026-02-25 17:54:26.9|Info|ReleaseSearchService|Searching indexer(s): [The Pirate Bay] for Term: [] for Season / Episode:[], Offset: 0, Limit: 100, Categories: [5000, 5050, 5040, 5045]
+2026-02-25 17:54:26.9|Debug|IndexerFactory|Temporarily ignoring indexer 1337x till 02/26/2026 15:05:51 due to recent failures.
+2026-02-25 17:54:26.9|Debug|Cardigann|Adding request for showRSS: https://showrss.info/other/all.rss
+2026-02-25 17:54:26.9|Debug|Cardigann|Downloading Feed https://showrss.info/other/all.rss
+2026-02-25 17:54:26.9|Info|ReleaseSearchService|Searching indexer(s): [Nyaa.si] for Term: [] for Season / Episode:[], Offset: 0, Limit: 100, Categories: [5000, 5070]
+2026-02-25 17:54:26.9|Debug|IndexerFactory|Temporarily ignoring indexer 1337x till 02/26/2026 15:05:51 due to recent failures.
+2026-02-25 17:54:26.9|Info|ReleaseSearchService|Searching indexer(s): [LimeTorrents] for Term: [] for Season / Episode:[], Offset: 0, Limit: 100, Categories: [5000, 5070]
+2026-02-25 17:54:26.9|Debug|Cardigann|Adding request for The Pirate Bay: https://apibay.org/precompiled/data_top100_recent.json
+2026-02-25 17:54:26.9|Debug|Cardigann|Downloading Feed https://apibay.org/precompiled/data_top100_recent.json
+2026-02-25 17:54:26.9|Debug|Cardigann|Adding request for LimeTorrents: https://www.limetorrents.fun/latest100
+2026-02-25 17:54:26.9|Debug|Cardigann|Downloading Feed https://www.limetorrents.fun/latest100
+2026-02-25 17:54:26.9|Debug|Cardigann|Adding request for Nyaa.si: https://nyaa.si/?f=0&c=0_0&s=id&o=desc
+2026-02-25 17:54:26.9|Debug|Cardigann|Downloading Feed https://nyaa.si/?f=0&c=0_0&s=id&o=desc
+2026-02-25 17:54:27.5|Debug|IndexerFactory|Temporarily ignoring indexer 1337x till 02/26/2026 15:05:51 due to recent failures.
+2026-02-25 17:54:27.5|Info|ReleaseSearchService|Searching indexer(s): [Torrent9] for Term: [] for Season / Episode:[], Offset: 0, Limit: 100, Categories: [5000]
+2026-02-25 17:54:27.5|Debug|Cardigann|Adding request for Torrent9: https://www5.torrent9.to/home/
+2026-02-25 17:54:27.5|Debug|Cardigann|Downloading Feed https://www5.torrent9.to/home/
+2026-02-25 17:54:31.9|Debug|ReleaseSearchService|Total of 48 reports were found for Term: [] for Season / Episode:[], Offset: 0, Limit: 100, Categories: [5000, 5070] from 1 indexer(s)
+2026-02-25 17:54:32.3|Debug|ReleaseSearchService|Total of 11 reports were found for Term: [] for Season / Episode:[], Offset: 0, Limit: 100, Categories: [5000, 5050, 5040, 5045] from 1 indexer(s)
+2026-02-25 17:54:32.4|Debug|Cardigann|Adding request for Nyaa.si: https://nyaa.si/?f=0&c=0_0&s=id&o=desc&p=2
+2026-02-25 17:54:32.4|Debug|Cardigann|Downloading Feed https://nyaa.si/?f=0&c=0_0&s=id&o=desc&p=2
+2026-02-25 17:54:32.4|Debug|ReleaseSearchService|Total of 15 reports were found for Term: [] for Season / Episode:[], Offset: 0, Limit: 100, Categories: [5000] from 1 indexer(s)
+2026-02-25 17:54:32.8|Debug|ReleaseSearchService|Total of 145 reports were found for Term: [] for Season / Episode:[], Offset: 0, Limit: 100, Categories: [5000, 5070] from 1 indexer(s)
+2026-02-25 17:54:36.4|Debug|ReleaseSearchService|Total of 100 reports were found for Term: [] for Season / Episode:[], Offset: 0, Limit: 100, Categories: [5000, 5030, 5040] from 1 indexer(s)
+2026-02-25 18:00:26.9|Debug|IndexerFactory|Temporarily ignoring indexer 1337x till 02/26/2026 15:05:51 due to recent failures.
+2026-02-25 18:00:26.9|Info|ReleaseSearchService|Searching indexer(s): [YTS] for Term: [], Offset: 0, Limit: 100, Categories: [2000, 2040, 2045, 2060]
+2026-02-25 18:00:26.9|Debug|IndexerFactory|Temporarily ignoring indexer 1337x till 02/26/2026 15:05:51 due to recent failures.
+2026-02-25 18:00:26.9|Debug|Cardigann|Adding request for YTS: https://yts.bz/api/v2/list_movies.json?limit=50&sort_by=date_added&order_by=desc
+2026-02-25 18:00:26.9|Info|ReleaseSearchService|Searching indexer(s): [Nyaa.si] for Term: [], Offset: 0, Limit: 100, Categories: [2000, 2020]
+2026-02-25 18:00:26.9|Debug|Cardigann|Downloading Feed https://yts.bz/api/v2/list_movies.json?limit=50&sort_by=date_added&order_by=desc
+2026-02-25 18:00:26.9|Debug|IndexerFactory|Temporarily ignoring indexer 1337x till 02/26/2026 15:05:51 due to recent failures.
+2026-02-25 18:00:26.9|Info|ReleaseSearchService|Searching indexer(s): [Torrent9] for Term: [], Offset: 0, Limit: 100, Categories: [2000]
+2026-02-25 18:00:26.9|Debug|Cardigann|Adding request for Nyaa.si: https://nyaa.si/?f=0&c=0_0&s=id&o=desc
+2026-02-25 18:00:26.9|Debug|Cardigann|Downloading Feed https://nyaa.si/?f=0&c=0_0&s=id&o=desc
+2026-02-25 18:00:26.9|Debug|Cardigann|Adding request for Torrent9: https://www5.torrent9.to/home/
+2026-02-25 18:00:26.9|Debug|IndexerFactory|Temporarily ignoring indexer 1337x till 02/26/2026 15:05:51 due to recent failures.
+2026-02-25 18:00:26.9|Debug|Cardigann|Downloading Feed https://www5.torrent9.to/home/
+2026-02-25 18:00:26.9|Info|ReleaseSearchService|Searching indexer(s): [The Pirate Bay] for Term: [], Offset: 0, Limit: 100, Categories: [2000, 2020, 2040, 2060, 2030, 2045]
+2026-02-25 18:00:27.0|Debug|Cardigann|Adding request for The Pirate Bay: https://apibay.org/precompiled/data_top100_recent.json
+2026-02-25 18:00:27.0|Debug|Cardigann|Downloading Feed https://apibay.org/precompiled/data_top100_recent.json
+2026-02-25 18:00:31.6|Debug|ReleaseSearchService|Total of 17 reports were found for Term: [], Offset: 0, Limit: 100, Categories: [2000, 2020, 2040, 2060, 2030, 2045] from 1 indexer(s)
+2026-02-25 18:00:31.7|Debug|ReleaseSearchService|Total of 83 reports were found for Term: [], Offset: 0, Limit: 100, Categories: [2000, 2040, 2045, 2060] from 1 indexer(s)
+2026-02-25 18:00:32.3|Debug|ReleaseSearchService|Total of 15 reports were found for Term: [], Offset: 0, Limit: 100, Categories: [2000] from 1 indexer(s)
+2026-02-25 18:00:32.5|Debug|Cardigann|Adding request for Nyaa.si: https://nyaa.si/?f=0&c=0_0&s=id&o=desc&p=2
+2026-02-25 18:00:32.5|Debug|Cardigann|Downloading Feed https://nyaa.si/?f=0&c=0_0&s=id&o=desc&p=2
+2026-02-25 18:00:32.8|Debug|ReleaseSearchService|Total of 145 reports were found for Term: [], Offset: 0, Limit: 100, Categories: [2000, 2020] from 1 indexer(s)

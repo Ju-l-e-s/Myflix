@@ -23,13 +23,14 @@ jobs:
           pip install pytest pytest-mock requests
 
       - name: Run Architectural Tests
+        env:
+          PYTHONPATH: ${{ github.workspace }}/scripts
+          OPENAI_KEY: "sk-fake"
+          TELEGRAM_TOKEN: "123:fake"
+          RADARR_API_KEY: "fake"
+          SONARR_API_KEY: "fake"
+          PLEX_TOKEN: "fake"
         run: |
-          export PYTHONPATH=$PYTHONPATH:$(pwd)/scripts
-          export OPENAI_KEY="sk-fake"
-          export TELEGRAM_TOKEN="123:fake"
-          export RADARR_API_KEY="fake"
-          export SONARR_API_KEY="fake"
-          export PLEX_TOKEN="fake"
           pytest scripts/tests/
 
       - name: Build Docker Image

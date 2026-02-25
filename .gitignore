@@ -1,6 +1,5 @@
 # Secrets et Identités
 .env
-scripts/config.py
 scripts/users.json
 
 # --- IA & DONNÉES MASSIVES ---

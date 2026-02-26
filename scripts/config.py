@@ -22,6 +22,12 @@ USERS_FILE = get_env(
     "/app/users.json" if DOCKER_MODE else os.path.join(BASE_DIR, "users.json"),
 )
 CONTEXT_FILE = get_env("CONTEXT_FILE", "/tmp/bot_context.json")
+CLEANUP_SCRIPT = get_env(
+    "CLEANUP_SCRIPT",
+    "/app/cleanup_share.py"
+    if DOCKER_MODE
+    else os.path.join(BASE_DIR, "cleanup_share.py"),
+)
 SCRIPT_PATH = get_env(
     "SCRIPT_PATH",
     "/app/media_manager.py"

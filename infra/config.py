@@ -17,6 +17,10 @@ USERS_FILE = get_env("USERS_FILE", os.path.join(BASE_DIR, "users.json"))
 CONTEXT_FILE = get_env("CONTEXT_FILE", "/tmp/bot_context.json")
 SCRIPT_PATH = get_env("SCRIPT_PATH", os.path.join(BASE_DIR, "media_manager.py"))
 
+# --- Services Networking ---
+QBIT_HOST = get_env("QBIT_HOST", "localhost")
+QBIT_URL = get_env("QBIT_URL", f"http://{QBIT_HOST}:8090")
+
 # --- API Configs ---
 RADARR_CFG = {
     "url": get_env("RADARR_URL", "http://localhost:7878"),

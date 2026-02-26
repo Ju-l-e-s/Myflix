@@ -1,6 +1,8 @@
 import os
 import shutil
 import json
+import subprocess
+import storage_skill
 from telebot import types
 from config import *
 
@@ -15,18 +17,15 @@ def register_admin_handlers(bot, is_authorized):
     def status_cmd(m):
         if not is_authorized(m.from_user.id):
             return
-        fmt = lambda u: (
-            f"{u.used / (1024**3):.1f}/{u.total / (1024**3):.1f}Go ({int(u.used / u.total * 100)}%)"
-        )
         try:
-            nvme = shutil.disk_usage("/")
-            msg = f"📊 **Statut Stockage**\n\n🚀 **NVMe** : `{fmt(nvme)}`"
-            if os.path.exists("/mnt/externe"):
-                hdd = shutil.disk_usage("/mnt/externe")
-                msg += f"\n📚 **HDD** : `{fmt(hdd)}`"
-            else:
-                msg += "\n⚠️ **HDD** : `Non détecté sur /mnt/externe`"
-            bot.reply_to(m, msg, parse_mode="Markdown")
+            msg = storage_skill.get_status()
+            markup = types.InlineKeyboardMarkup()
+            markup.add(
+                types.InlineKeyboardButton(
+                    "🧹 Nettoyer le NVMe", callback_data="adm:clean"
+                )
+            )
+            bot.send_message(m.chat.id, msg, reply_markup=markup, parse_mode="Markdown")
         except Exception as e:
             bot.reply_to(m, f"❌ Erreur lecture disques : {e}")
 
@@ -197,3 +196,14 @@ def register_admin_handlers(bot, is_authorized):
             list_media_unified(bot, call.message, d[2], "Partage", True)
         elif cmd == "close":
             bot.delete_message(call.message.chat.id, call.message.message_id)
+        elif cmd == "clean":
+            bot.answer_callback_query(call.id, "🧹 Nettoyage NVMe en cours...")
+            res = subprocess.run(
+                ["python3", CLEANUP_SCRIPT], capture_output=True, text=True
+            )
+            bot.edit_message_text(
+                f"✅ **Nettoyage NVMe terminé**\n\n```\n{res.stdout or 'Opération réussie.'}\n```",
+                call.message.chat.id,
+                call.message.message_id,
+                parse_mode="Markdown",
+            )

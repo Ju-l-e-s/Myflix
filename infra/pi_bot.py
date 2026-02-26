@@ -12,6 +12,8 @@ from telebot import types
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from flask import Flask
 import share_engine
+import media_manager
+import storage_skill
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
@@ -283,8 +285,11 @@ def master_router(call):
     d = call.data.split(":")
 
     # 1. New Paged UI Callbacks
-    if d[0] in ["m_pag", "m_sel", "m_act", "dl_sel"]:
-        if d[0] == "m_pag":
+    if d[0] in ["m_pag", "m_sel", "m_act", "dl_sel", "q_refresh"]:
+        if d[0] == "q_refresh":
+            send_queue_status(call.message.chat.id, call.message.message_id)
+            bot.answer_callback_query(call.id, "✅ Mis à jour.")
+        elif d[0] == "m_pag":
             show_media_list(
                 call.message.chat.id, call.message.message_id, d[1], int(d[2])
             )
@@ -542,38 +547,73 @@ def status_command(m):
     if not is_authorized(m.chat.id):
         return
     try:
-        nvme = shutil.disk_usage("/")
-
-        def fmt(u):
-            return f"{u.used / (1024**3):.1f}/{u.total / (1024**3):.1f}Go ({(u.used / u.total) * 100:.1f}%)"
-
-        msg = f"📊 **Stockage Temps Réel**\n\n🚀 **NVMe** : `{fmt(nvme)}`"
-        if os.path.exists("/mnt/externe"):
-            hdd = shutil.disk_usage("/mnt/externe")
-            msg += f"\n📚 **HDD** : `{fmt(hdd)}`"
-        bot.reply_to(m, msg, parse_mode="Markdown")
-    except:
-        bot.reply_to(m, "❌ Erreur lecture disque.")
+        msg = storage_skill.get_status()
+        bot.send_message(m.chat.id, msg, parse_mode="Markdown")
+    except Exception as e:
+        bot.reply_to(m, f"❌ Erreur lecture disque : {e}")
 
 
 @bot.message_handler(commands=["queue"])
 def queue_command(m):
     if not is_authorized(m.chat.id):
         return
+    send_queue_status(m.chat.id)
+
+
+def send_queue_status(chat_id, message_id=None):
     try:
         r = requests.get("http://localhost:8090/api/v2/torrents/info", timeout=5)
         torrents = r.json()
         if not torrents:
-            bot.reply_to(m, "• Queue vide.")
+            msg = "📥 **QUEUE DE TÉLÉCHARGEMENT**\n\n• Queue vide."
+            if message_id:
+                bot.edit_message_text(msg, chat_id, message_id, parse_mode="Markdown")
+            else:
+                bot.send_message(chat_id, msg, parse_mode="Markdown")
             return
-        q_text = "📥 **Queue :**\n\n"
+
+        q_text = "📥 **QUEUE DE TÉLÉCHARGEMENT**\n\n"
+        found = False
         for t in torrents:
-            if t["state"] in ["downloading", "stalledDL", "metaDL", "queuedDL"]:
-                name = re.sub(r"[\._]", " ", t["name"])
-                q_text += f"• **{name}**\n  └ 📊 {round(t['progress'] * 100, 1)}% | 📂 {round(t['size'] / 1024**3, 2)}GB\n"
-        bot.reply_to(m, q_text, parse_mode="Markdown")
-    except:
-        bot.reply_to(m, "❌ Erreur qBit.")
+            if t["state"] in [
+                "downloading",
+                "stalledDL",
+                "metaDL",
+                "queuedDL",
+                "checkingDL",
+                "pausedDL",
+            ]:
+                found = True
+                clean_name = media_manager.clean_media_name(t["name"])
+                progress_val = round(t["progress"] * 100, 1)
+                progress_bar = media_manager.get_progress_bar(progress_val)
+                size = media_manager.format_size(t["size"])
+                speed = media_manager.format_speed(t["dlspeed"])
+                eta_sec = t.get("eta", 8640000)
+                eta = "∞" if eta_sec >= 8640000 else str(timedelta(seconds=eta_sec))
+
+                q_text += f"🎬 **{clean_name}**\n"
+                q_text += f"{progress_bar}\n"
+                q_text += f"📦 {size}  •  🚀 {speed}  •  ⏳ {eta}\n\n"
+
+        if not found:
+            q_text += "• Aucun téléchargement en cours."
+
+        markup = InlineKeyboardMarkup()
+        markup.add(InlineKeyboardButton("🔄 Actualiser", callback_data="q_refresh"))
+
+        if message_id:
+            try:
+                bot.edit_message_text(
+                    q_text, chat_id, message_id, reply_markup=markup, parse_mode="Markdown"
+                )
+            except Exception as e:
+                if "message is not modified" not in str(e):
+                    raise e
+        else:
+            bot.send_message(chat_id, q_text, reply_markup=markup, parse_mode="Markdown")
+    except Exception as e:
+        bot.send_message(chat_id, f"❌ Erreur qBit : {e}")
 
 
 # --- STARTUP ---

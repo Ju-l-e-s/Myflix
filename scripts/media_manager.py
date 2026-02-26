@@ -25,30 +25,50 @@ PATHS = {
 MIN_SIZE_BYTES = 500 * 1024 * 1024
 
 
+def clean_title(title):
+    """Supprime les tags techniques et pollutions visuelles [cite: 2025-12-05]."""
+    pattern = r'(?i)(?:1080p|720p|4k|uhd|x26[45]|h26[45]|web[- ]?(dl|rip)|bluray|aac|dd[p]?5\.1|atmos|repack|playweb|max|[\d\s]+A M|[\d\s]+P M|-NTb|-playWEB)'
+    # On coupe au premier tag technique
+    parts = re.split(pattern, title)
+    cleaned = parts[0]
+    # Nettoyage final : points remplacés par espaces, suppression doubles espaces
+    cleaned = cleaned.replace('.', ' ').strip()
+    return re.sub(r'\s+', ' ', cleaned)
+
+
 def clean_media_name(name):
-    name = os.path.splitext(name)[0]
-    name = re.sub(r"[\._]", " ", name)
-    match = re.search(
-        r"(.*?)\s*[\(\[]?((?:19|20)\d{2})[\)\]]?(.*)", name, re.IGNORECASE
-    )
-    title = match.group(1).strip() if match else name
-    year = match.group(2) if match else ""
-    tags = [
-        r"\b\d{3,4}p\b",
-        r"\b2160p\b",
-        r"\b4k\b",
-        r"\bHEVC\b",
-        r"\bx26[45]\b",
-        r"\bBluRay\b",
-        r"\bWEB-DL\b",
-        r"\bCOMPLETE\b",
-        r"\bSeason\s*\d*\b",
-        r"\bS\d+E\d+\b",
-    ]
-    clean = f"{title} ({year})" if year else title
-    for tag in tags:
-        clean = re.sub(tag, "", clean, flags=re.IGNORECASE)
-    return re.sub(r"\s+", " ", clean).strip()
+    """Version évoluée pour la queue : [S01E01] Titre propre."""
+    ep_match = re.search(r"S(\d+)E(\d+)", name, re.IGNORECASE)
+    ep_info = ep_match.group(0).upper() if ep_match else ""
+    
+    title = clean_title(name)
+    
+    # On retire l'épisode du titre s'il y est resté
+    if ep_info:
+        title = title.replace(ep_info, "").replace(ep_info.lower(), "").strip()
+        return f"[{ep_info}] {title}"
+    return title
+
+
+def get_progress_bar(percentage, length=15):
+    """Génère une barre de progression élégante [cite: 2025-12-05]."""
+    filled_length = int(length * percentage / 100)
+    bar = "█" * filled_length + "░" * (length - filled_length)
+    return f"`{bar}` {percentage}%"
+
+
+def format_size(size_bytes):
+    """Formate la taille en GB ou MB."""
+    if size_bytes >= 1024**3:
+        return f"{round(size_bytes / 1024**3, 2)} GB"
+    return f"{round(size_bytes / 1024**2, 2)} MB"
+
+
+def format_speed(speed_bytes_per_sec):
+    """Formate la vitesse de téléchargement."""
+    if speed_bytes_per_sec >= 1024**2:
+        return f"{round(speed_bytes_per_sec / 1024**2, 1)} MB/s"
+    return f"{round(speed_bytes_per_sec / 1024, 1)} KB/s"
 
 
 def get_size(p):

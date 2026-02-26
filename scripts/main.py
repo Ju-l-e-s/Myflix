@@ -19,6 +19,20 @@ def index():
     return "Bot Active"
 
 
+@webhook_app.route("/webhook/media", methods=["POST"])
+def media_webhook():
+    from flask import request
+    try:
+        data = request.json
+        logging.info(f"Webhook received: {data.get('eventType', 'Unknown')}")
+        # Optionnel : Envoyer une notification au SUPER_ADMIN
+        # bot.send_message(SUPER_ADMIN, f"🔔 **Webhook {data.get('eventType')}**\n{data.get('message', '')}")
+        return {"status": "success"}, 200
+    except Exception as e:
+        logging.error(f"Webhook Error: {e}")
+        return {"status": "error", "message": str(e)}, 500
+
+
 def run_flask():
     try:
         # Port 5001 as required

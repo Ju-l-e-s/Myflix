@@ -4,10 +4,16 @@ import json
 import subprocess
 import re
 import pathlib
+import sys
+import time
 from datetime import timedelta
 from telebot import types
 from config import *
 import share_engine
+
+# Add scripts directory to path to import media_manager
+sys.path.append("/home/jules/scripts")
+import media_manager
 
 
 def get_storage_emoji(item):
@@ -81,10 +87,10 @@ def show_media_list(
         if not items:
             bot.send_message(chat_id, "Vide.")
             return
-        text = f"**{category.capitalize()} ({total})**\n\n"
+        text = f"{'🎬' if category == 'films' else '📺'} **{category.upper()}** ({total})\n\n"
         for i, item in enumerate(items, 1):
-            idx = start + i
-            text += f"{idx}. {item['title']} ({item.get('year', '')})\n"
+            clean_title = media_manager.clean_title(item['title'])
+            text += f"{clean_title} ({item.get('year', '')})\n"
         markup = types.InlineKeyboardMarkup(row_width=5)
         btns = [
             types.InlineKeyboardButton(
@@ -136,38 +142,22 @@ def register_media_handlers(bot, is_authorized):
     def queue_command(m):
         if not is_authorized(m.chat.id):
             return
+        send_queue_status(bot, m.chat.id)
 
-        def clean_title(name):
-            name = os.path.splitext(name)[0]
-            name = re.sub(r"[\._]", " ", name)
-            match = re.search(
-                r"(.*?)\s*[\(\[]?((?:19|20)\d{2})[\)\]]?(.*)", name, re.IGNORECASE
-            )
-            title = match.group(1).strip() if match else name
-            year = match.group(2) if match else ""
-            tags = [
-                r"\b\d{3,4}p\b",
-                r"\b2160p\b",
-                r"\b4k\b",
-                r"\bHEVC\b",
-                r"\bx26[45]\b",
-                r"\bBluRay\b",
-                r"\bWEB-DL\b",
-                r"\bCOMPLETE\b",
-                r"\bSeason\s*\d*\b",
-            ]
-            clean = f"{title} ({year})" if year else title
-            for tag in tags:
-                clean = re.sub(tag, "", clean, flags=re.IGNORECASE)
-            return re.sub(r"\s+", " ", clean).strip()
-
+    def send_queue_status(bot, chat_id, message_id=None):
         try:
-            r = requests.get("http://localhost:8090/api/v2/torrents/info", timeout=5)
+            r = requests.get(f"{QBIT_URL}/api/v2/torrents/info", timeout=5)
             torrents = r.json()
             if not torrents:
-                bot.reply_to(m, "• Queue vide.")
+                msg = "📥 **QUEUE DE TÉLÉCHARGEMENT**\n\n• Queue vide."
+                if message_id:
+                    bot.edit_message_text(msg, chat_id, message_id, parse_mode="Markdown")
+                else:
+                    bot.send_message(chat_id, msg, parse_mode="Markdown")
                 return
-            q_text = "📥 **Queue :**\n\n"
+
+            q_text = "📥 **QUEUE DE TÉLÉCHARGEMENT**\n\n"
+            found = False
             for t in torrents:
                 if t["state"] in [
                     "downloading",
@@ -177,13 +167,35 @@ def register_media_handlers(bot, is_authorized):
                     "checkingDL",
                     "pausedDL",
                 ]:
-                    clean_name = clean_title(t["name"])
+                    found = True
+                    clean_name = media_manager.clean_media_name(t["name"])
+                    progress_val = round(t["progress"] * 100, 1)
+                    progress_bar = media_manager.get_progress_bar(progress_val)
+                    size = media_manager.format_size(t["size"])
+                    speed = media_manager.format_speed(t["dlspeed"])
                     eta_sec = t.get("eta", 8640000)
                     eta = "∞" if eta_sec >= 8640000 else str(timedelta(seconds=eta_sec))
-                    q_text += f"• **{clean_name}**\n  └ 📊 {round(t['progress'] * 100, 1)}% | 📂 {round(t['size'] / 1024**3, 2)}GB | ⏳ {eta}\n"
-            bot.reply_to(m, q_text, parse_mode="Markdown")
-        except:
-            bot.reply_to(m, "❌ Erreur qBit.")
+
+                    q_text += f"🎬 **{clean_name}**\n"
+                    q_text += f"{progress_bar}\n"
+                    q_text += f"📦 {size}  •  🚀 {speed}  •  ⏳ {eta}\n\n"
+
+            if not found:
+                q_text += "• Aucun téléchargement en cours."
+
+            markup = types.InlineKeyboardMarkup()
+            markup.add(types.InlineKeyboardButton("🔄 Actualiser", callback_data="q_refresh"))
+
+            if message_id:
+                try:
+                    bot.edit_message_text(q_text, chat_id, message_id, reply_markup=markup, parse_mode="Markdown")
+                except Exception as e:
+                    if "message is not modified" not in str(e):
+                        raise e
+            else:
+                bot.send_message(chat_id, q_text, reply_markup=markup, parse_mode="Markdown")
+        except Exception as e:
+            bot.send_message(chat_id, f"❌ Erreur qBit : {e}")
 
     @bot.callback_query_handler(
         func=lambda call: call.data.startswith(
@@ -196,6 +208,7 @@ def register_media_handlers(bot, is_authorized):
                 "share_exec",
                 "share_final",
                 "cancel",
+                "q_refresh",
             )
         )
     )
@@ -204,7 +217,10 @@ def register_media_handlers(bot, is_authorized):
             return
         d = call.data.split(":")
 
-        if d[0] == "m_pag":
+        if d[0] == "q_refresh":
+            send_queue_status(bot, call.message.chat.id, call.message.message_id)
+            bot.answer_callback_query(call.id, "✅ Mis à jour.")
+        elif d[0] == "m_pag":
             show_media_list(
                 bot, call.message.chat.id, call.message.message_id, d[1], int(d[2])
             )

@@ -27,3 +27,21 @@ __pycache__/
 venv/
 .nvm/
 .openclaw/
+
+# Historique et Identifiants
+.bash_history
+.git-credentials
+.gemini/
+.npm/
+
+# Logs et Bases de données (Prowlarr)
+infra/ai/config/prowlarr/logs/
+infra/ai/config/prowlarr/*.db
+
+# Données de monitoring temporaires
+infra/monitoring/debug_v2.json
+infra/monitoring/current_dashboard.json
+
+# Fichiers temporaires SQLite
+*.db-shm
+*.db-wal

@@ -9,60 +9,66 @@
 
 A high-performance, all-in-one multimedia server infrastructure designed for **Raspberry Pi 5**. Myflix automates the entire lifecycle of your media: discovery, high-speed downloading, intelligent storage, and seamless streaming—all controlled via a powerful Telegram bot.
 
-## 🌟 The 100% Go Native Architecture
-Myflix has been completely rewritten from Python to **100% pure Go**. Everything runs within a **single, highly-optimized binary** using asynchronous Goroutines. This architecture provides sub-millisecond response times, zero CPU overhead while idling, and massive concurrent processing capabilities tailored for ARM64.
+---
 
-## 🚀 Core Features
+## 🚀 Quick Start (Deployment)
 
-### 🤖 Telegram Control Center
-No more complex web UIs. Manage your entire server through an intuitive Telegram bot:
-- **Natural Language Requests**: Powered by **Gemini 1.5 Flash**, the bot understands what you want to watch.
-- **Instant Status**: Real-time storage stats, download queues, and VPN health.
-- **High-Speed Sharing**: Generate secure, Cloudflare-ready streaming links instantly via the native Go `ShareEngine`.
+Myflix is designed to be **portable**. Whether you use local drives or a **NAS**, you can adapt it in minutes.
 
-### ⚡ Single-Binary Daemons (Zero Overhead)
-All background tasks are now integrated directly into the Go engine:
-- **Auto-Tiering**: Real-time NVMe health monitoring. Automatically and securely migrates older files to the HDD when the fast storage hits 80% capacity.
-- **VPN Exporter**: A built-in Prometheus exporter serving public IP metrics with zero external dependencies.
-- **Thermal Governor**: Protects the Pi 5 by intelligently throttling qBittorrent downloads if the CPU exceeds **75°C**.
-- **Auto-Healing**: The Go engine directly communicates with the Docker Socket to revive failing Servarr APIs autonomously.
+### 1. Prerequisites
+- **Docker** & **Docker Compose** installed.
+- A **Domain** (optional, for the Share Engine) linked to a Cloudflare Tunnel.
+- A **Telegram Bot Token** (from [@BotFather](https://t.me/botfather)).
 
-### 🎯 Intelligent Search & Acquisition
-- **Sniper Search (ID-First)**: Ultra-precise matching using **TMDB/TVDB** identifiers to ensure the right content is added every time.
-- **Auto-Inject**: Automatic injection of top-tier public trackers to maximize download speeds.
+### 2. Installation
+```bash
+git clone https://github.com/Ju-l-e-s/Myflix.git
+cd Myflix
+cp .env.example .env
+```
 
-### 🔒 Privacy & Connectivity
-- **VPN Port Sync**: Automatic, bi-directional synchronization between **Gluetun** and qBittorrent for constant "Active Mode" connectivity.
-- **Security-First**: All traffic is routed through a secure VPN tunnel.
+### 3. Configuration (The `.env` file)
+Open `.env` and fill in your API keys. **Crucial for NAS/External HDD users:**
+- `NVME_DATA_PATH`: Where the fast cache and config files live (e.g., `./data`).
+- `HDD_STORAGE_PATH`: Where your massive library is stored (e.g., `/volume1/video` for Synology, or `/mnt/your_nas`).
+- `DOCKER_BASE_DIR`: The path to the root of this cloned project.
 
-## 📊 Advanced Monitoring
-Keep an eye on your infrastructure with a dedicated Grafana dashboard powered by our native Go Prometheus exporters:
-- **Real-time Connectivity**: Public IP vs. Secure VPN IP tracking.
-- **System Health**: CPU temperature, RAM saturation, and I/O load.
+### 4. Launch
+```bash
+docker compose -f infra/ai/docker-compose.yml up -d --build
+```
 
-## 🛠️ Tech Stack
-- **Core Engine**: Go 1.22+ (Native Goroutines for all daemons)
-- **AI Engine**: Gemini 1.5 Flash API
-- **Automation**: Radarr, Sonarr, Bazarr, Prowlarr
-- **Download/Routing**: qBittorrent secured via Gluetun
-- **Streaming**: Plex Media Server
-- **Infrastructure**: Docker Compose (Auto-healed via Go)
+---
 
-## 🚀 Getting Started
-
-1. **Deployment**:
+## 📂 NAS & External Storage Setup
+If your movies are on a NAS, simply mount it to your Raspberry Pi before starting the project:
+1. **Mount via NFS/SMB**:
    ```bash
-   docker compose -f infra/ai/docker-compose.yml up -d --build
-   docker compose -f infra/monitoring/docker-monitoring.yml up -d
+   # Example for NFS
+   sudo mount -t nfs 192.168.1.10:/volume1/video /mnt/nas_movies
    ```
-2. **Configuration**:
-   Add your API keys (`TELEGRAM_TOKEN`, `RADARR_API_KEY`, `GEMINI_KEY`, `SHARE_DOMAIN` etc.) to a `.env` file in the root directory.
+2. **Update your `.env`**:
+   Set `HDD_STORAGE_PATH="/mnt/nas_movies"`.
+3. **Restart**: `docker compose up -d`.
 
-## 🎬 Telegram Commands
+---
+
+## 🌟 The 100% Go Native Architecture
+Myflix runs within a **single, highly-optimized binary** using asynchronous Goroutines.
+- **Sub-millisecond response times**.
+- **Zero CPU overhead** while idling.
+- **Native Daemons**: Auto-tiering, VPN Exporter, and Thermal Governor all run inside the main process.
+
+## 🤖 Features & Commands
+- **Natural Language Requests**: Powered by **Gemini 1.5 Flash**.
+- **High-Speed Sharing**: Generate secure, Cloudflare-ready streaming links instantly.
+- **Auto-Healing**: The engine automatically revives failing services via the Docker Socket.
+
+### Telegram Commands
 - `/start` : Interactive main menu.
-- `/films` / `/series` : List your downloaded library.
-- `/status` : Detailed storage health and VPN status.
-- `/queue` : Real-time download progress.
+- `/films` / `/series` : Browse your library.
+- `/status` : Real-time storage (NVMe vs HDD) and VPN health.
+- `/queue` : Live download progress with an **Actualiser** button.
 
 ---
 *Built for efficiency, stability, and the ultimate viewing experience on Raspberry Pi 5.*

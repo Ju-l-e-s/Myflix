@@ -1,14 +1,14 @@
 services:
   # L'orchestrateur de maintenance (Bot Go Architect)
   maintenance:
-    build: /home/jules/scripts
+    build: ../../scripts
     container_name: maintenance
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Europe/Paris
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - TZ=${TZ:-Europe/Paris}
       - DOCKER_MODE=true
       - TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
       - RADARR_API_KEY=${RADARR_API_KEY}
@@ -16,15 +16,17 @@ services:
       - SONARR_API_KEY=${SONARR_API_KEY}
       - GEMINI_KEY=${GEMINI_KEY}
       - SHARE_DOMAIN=${SHARE_DOMAIN}
+      - STORAGE_NVME_PATH=/data/internal
+      - STORAGE_HDD_PATH=/data/external
     volumes:
-      - /home/jules/media_share:/media_share
-      - ./data:/data/internal
-      - /mnt/externe:/data/external
+      - ${MEDIA_SHARE_PATH:-/home/jules/media_share}:/media_share
+      - ${NVME_DATA_PATH:-./data}:/data/internal
+      - ${HDD_STORAGE_PATH:-/mnt/externe}:/data/external
       # --- Legacy Bridge ---
-      - ./data/media/movies:/movies
-      - ./data/media/tv:/tv
-      - /mnt/externe:/mnt/externe
-      - ./data/gluetun:/tmp/gluetun:ro
+      - ${NVME_DATA_PATH:-./data}/media/movies:/movies
+      - ${NVME_DATA_PATH:-./data}/media/tv:/tv
+      - ${HDD_STORAGE_PATH:-/mnt/externe}:/mnt/externe
+      - ${NVME_DATA_PATH:-./data}/gluetun:/tmp/gluetun:ro
       - /var/run/docker.sock:/var/run/docker.sock # Privilège Auto-Healing
     ports:
       - 5001:5001
@@ -38,14 +40,14 @@ services:
     image: lscr.io/linuxserver/duplicati:latest
     container_name: duplicati
     environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Europe/Paris
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - TZ=${TZ:-Europe/Paris}
     volumes:
-      - ./data/duplicati/config:/config
-      - /home/jules/infra:/source/infra:ro
-      - /home/jules/scripts:/source/scripts:ro
-      - ./data/duplicati/backups:/backups
+      - ${NVME_DATA_PATH:-./data}/duplicati/config:/config
+      - ${DOCKER_BASE_DIR:-/home/jules}/infra:/source/infra:ro
+      - ${DOCKER_BASE_DIR:-/home/jules}/scripts:/source/scripts:ro
+      - ${NVME_DATA_PATH:-./data}/duplicati/backups:/backups
     ports:
       - 8200:8200
     restart: unless-stopped
@@ -58,11 +60,11 @@ services:
     cap_add: [NET_ADMIN]
     devices: [/dev/net/tun:/dev/net/tun]
     environment:
-      - VPN_SERVICE_PROVIDER=nordvpn
-      - VPN_TYPE=openvpn
+      - VPN_SERVICE_PROVIDER=${VPN_PROVIDER:-nordvpn}
+      - VPN_TYPE=${VPN_TYPE:-openvpn}
       - OPENVPN_USER=${NORDVPN_USER}
       - OPENVPN_PASSWORD=${NORDVPN_PASS}
-      - SERVER_COUNTRIES=Netherlands
+      - SERVER_COUNTRIES=${VPN_COUNTRY:-Netherlands}
       - SERVER_CATEGORIES=p2p
       - LOCAL_NETWORK=192.168.1.0/24,172.18.0.0/16,172.23.0.0/16
       - FIREWALL=on
@@ -71,10 +73,9 @@ services:
       - VPN_MTU=1400
       - DNS_ADDRESS=1.1.1.1
       - DNS_UPSTREAM_RESOLVERS=cloudflare
-      # Autoriser l'accès via le nom de domaine local
       - HTTP_CONTROL_SERVER_ADDRESS=:8000
     volumes:
-      - ./data/gluetun:/tmp/gluetun
+      - ${NVME_DATA_PATH:-./data}/gluetun:/tmp/gluetun
     ports:
       - 8090:8080 # qBittorrent WebUI
       - 6881:6881
@@ -88,15 +89,14 @@ services:
     network_mode: "service:gluetun"
     depends_on: [gluetun]
     environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Europe/Paris
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - TZ=${TZ:-Europe/Paris}
       - WEBUI_PORT=8080
     volumes:
-      - ./data/qbittorrent/config:/config
-      - ./data:/data/internal
-      # Legacy support for downloads
-      - ./data/downloads:/downloads
+      - ${NVME_DATA_PATH:-./data}/qbittorrent/config:/config
+      - ${NVME_DATA_PATH:-./data}:/data/internal
+      - ${NVME_DATA_PATH:-./data}/downloads:/downloads
     restart: always
 
   flaresolverr:
@@ -110,15 +110,18 @@ services:
     image: lscr.io/linuxserver/plex:latest
     container_name: plex
     network_mode: host
-    environment: [PUID=1000, PGID=1000, VERSION=docker]
+    environment: 
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - VERSION=docker
     volumes:
-      - ./data/plex/config:/config
-      - ./data:/data/internal
-      - /mnt/externe:/data/external
+      - ${NVME_DATA_PATH:-./data}/plex/config:/config
+      - ${NVME_DATA_PATH:-./data}:/data/internal
+      - ${HDD_STORAGE_PATH:-/mnt/externe}:/data/external
       # --- Legacy Bridge ---
-      - ./data/media/movies:/movies
-      - ./data/media/tv:/tv
-      - /mnt/externe:/mnt/externe
+      - ${NVME_DATA_PATH:-./data}/media/movies:/movies
+      - ${NVME_DATA_PATH:-./data}/media/tv:/tv
+      - ${HDD_STORAGE_PATH:-/mnt/externe}:/mnt/externe
     restart: unless-stopped
 
 networks:

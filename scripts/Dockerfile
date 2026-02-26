@@ -4,27 +4,28 @@ WORKDIR /build
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
-# Compilation statique ARM64 (aarch64)
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -a -ldflags="-s -w" -o myflixbot main.go
+# Compilation statique pour la performance et la portabilité
+RUN CGO_ENABLED=0 GOOS=linux go build -a -ldflags="-s -w" -o myflixbot *.go
 
-# --- Stage 2: Runtime ---
+# --- Stage 2: Runtime (Ultra Léger) ---
 FROM debian:bookworm-slim
 WORKDIR /app
-# Installation des dépendances système nécessaires aux scripts Python
+
+# Installation de certificats pour les requêtes HTTPS (ex: API TMDB, Gemini, ipify)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3 \
-    python3-pip \
-    ffmpeg \
     ca-certificates \
+    tzdata \
     && rm -rf /var/lib/apt/lists/*
 
-# Fix pour pip sur Debian 12 (PEP 668)
-RUN pip3 install --no-cache-dir requests --break-system-packages
-
-# Copie du binaire Go
+# Copie du binaire Go compilé
 COPY --from=builder /build/myflixbot /app/myflixbot
-# Copie des scripts Python auxiliaires
-COPY media_manager.py share_engine.py config.py /app/
 
 RUN chmod +x /app/myflixbot
+
+# Le binaire Go expose les ports suivants:
+# 5001: Webhook (Radarr/Sonarr)
+# 3000: Share Engine (Cloudflare)
+# 8001: VPN Exporter (Prometheus)
+EXPOSE 5001 3000 8001
+
 ENTRYPOINT ["/app/myflixbot"]

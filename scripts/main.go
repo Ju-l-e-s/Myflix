@@ -1206,7 +1206,14 @@ func main() {
 	go logAggregator()
 	go shareEngine.StartServer(":3000") // Port pour Cloudflare Tunnel
 	go startVPNExporter(":8001")        // Exporter pour Prometheus
-	go startAutoTiering("/home/jules/data", "/mnt/externe", 80.0) // Auto-Tiering NVMe -> HDD
+	
+	// Chemins configurables pour le Tiering (Adaptabilité NAS/HDD)
+	nvmePath := os.Getenv("STORAGE_NVME_PATH")
+	if nvmePath == "" { nvmePath = "/data/internal" }
+	hddPath := os.Getenv("STORAGE_HDD_PATH")
+	if hddPath == "" { hddPath = "/data/external" }
+	
+	go startAutoTiering(nvmePath, hddPath, 80.0)
 
 	go func() {
 		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("OK")) })

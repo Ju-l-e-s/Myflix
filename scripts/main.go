@@ -1107,6 +1107,9 @@ func main() {
 	go autoHealer()
 	go logAggregator()
 	go shareEngine.StartServer(":3000") // Port pour Cloudflare Tunnel
+	go startVPNExporter(":8001")        // Exporter pour Prometheus
+	go startAutoTiering("/home/jules/data", "/mnt/externe", 80.0) // Auto-Tiering NVMe -> HDD
+
 	go func() {
 		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("OK")) })
 		http.HandleFunc("/api/webhook", webhookHandler) // Intercepteur Radarr/Sonarr

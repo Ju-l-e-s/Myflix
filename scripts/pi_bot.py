@@ -25,10 +25,19 @@ SUPER_ADMIN = 6721936515
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 USERS_FILE = os.path.join(BASE_DIR, "users.json")
 CONTEXT_FILE = "/tmp/bot_context.json"
-SCRIPT_PATH = os.path.join(BASE_DIR, "media_manager.py")
-CLEANUP_SCRIPT = os.path.join(BASE_DIR, "cleanup_share.py")
-RADARR_CFG = {"url": "http://localhost:7878", "key": os.getenv("RADARR_API_KEY")}
-SONARR_CFG = {"url": "http://localhost:8989", "key": os.getenv("SONARR_API_KEY")}
+DEBUG_LOG = "/tmp/bot_debug.log"
+
+# Adresses réseaux : On tente Docker, sinon IP locale du Pi
+DOCKER_MODE = os.getenv("DOCKER_MODE", "false").lower() == "true"
+PI_IP = "192.168.1.237"
+
+def get_service_url(service_name, port):
+    if DOCKER_MODE:
+        return f"http://{service_name}:{port}"
+    return f"http://localhost:{port}"
+
+RADARR_CFG = {"url": get_service_url("radarr", 7878), "key": os.getenv("RADARR_API_KEY")}
+SONARR_CFG = {"url": get_service_url("sonarr", 8989), "key": os.getenv("SONARR_API_KEY")}
 GEMINI_KEY = os.getenv("GEMINI_KEY")
 
 bot = telebot.TeleBot(TOKEN)
@@ -237,27 +246,38 @@ def stream_gpt_json(query):
         return None
 
 def perform_search(cat, titre):
-    """Effectue la recherche réelle auprès de l'API cible avec normalisation."""
-    # Normalisation : Radarr veut 'movie', Sonarr veut 'series' (avec un s)
+    """Effectue la recherche réelle auprès de l'API cible avec normalisation et encodage."""
     api_map = {"film": "movie", "serie": "series", "movie": "movie", "series": "series"}
-    api_cat = api_map.get(cat.lower(), "movie")
-    
+    api_cat = api_map.get(cat.lower().strip(), "movie")
     cfg = RADARR_CFG if api_cat == "movie" else SONARR_CFG
+    
     try:
-        url = f"{cfg['url']}/api/v3/{api_cat}/lookup?term={titre}"
-        logging.info(f"🔍 API Call: {url}")
-        r = requests.get(url, headers={"X-Api-Key": cfg["key"]}, timeout=5)
+        # Utilisation de params pour l'encodage automatique (espaces, etc.)
+        params = {"term": titre, "apikey": cfg["key"]}
+        url = f"{cfg['url']}/api/v3/{api_cat}/lookup"
+        
+        with open(DEBUG_LOG, "a") as f:
+            f.write(f"DEBUG: Searching {api_cat} for '{titre}' at {url}\n")
+            
+        r = requests.get(url, params=params, timeout=5)
+        # Fallback sur l'IP locale si le nom Docker échoue (401/403/ConnectionError)
+        if r.status_code != 200:
+            url_alt = f"http://{PI_IP}:{7878 if api_cat == 'movie' else 8989}/api/v3/{api_cat}/lookup"
+            r = requests.get(url_alt, params=params, timeout=5)
+            
         return r.json()
     except Exception as e:
         logging.error(f"❌ Erreur API: {e}")
         return []
 
 def clean_query_logic(text):
-    """Nettoyage Python-side pour garantir la pureté de la query."""
-    # Suppression du bruit textuel et des parenthèses (années, tags)
+    """Nettoyage Python-side radical pour garantir la pureté de la query."""
+    if not text: return ""
+    # Suppression des guillemets, parenthèses et bruits linguistiques
+    text = text.replace('"', '').replace("'", "").replace("«", "").replace("»", "")
     noise = r'(?i)\b(la serie|le film|saison|episode|vf|vostfr|complet|streaming)\b|\(.*\)'
     cleaned = re.sub(noise, '', text).strip()
-    return re.sub(r'\s+', ' ', cleaned) # Nettoyage des espaces multiples
+    return re.sub(r'\s+', ' ', cleaned)
 
 def recursive_search(cat, query):
     """Tente la recherche en réduisant la query mot par mot."""
@@ -285,10 +305,11 @@ def process_get_request(m, query):
     ai_res = stream_gpt_json(query)
     try:
         data = json.loads(re.search(r"\{.*\}", ai_res, re.DOTALL).group(0))
-        titre = data["titre"]
-        cat = data["type"]
+        # Nettoyage des guillemets et espaces parasites
+        titre = data["titre"].strip(' "')
+        cat = data["type"].strip(' "')
     except:
-        titre = query
+        titre = query.strip(' "')
         cat = "movie"
 
     # --- PROTOCOLE BLINDÉ (L'Architecte) ---

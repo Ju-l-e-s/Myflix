@@ -41,12 +41,30 @@ The system uses **MergerFS** to create a high-performance unified storage pool:
 
 ---
 
+### 🔑 API Keys & Configuration Guide
+
+To get Myflix running, you need a few API keys. Follow these simple steps:
+
+#### 1. Create your Telegram Bot
+1. Open Telegram and search for **@BotFather**.
+2. Send `/newbot` and follow the instructions to name your bot.
+3. You will receive a **Bot Token** (e.g., `123456789:ABC...`). This is your `TELEGRAM_TOKEN`.
+4. To get your **User ID** (for `ADMIN_ID`), search for **@userinfobot** on Telegram and send it a message. It will reply with your ID number.
+
+#### 2. Get your Google Gemini API Key
+1. Go to [Google AI Studio](https://aistudio.google.com/).
+2. Click on **"Get API key"** in the left menu.
+3. Create a new API key in a new project.
+4. Copy the key. This is your `GEMINI_KEY`.
+
+---
+
 ## 🚀 Quick Start
 
 ### Prerequisites
 - Raspberry Pi 5 (8GB recommended) with NVMe SSD.
 - Docker & Docker Compose installed.
-- Google Gemini API Key & Telegram Bot Token.
+- **MergerFS** installed (`sudo apt install mergerfs`).
 
 ### Setup
 1. **Clone the project**
@@ -58,8 +76,16 @@ The system uses **MergerFS** to create a high-performance unified storage pool:
 2. **Configuration**
    ```bash
    cp .env.example .env
-   # Add your API keys in the .env file
+   nano .env  # Add your API keys and paths here
    ```
+
+3. **Storage Pool (MergerFS)**
+   Add the following line to your `/etc/fstab` to create the unified pool:
+   ```bash
+   # /home/jules/data = NVMe, /mnt/externe = HDD
+   /home/jules/data:/mnt/externe /mnt/pool fuse.mergerfs defaults,allow_other,use_ino,cache.files=off,dropcacheonclose=true,category.create=epmfs,minfreespace=50G 0 0
+   ```
+   Then run: `sudo mkdir -p /mnt/pool && sudo mount /mnt/pool`
 
 3. **Start Infrastructure**
    ```bash

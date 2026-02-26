@@ -237,16 +237,19 @@ def stream_gpt_json(query):
         return None
 
 def perform_search(cat, titre):
-    """Effectue la recherche réelle auprès de l'API cible."""
-    cfg = RADARR_CFG if cat == "movie" else SONARR_CFG
+    """Effectue la recherche réelle auprès de l'API cible avec normalisation."""
+    # Normalisation : Radarr veut 'movie', Sonarr veut 'series' (avec un s)
+    api_map = {"film": "movie", "serie": "series", "movie": "movie", "series": "series"}
+    api_cat = api_map.get(cat.lower(), "movie")
+    
+    cfg = RADARR_CFG if api_cat == "movie" else SONARR_CFG
     try:
-        r = requests.get(
-            f"{cfg['url']}/api/v3/{cat}/lookup?term={titre}",
-            headers={"X-Api-Key": cfg["key"]},
-            timeout=5,
-        )
+        url = f"{cfg['url']}/api/v3/{api_cat}/lookup?term={titre}"
+        logging.info(f"🔍 API Call: {url}")
+        r = requests.get(url, headers={"X-Api-Key": cfg["key"]}, timeout=5)
         return r.json()
-    except:
+    except Exception as e:
+        logging.error(f"❌ Erreur API: {e}")
         return []
 
 def clean_query_logic(text):
@@ -283,7 +286,7 @@ def process_get_request(m, query):
     try:
         data = json.loads(re.search(r"\{.*\}", ai_res, re.DOTALL).group(0))
         titre = data["titre"]
-        cat = "movie" if data["type"] == "film" else "series"
+        cat = data["type"]
     except:
         titre = query
         cat = "movie"
@@ -296,14 +299,17 @@ def process_get_request(m, query):
     
     # 2. Si échec, tentative récursive dans l'autre catégorie (Cross-search)
     if not results:
-        alt_cat = "series" if cat == "movie" else "movie"
+        alt_cat = "series" if cat in ["movie", "film"] else "movie"
         results, final_cat, final_titre = recursive_search(alt_cat, titre_clean)
         if results:
-            cat = final_cat
+            cat = alt_cat
 
     if not results:
         bot.send_message(m.chat.id, f"❌ Aucun résultat pour '{titre_clean}'.")
         return
+
+    # Normalisation finale pour le callback du bouton download (Radarr=movie, Sonarr=series)
+    final_api_cat = "movie" if cat in ["movie", "film"] else "series"
 
     text = f"🔍 **Résultats pour '{final_titre}'**\n\n"
     limit = min(len(results), 5)
@@ -312,7 +318,7 @@ def process_get_request(m, query):
     
     markup = InlineKeyboardMarkup()
     btns = [
-        InlineKeyboardButton(str(i), callback_data=f"dl_sel:{cat}:{i}")
+        InlineKeyboardButton(str(i), callback_data=f"dl_sel:{final_api_cat}:{i}")
         for i in range(1, limit + 1)
     ]
     markup.add(*btns)

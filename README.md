@@ -17,37 +17,31 @@ Just text your bot: *"I want to watch the movie with the guy stranded on Mars"*,
 
 ## ✨ Killer Features
 
-* 🧠 **Conversational Discovery (Gemini 1.5):** Natural language processing. You don't need exact titles. The AI understands context, typos, and genres natively.
-* ⚡ **100% Native Go Engine:** We ditched sluggish Python scripts. Myflix is a compiled Go daemon offering sub-millisecond API routing, massive concurrency, and a minimal RAM footprint.
-* 🛡️ **Hardware & Network Aware:** Built specifically for Raspberry Pi 5. Includes a native **Thermal Governor** to protect your hardware and an **Auto-Healing** supervisor for your VPN and APIs.
-* 🔗 **Instant Sharing Engine:** Generate secure, Cloudflare-tunneled streaming links for your friends in one tap directly from Telegram.
+* 🧠 **Conversational Discovery (Gemini 1.5):** Natural language processing. The AI understands context, typos, and genres natively.
+* ⚡ **100% Native Go Engine:** A compiled Go daemon offering sub-millisecond API routing and a minimal RAM footprint (<20MB).
+* 🛡️ **Hardware & Network Aware:** Native **Thermal Governor** for Pi 5 and an **Auto-Healing** supervisor for your VPN and APIs.
+* 🔗 **Instant Sharing Engine:** Generate secure, Cloudflare-tunneled streaming links instantly via Telegram.
 * 🗄️ **Smart Tiering:** Seamlessly manages fast NVMe cache drives and massive external HDD/NAS storage.
 
 ---
 
-## 📱 Telegram Interface
+## 🚀 Installation Tutorial
 
-The bot acts as your personal media concierge with interactive, responsive inline keyboards:
-* `/start` - Launch the interactive dashboard.
-* `/films` & `/series` - Browse your library with instant pagination (Zero lag thanks to Go memory caching).
-* `/queue` - Live download progress with real-time refresh.
-* `/status` - System health (Temperatures, Storage space, VPN IP).
-
----
-
-## 🚀 Quick Start (Deployment)
-
-Myflix is designed to be highly portable. Set it up in minutes.
-
-### 1. Installation
+### 1. Initial Setup
 ```bash
 git clone https://github.com/Ju-l-e-s/Myflix.git
 cd Myflix
 cp .env.example .env
 ```
 
-### 2. Configuration
-Open `.env` and fill in your API keys. **Crucial for NAS/External HDD users:**
+### 2. Configuration (`.env`)
+Open `.env` and fill in your API keys.
+- `TELEGRAM_TOKEN`: From @BotFather.
+- `GEMINI_KEY`: Your Google AI Studio key.
+- `NORDVPN_USER/PASS`: Your VPN credentials for secure downloading.
+
+### 3. Storage Adaptation (Crucial for NAS/HDD)
+Edit these variables in your `.env` to match your hardware:
 - `NVME_DATA_PATH`: Fast storage for cache and config files (e.g., `./data`).
 - `HDD_STORAGE_PATH`: Your massive media library (e.g., `/mnt/nas_movies`).
 
@@ -56,12 +50,44 @@ Open `.env` and fill in your API keys. **Crucial for NAS/External HDD users:**
 sudo mount -t nfs 192.168.1.10:/volume1/video /mnt/nas_movies
 ```
 
-### 3. Launch
-Ignite the engine:
+### 4. Ignite the Engine
 ```bash
 docker compose -f infra/ai/docker-compose.yml up -d --build
 ```
-**Your self-hosted empire is now online.**
+
+---
+
+## 🏗️ Technical Architecture (Deep Dive)
+
+### 🏎️ The Go "Architect" Engine
+Myflix is powered by a single Go binary running multiple concurrent Goroutines:
+- **Sub-millisecond Routing**: Telegram callbacks are handled instantly.
+- **Memory Caching**: Library metadata is cached in-RAM with `RWMutex` locking for zero-lag browsing.
+- **Zero-Copy Sharing**: The `ShareEngine` uses `sendfile(2)` for high-performance streaming directly from the Linux kernel.
+
+### 🌡️ Thermal Governor & Auto-Healing
+- **Safety**: Monitoring `/sys/class/thermal`. If the Pi 5 exceeds **75°C**, qBittorrent is throttled to 5MB/s to prioritize Plex streaming and hardware longevity.
+- **Resilience**: The engine monitors Docker containers via the unix socket. If Radarr or Gluetun stops responding, Myflix triggers an automatic restart.
+
+### 🧹 I/O & Storage Garbage Collector
+- **Tiering**: Automatically migrates older files from NVMe to HDD/NAS when the fast drive hits 80%.
+- **Cleanup**: Removes completed torrents from the queue every hour to keep the system lean.
+
+---
+
+## 📊 Monitoring & Observability
+Myflix includes a pre-configured Grafana & Prometheus stack:
+- **Connectivity**: Real-time tracking of Public IP vs. Secure VPN IP.
+- **Hardware**: CPU temperature, RAM saturation, and I/O load.
+- **Network**: Detailed bandwidth usage for the VPN tunnel.
+
+---
+
+## 🎬 Telegram Commands Reference
+- `/start` - Launch the interactive dashboard.
+- `/films` & `/series` - Browse your library with posters and rich metadata.
+- `/status` - Detailed health report (Storage, Thermal, VPN).
+- `/queue` - Live download progress with an **Actualiser** button.
 
 ---
 *Built for efficiency, stability, and the ultimate viewing experience on Raspberry Pi 5.*

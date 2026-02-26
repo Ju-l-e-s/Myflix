@@ -88,13 +88,42 @@ type Movie struct {
 }
 
 type Series struct {
+	ID         int                    `json:"id"`
 	Title      string                 `json:"title"`
 	Year       int                    `json:"year"`
 	Added      string                 `json:"added"`
 	Path       string                 `json:"path"`
+	Runtime    int                    `json:"runtime"`
+	TvdbID     int                    `json:"tvdbId"`
+	PosterURL  string                 `json:"posterUrl"`
 	Statistics map[string]interface{} `json:"statistics"`
 }
 
+func mapToSeries(item map[string]interface{}) Series {
+	s := Series{
+		ID:         int(item["id"].(float64)),
+		Title:      item["title"].(string),
+		Year:       int(item["year"].(float64)),
+		Path:       item["path"].(string),
+		Statistics: item["statistics"].(map[string]interface{}),
+	}
+	if v, ok := item["runtime"].(float64); ok {
+		s.Runtime = int(v)
+	}
+	if v, ok := item["tvdbId"].(float64); ok {
+		s.TvdbID = int(v)
+	}
+	if images, ok := item["images"].([]interface{}); ok {
+		for _, img := range images {
+			m := img.(map[string]interface{})
+			if m["coverType"] == "poster" {
+				s.PosterURL = m["remoteUrl"].(string)
+				break
+			}
+		}
+	}
+	return s
+}
 type LibraryCache struct {
 	mu        sync.RWMutex
 	Movies    []map[string]interface{}
@@ -524,6 +553,54 @@ func sendDetailedMovie(c tele.Context, m Movie) error {
 	btnShare := menu.Data("🔗 Partager", "m_share", "films", fmt.Sprint(m.ID))
 	btnDelete := menu.Data("🗑️ Supprimer", "m_del", "films", fmt.Sprint(m.ID))
 	menu.Inline(menu.Row(btnShare, btnDelete), menu.Row(menu.Data("⬅️ Retour", "lib", "films")))
+
+	return c.Send(photo, menu, tele.ModeHTML)
+}
+
+func formatSeriesDetails(s Series) string {
+	var b strings.Builder
+
+	// Conversion du poids (Bytes -> GB) depuis les stats
+	size := 0.0
+	if s.Statistics != nil {
+		if v, ok := s.Statistics["sizeOnDisk"].(float64); ok {
+			size = v
+		}
+	}
+	sizeGB := size / (1024 * 1024 * 1024)
+
+	b.WriteString(fmt.Sprintf("📺 <b>%s</b> (%d)\n", s.Title, s.Year))
+	b.WriteString("⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n")
+	if s.Runtime > 0 {
+		b.WriteString(fmt.Sprintf("⏱️ <b>Durée</b> : ~%d min / ep\n", s.Runtime))
+	}
+	b.WriteString(fmt.Sprintf("⚖️ <b>Poids</b> : %.2f GB\n", sizeGB))
+	b.WriteString(fmt.Sprintf("💾 <b>Stockage</b> : %s\n", getStorageEmoji(s.Path)))
+	b.WriteString("⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n")
+	b.WriteString(fmt.Sprintf("📁 <code>%s</code>", s.Path))
+
+	return b.String()
+}
+
+func sendDetailedSeries(c tele.Context, s Series) error {
+	posterPath := fmt.Sprintf("%stvdb_%d.jpg", PosterCacheDir, s.TvdbID)
+
+	// Vérification du cache local
+	if _, err := os.Stat(posterPath); os.IsNotExist(err) && s.PosterURL != "" {
+		downloadFile(s.PosterURL, posterPath)
+	}
+
+	// Préparation de l'image Telegram
+	photo := &tele.Photo{
+		File:    tele.FromDisk(posterPath),
+		Caption: formatSeriesDetails(s),
+	}
+
+	// Menu d'actions
+	menu := &tele.ReplyMarkup{}
+	btnShare := menu.Data("🔗 Partager", "m_share", "series", fmt.Sprint(s.ID))
+	btnDelete := menu.Data("🗑️ Supprimer", "m_del", "series", fmt.Sprint(s.ID))
+	menu.Inline(menu.Row(btnShare, btnDelete), menu.Row(menu.Data("⬅️ Retour", "lib", "series")))
 
 	return c.Send(photo, menu, tele.ModeHTML)
 }
@@ -1202,21 +1279,7 @@ func main() {
 		if cat == "films" {
 			return sendDetailedMovie(c, mapToMovie(item))
 		}
-
-		title := item["title"].(string); year := item["year"]; path := item["path"].(string)
-		msg := fmt.Sprintf("🎯 <b>Détails : %s (%v)</b>\n\n", title, year)
-		msg += fmt.Sprintf("📁 Chemin : <code>%s</code>\n", path)
-		msg += fmt.Sprintf("💾 Stockage : %s\n", getStorageEmoji(path))
-
-		menu := &tele.ReplyMarkup{}
-		menu.Inline(
-			menu.Row(
-				menu.Data("🗑️ Supprimer", "m_del", cat, itemID),
-				menu.Data("🔗 Partager", "m_share", cat, itemID),
-			),
-			menu.Row(menu.Data("⬅️ Retour", "lib", cat)),
-		)
-		return c.Edit(msg, menu, tele.ModeHTML)
+		return sendDetailedSeries(c, mapToSeries(item))
 	})
 
 	b.Handle(&tele.Btn{Unique: "m_del"}, func(c tele.Context) error {

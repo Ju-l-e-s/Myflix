@@ -1,49 +1,21 @@
 import os
 import shutil
-import time
 import logging
 
 # --- CONFIGURATION GLOBALE ---
-HOME = os.path.expanduser("~")
-SHARE_DIR = os.path.join(HOME, "media_share")
-NVME_PATH = os.path.join(HOME, "infra/ai/data/media")  # Base NVMe pour Sonarr/Radarr
-HDD_PATH = "/mnt/externe"  # Base HDD d'archive
+# On scanne via le NVMe physique pour savoir quoi déplacer
+NVME_PATH = "/home/jules/data"  
+# On déplace vers le HDD physique
+HDD_PATH = "/mnt/externe"
+# Le seuil d'alerte (si NVMe > 80%, on déplace vers HDD)
+TARGET_NVME_PERCENT = 80.0
 LOG_FILE = "/tmp/cleanup_share.log"
-TARGET_NVME_PERCENT = 50.0
-MAX_AGE_SECONDS = 24 * 3600  # 24 heures
 
 logging.basicConfig(
     filename=LOG_FILE,
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
 )
-
-
-def purge_share_directory():
-    """Supprime les fichiers et symlinks de plus de 24h dans SHARE_DIR."""
-    logging.info(f"Début de la purge de {SHARE_DIR}")
-    if not os.path.exists(SHARE_DIR):
-        logging.warning(f"Le dossier {SHARE_DIR} n'existe pas.")
-        return
-
-    now = time.time()
-    for root, dirs, files in os.walk(SHARE_DIR):
-        for name in files + dirs:
-            path = os.path.join(root, name)
-            try:
-                # Utiliser lstat pour ne pas suivre les symlinks
-                stat = os.lstat(path)
-                # Vérifier mtime ou ctime
-                if now - stat.st_mtime > MAX_AGE_SECONDS:
-                    if os.path.islink(path) or os.path.isfile(path):
-                        os.unlink(path)
-                        logging.info(f"Supprimé (fichier/lien) : {path}")
-                    elif os.path.isdir(path):
-                        shutil.rmtree(path)
-                        logging.info(f"Supprimé (dossier) : {path}")
-            except Exception as e:
-                logging.error(f"Erreur lors de la suppression de {path} : {e}")
-
 
 def get_nvme_usage_percent():
     """Retourne le pourcentage d'utilisation de la partition NVMe."""
@@ -52,129 +24,56 @@ def get_nvme_usage_percent():
         return (usage.used / usage.total) * 100
     except Exception as e:
         logging.error(f"Erreur lecture usage NVMe : {e}")
-        return 100.0  # Failsafe pour ne pas archiver si erreur
-
+        return 100.0
 
 def is_hdd_mounted():
     """Vérifie si le HDD de destination est accessible."""
-    return (
-        os.path.ismount(HDD_PATH)
-        or os.path.ismount("/mnt/externe")
-        or os.path.exists(HDD_PATH)
-    )
-
+    return os.path.exists(HDD_PATH) and os.path.ismount(HDD_PATH)
 
 def auto_tiering_nvme_to_hdd():
-    """Déplace les fichiers les plus anciens du NVMe vers le HDD si > TARGET_NVME_PERCENT."""
+    """Déplace les fichiers les plus anciens du NVMe vers le HDD."""
     logging.info("Vérification de l'espace NVMe pour Auto-Tiering...")
 
     if not is_hdd_mounted():
-        logging.error(
-            f"Le HDD cible ({HDD_PATH}) n'est pas monté ou accessible. Abandon du Tiering."
-        )
+        logging.error(f"Le HDD cible ({HDD_PATH}) n'est pas accessible. Abandon.")
         return
 
     usage_percent = get_nvme_usage_percent()
-    logging.info(
-        f"Utilisation NVMe actuelle : {usage_percent:.2f}% (Cible: {TARGET_NVME_PERCENT}%)"
-    )
+    logging.info(f"Usage NVMe : {usage_percent:.2f}% (Cible: {TARGET_NVME_PERCENT}%)")
 
     if usage_percent <= TARGET_NVME_PERCENT:
-        logging.info("Espace suffisant. Aucun tiering nécessaire.")
         return
 
-    # Lister tous les fichiers médias sur le NVMe
+    # Lister les fichiers médias sur le NVMe (fichiers réels uniquement)
     media_files = []
-    extensions = {".mkv", ".mp4", ".avi"}
+    for root, _, files in os.walk(NVME_PATH):
+        for file in files:
+            path = os.path.join(root, file)
+            if not os.path.islink(path): # On ne touche pas aux liens
+                stat = os.stat(path)
+                media_files.append((path, stat.st_atime))
 
-    try:
-        for root, _, files in os.walk(NVME_PATH):
-            for file in files:
-                ext = os.path.splitext(file)[1].lower()
-                if ext in extensions:
-                    path = os.path.join(root, file)
-                    # Exclure les symlinks déjà existants
-                    if not os.path.islink(path):
-                        stat = os.stat(path)
-                        media_files.append((path, stat.st_atime, stat.st_size))
-    except Exception as e:
-        logging.error(f"Erreur lors du scan du NVMe : {e}")
-        return
-
-    # Trier par atime (dernier accès) le plus ancien en premier
+    # Trier par date d'accès (plus ancien en premier)
     media_files.sort(key=lambda x: x[1])
 
-    for file_path, _, size in media_files:
+    for file_path, _ in media_files:
         if get_nvme_usage_percent() <= TARGET_NVME_PERCENT:
-            logging.info("Cible d'utilisation NVMe atteinte. Fin de la migration.")
             break
 
         rel_path = os.path.relpath(file_path, NVME_PATH)
         dest_path = os.path.join(HDD_PATH, rel_path)
-        dest_dir = os.path.dirname(dest_path)
-
-        logging.info(f"Migration de {file_path} vers {dest_path}")
-
+        
+        logging.info(f"Migration : {rel_path} -> HDD")
         try:
-            os.makedirs(dest_dir, exist_ok=True)
-            # Déplacement physique
+            os.makedirs(os.path.dirname(dest_path), exist_ok=True)
             shutil.move(file_path, dest_path)
-
-            # Création du symlink pour tromper Sonarr/Radarr
-            os.symlink(dest_path, file_path)
-            logging.info("Migration réussie : Symlink créé sur le NVMe.")
-
         except Exception as e:
-            logging.error(f"Échec de la migration pour {file_path} : {e}")
-            # Failsafe: tenter de restaurer si ça a planté en cours de route
-            if os.path.exists(dest_path) and not os.path.exists(file_path):
-                try:
-                    shutil.move(dest_path, file_path)
-                    logging.info(f"Rollback réussi pour {file_path}")
-                except:
-                    pass
-
-
-def ensure_hdd_symlinks():
-    """Garantit que chaque dossier/fichier sur le HDD a un symlink sur le NVMe."""
-    logging.info("Vérification des symlinks HDD -> NVMe...")
-
-    # Mapping des dossiers HDD vers NVMe
-    mapping = {
-        os.path.join(HDD_PATH, "Films"): os.path.join(NVME_PATH, "movies"),
-        os.path.join(HDD_PATH, "Series"): os.path.join(NVME_PATH, "tv"),
-    }
-
-    for hdd_dir, nvme_dir in mapping.items():
-        if not os.path.exists(hdd_dir):
-            continue
-
-        os.makedirs(nvme_dir, exist_ok=True)
-
-        for item in os.listdir(hdd_dir):
-            if item.startswith("."):
-                continue
-
-            hdd_item_path = os.path.join(hdd_dir, item)
-            nvme_item_path = os.path.join(nvme_dir, item)
-
-            if not os.path.exists(nvme_item_path):
-                try:
-                    os.symlink(hdd_item_path, nvme_item_path)
-                    logging.info(
-                        f"Symlink recréé : {nvme_item_path} -> {hdd_item_path}"
-                    )
-                except Exception as e:
-                    logging.error(f"Erreur création symlink pour {item} : {e}")
-
+            logging.error(f"Erreur migration {file_path} : {e}")
 
 def main():
-    logging.info("=== Lancement du Garbage Collector & Tiering ===")
-    purge_share_directory()
-    ensure_hdd_symlinks()
+    logging.info("=== Lancement du Tiering Hybride (MergerFS Mode) ===")
     auto_tiering_nvme_to_hdd()
     logging.info("=== Fin de l'opération ===")
-
 
 if __name__ == "__main__":
     main()

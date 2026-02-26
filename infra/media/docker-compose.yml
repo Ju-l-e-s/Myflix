@@ -26,12 +26,7 @@ services:
       - TZ=Europe/Paris
     volumes:
       - /home/jules/infra/ai/data/radarr/config:/config
-      - /home/jules/infra/ai/data:/data/internal
-      - /home/jules/infra/ai/data/downloads:/downloads
-      - /mnt/externe:/data/external
-      # --- Legacy Bridge ---
-      - /home/jules/infra/ai/data/media/movies:/movies
-      - /mnt/externe:/mnt/externe
+      - /mnt/pool:/data
     ports:
       - 7878:7878
     restart: unless-stopped
@@ -49,12 +44,7 @@ services:
       - TZ=Europe/Paris
     volumes:
       - /home/jules/infra/ai/data/sonarr/config:/config
-      - /home/jules/infra/ai/data:/data/internal
-      - /home/jules/infra/ai/data/downloads:/downloads
-      - /mnt/externe:/data/external
-      # --- Legacy Bridge ---
-      - /home/jules/infra/ai/data/media/tv:/tv
-      - /mnt/externe:/mnt/externe
+      - /mnt/pool:/data
     ports:
       - 8989:8989
     restart: unless-stopped
@@ -72,12 +62,7 @@ services:
       - TZ=Europe/Paris
     volumes:
       - /home/jules/infra/ai/data/bazarr/config:/config
-      - /home/jules/infra/ai/data:/data/internal
-      - /mnt/externe:/data/external
-      # --- Legacy Bridge ---
-      - /home/jules/infra/ai/data/media/movies:/movies
-      - /home/jules/infra/ai/data/media/tv:/tv
-      - /mnt/externe:/mnt/externe
+      - /mnt/pool:/data
     ports:
       - 6767:6767
     restart: unless-stopped
@@ -95,7 +80,7 @@ services:
       - TZ=Europe/Paris
     volumes:
       - /home/jules/infra/ai/data/syncthing/config:/config
-      - /home/jules/infra/ai/data/media:/data
+      - /mnt/pool/media:/data
     ports:
       - 8384:8384
       - 22000:22000/tcp

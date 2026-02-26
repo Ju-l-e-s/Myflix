@@ -33,11 +33,11 @@ A Python-based agent that acts as your personal butler:
 - **Telegram Interface**: Easy control without using complex apps.
 - **Maintenance Scripts**: Auto-cleanup of files and storage optimization.
 
-### 3. Smart Storage (`Auto-Tiering`)
-Custom logic to keep your system fast and organized:
-- **Hot Tier (NVMe)**: For new releases and metadata (instant loading).
-- **Cold Tier (HDD)**: For older movies and shows.
-- **Unified Library**: Plex sees everything in one place using smart links.
+### 3. Smart Storage Architecture (MergerFS)
+The system uses **MergerFS** to create a high-performance unified storage pool:
+- **Unified Pool (`/mnt/pool`)**: Combines NVMe and HDD into a single mount point. Plex and the "Arr" suite see one giant library.
+- **Smart Tiering**: Recent media stays on the fast NVMe (Hot Tier), while older content is transparently moved to the HDD (Cold Tier) by our custom "Mover" script.
+- **Reliability**: No more broken symbolic links. The file path stays the same (`/mnt/pool/media/...`) regardless of the physical location.
 
 ---
 

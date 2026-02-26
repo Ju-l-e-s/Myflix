@@ -1,10 +1,6 @@
 # --- PROJET ---
-infra/
-scripts/
-.github/
-README.md
-pyproject.toml
-.env.example
+# On garde les structures mais on ignore les données lourdes à l'intérieur
+# infra/ et scripts/ ne doivent PAS être dans cette section d'ignorés
 
 # --- SÉCURITÉ (À NE JAMAIS COMMIT) ---
 .env

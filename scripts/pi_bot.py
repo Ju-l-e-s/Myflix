@@ -215,7 +215,8 @@ GEMINI_KEY = os.getenv("GEMINI_KEY")
 def stream_gpt_json(query):
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_KEY}"
     headers = {"Content-Type": "application/json"}
-    prompt = f"Analyse : '{query}'. Renvoie UNIQUEMENT un JSON brut (sans markdown) : {{\"titre\": \"nom du film ou serie\", \"type\": \"serie|film\"}}"
+    # Prompt optimisé pour le "Query Stripping"
+    prompt = f"Media assistant. Analyze: '{query}'. Extract ONLY the media title. REMOVE keywords like 'la serie', 'le film', 'saison', 'episode', 'vf', 'vostfr'. Return ONLY raw JSON: {{\"titre\": \"cleaned title\", \"type\": \"serie|film\"}}"
     
     payload = {
         "contents": [{
@@ -235,6 +236,36 @@ def stream_gpt_json(query):
         logging.error(f"Erreur Gemini: {e}")
         return None
 
+def perform_search(cat, titre):
+    """Effectue la recherche réelle auprès de l'API cible."""
+    cfg = RADARR_CFG if cat == "movie" else SONARR_CFG
+    try:
+        r = requests.get(
+            f"{cfg['url']}/api/v3/{cat}/lookup?term={titre}",
+            headers={"X-Api-Key": cfg["key"]},
+            timeout=5,
+        )
+        return r.json()
+    except:
+        return []
+
+def clean_query_logic(text):
+    """Nettoyage Python-side pour garantir la pureté de la query."""
+    # Suppression du bruit textuel et des parenthèses (années, tags)
+    noise = r'(?i)\b(la serie|le film|saison|episode|vf|vostfr|complet|streaming)\b|\(.*\)'
+    cleaned = re.sub(noise, '', text).strip()
+    return re.sub(r'\s+', ' ', cleaned) # Nettoyage des espaces multiples
+
+def recursive_search(cat, query):
+    """Tente la recherche en réduisant la query mot par mot."""
+    words = query.split()
+    while len(words) > 0:
+        current_attempt = " ".join(words)
+        results = perform_search(cat, current_attempt)
+        if results:
+            return results, cat, current_attempt
+        words.pop()
+    return [], cat, query
 
 @bot.message_handler(commands=["get"])
 def handle_get(m):
@@ -246,7 +277,6 @@ def handle_get(m):
     else:
         bot.reply_to(m, "🎬 Que veux-tu ?")
 
-
 def process_get_request(m, query):
     bot.send_chat_action(m.chat.id, "typing")
     ai_res = stream_gpt_json(query)
@@ -257,30 +287,36 @@ def process_get_request(m, query):
     except:
         titre = query
         cat = "movie"
-    cfg = RADARR_CFG if cat == "movie" else SONARR_CFG
-    try:
-        r = requests.get(
-            f"{cfg['url']}/api/v3/{cat}/lookup?term={titre}",
-            headers={"X-Api-Key": cfg["key"]},
-            timeout=5,
-        )
-        results = r.json()
-        if not results:
-            bot.send_message(m.chat.id, "❌ Aucun résultat.")
-            return
-        text = f"🔍 **Résultats pour '{titre}'**\n\n"
-        limit = min(len(results), 5)
-        for i, res in enumerate(results[:limit], 1):
-            text += f"{i}. {res['title']} ({res.get('year', 'N/A')})\n"
-        markup = InlineKeyboardMarkup()
-        btns = [
-            InlineKeyboardButton(str(i), callback_data=f"dl_sel:{cat}:{i}")
-            for i in range(1, limit + 1)
-        ]
-        markup.add(*btns)
-        bot.send_message(m.chat.id, text, reply_markup=markup, parse_mode="Markdown")
-    except:
-        bot.send_message(m.chat.id, "❌ Erreur.")
+
+    # --- PROTOCOLE BLINDÉ (L'Architecte) ---
+    titre_clean = clean_query_logic(titre)
+    
+    # 1. Tentative récursive dans la catégorie suggérée
+    results, final_cat, final_titre = recursive_search(cat, titre_clean)
+    
+    # 2. Si échec, tentative récursive dans l'autre catégorie (Cross-search)
+    if not results:
+        alt_cat = "series" if cat == "movie" else "movie"
+        results, final_cat, final_titre = recursive_search(alt_cat, titre_clean)
+        if results:
+            cat = final_cat
+
+    if not results:
+        bot.send_message(m.chat.id, f"❌ Aucun résultat pour '{titre_clean}'.")
+        return
+
+    text = f"🔍 **Résultats pour '{final_titre}'**\n\n"
+    limit = min(len(results), 5)
+    for i, res in enumerate(results[:limit], 1):
+        text += f"{i}. {res['title']} ({res.get('year', 'N/A')})\n"
+    
+    markup = InlineKeyboardMarkup()
+    btns = [
+        InlineKeyboardButton(str(i), callback_data=f"dl_sel:{cat}:{i}")
+        for i in range(1, limit + 1)
+    ]
+    markup.add(*btns)
+    bot.send_message(m.chat.id, text, reply_markup=markup, parse_mode="Markdown")
 
 
 # --- MASTER CALLBACK ROUTER ---

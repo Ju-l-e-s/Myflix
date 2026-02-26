@@ -11,6 +11,9 @@ import pathlib
 from telebot import types
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from flask import Flask
+from guessit import guessit
+from pyarr import RadarrAPI, SonarrAPI
+from rapidfuzz import fuzz, process
 import share_engine
 import storage_skill
 import media_manager
@@ -25,19 +28,30 @@ SUPER_ADMIN = 6721936515
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 USERS_FILE = os.path.join(BASE_DIR, "users.json")
 CONTEXT_FILE = "/tmp/bot_context.json"
-DEBUG_LOG = "/tmp/bot_debug.log"
+SCRIPT_PATH = os.path.join(BASE_DIR, "media_manager.py")
+CLEANUP_SCRIPT = os.path.join(BASE_DIR, "cleanup_share.py")
 
-# Adresses réseaux : On tente Docker, sinon IP locale du Pi
+# Gestion réseau Docker intelligente
 DOCKER_MODE = os.getenv("DOCKER_MODE", "false").lower() == "true"
-PI_IP = "192.168.1.237"
 
-def get_service_url(service_name, port):
-    if DOCKER_MODE:
-        return f"http://{service_name}:{port}"
-    return f"http://localhost:{port}"
+def get_pyarr_client(service_type):
+    port = 7878 if service_type == "radarr" else 8989
+    key = os.getenv(f"{service_type.upper()}_API_KEY")
+    # Tentative avec le nom du conteneur (si réseau partagé)
+    url_primary = f"http://{service_type}:{port}" if DOCKER_MODE else f"http://localhost:{port}"
+    # Tentative avec la gateway hôte
+    url_fallback = f"http://host.docker.internal:{port}" if DOCKER_MODE else url_primary
+    
+    api_class = RadarrAPI if service_type == "radarr" else SonarrAPI
+    client = api_class(url_primary, key)
+    try:
+        client.get_system_status()
+        return client
+    except:
+        return api_class(url_fallback, key)
 
-RADARR_CFG = {"url": get_service_url("radarr", 7878), "key": os.getenv("RADARR_API_KEY")}
-SONARR_CFG = {"url": get_service_url("sonarr", 8989), "key": os.getenv("SONARR_API_KEY")}
+radarr = get_pyarr_client("radarr")
+sonarr = get_pyarr_client("sonarr")
 GEMINI_KEY = os.getenv("GEMINI_KEY")
 
 bot = telebot.TeleBot(TOKEN)
@@ -245,51 +259,6 @@ def stream_gpt_json(query):
         logging.error(f"Erreur Gemini: {e}")
         return None
 
-def perform_search(cat, titre):
-    """Effectue la recherche réelle auprès de l'API cible avec normalisation et encodage."""
-    api_map = {"film": "movie", "serie": "series", "movie": "movie", "series": "series"}
-    api_cat = api_map.get(cat.lower().strip(), "movie")
-    cfg = RADARR_CFG if api_cat == "movie" else SONARR_CFG
-    
-    try:
-        # Utilisation de params pour l'encodage automatique (espaces, etc.)
-        params = {"term": titre, "apikey": cfg["key"]}
-        url = f"{cfg['url']}/api/v3/{api_cat}/lookup"
-        
-        with open(DEBUG_LOG, "a") as f:
-            f.write(f"DEBUG: Searching {api_cat} for '{titre}' at {url}\n")
-            
-        r = requests.get(url, params=params, timeout=5)
-        # Fallback sur l'IP locale si le nom Docker échoue (401/403/ConnectionError)
-        if r.status_code != 200:
-            url_alt = f"http://{PI_IP}:{7878 if api_cat == 'movie' else 8989}/api/v3/{api_cat}/lookup"
-            r = requests.get(url_alt, params=params, timeout=5)
-            
-        return r.json()
-    except Exception as e:
-        logging.error(f"❌ Erreur API: {e}")
-        return []
-
-def clean_query_logic(text):
-    """Nettoyage Python-side radical pour garantir la pureté de la query."""
-    if not text: return ""
-    # Suppression des guillemets, parenthèses et bruits linguistiques
-    text = text.replace('"', '').replace("'", "").replace("«", "").replace("»", "")
-    noise = r'(?i)\b(la serie|le film|saison|episode|vf|vostfr|complet|streaming)\b|\(.*\)'
-    cleaned = re.sub(noise, '', text).strip()
-    return re.sub(r'\s+', ' ', cleaned)
-
-def recursive_search(cat, query):
-    """Tente la recherche en réduisant la query mot par mot."""
-    words = query.split()
-    while len(words) > 0:
-        current_attempt = " ".join(words)
-        results = perform_search(cat, current_attempt)
-        if results:
-            return results, cat, current_attempt
-        words.pop()
-    return [], cat, query
-
 @bot.message_handler(commands=["get"])
 def handle_get(m):
     if not is_authorized(m.chat.id):
@@ -300,42 +269,58 @@ def handle_get(m):
     else:
         bot.reply_to(m, "🎬 Que veux-tu ?")
 
+def perform_robust_search(cat, titre):
+    """Utilise PyArr et RapidFuzz pour trouver le meilleur match."""
+    client = radarr if cat in ["movie", "film"] else sonarr
+    try:
+        results = client.lookup_movie(titre) if cat in ["movie", "film"] else client.lookup_series(titre)
+        if not results:
+            alt_client = sonarr if cat in ["movie", "film"] else radarr
+            results = alt_client.lookup_series(titre) if cat in ["movie", "film"] else alt_client.lookup_movie(titre)
+            if results:
+                cat = "series" if cat in ["movie", "film"] else "movie"
+        
+        if not results: return [], cat
+
+        choices = [r['title'] for r in results]
+        best_matches = process.extract(titre, choices, scorer=fuzz.WRatio, limit=5)
+        
+        final_results = [results[idx] for _, _, idx in best_matches]
+        return final_results, cat
+    except Exception as e:
+        logging.error(f"Erreur PyArr: {e}")
+        return [], cat
+
 def process_get_request(m, query):
     bot.send_chat_action(m.chat.id, "typing")
+    
+    guess = guessit(query)
+    titre_guess = guess.get('title', query)
+    
     ai_res = stream_gpt_json(query)
     try:
         data = json.loads(re.search(r"\{.*\}", ai_res, re.DOTALL).group(0))
-        # Nettoyage des guillemets et espaces parasites
         titre = data["titre"].strip(' "')
         cat = data["type"].strip(' "')
     except:
-        titre = query.strip(' "')
+        titre = titre_guess
         cat = "movie"
 
-    # --- PROTOCOLE BLINDÉ (L'Architecte) ---
-    titre_clean = clean_query_logic(titre)
-    
-    # 1. Tentative récursive dans la catégorie suggérée
-    results, final_cat, final_titre = recursive_search(cat, titre_clean)
-    
-    # 2. Si échec, tentative récursive dans l'autre catégorie (Cross-search)
-    if not results:
-        alt_cat = "series" if cat in ["movie", "film"] else "movie"
-        results, final_cat, final_titre = recursive_search(alt_cat, titre_clean)
-        if results:
-            cat = alt_cat
+    results, final_cat = perform_robust_search(cat, titre)
 
     if not results:
-        bot.send_message(m.chat.id, f"❌ Aucun résultat pour '{titre_clean}'.")
+        bot.send_message(m.chat.id, f"❌ Aucun résultat pour '{titre}'.")
         return
 
-    # Normalisation finale pour le callback du bouton download (Radarr=movie, Sonarr=series)
-    final_api_cat = "movie" if cat in ["movie", "film"] else "series"
+    final_api_cat = "movie" if final_cat in ["movie", "film"] else "series"
 
-    text = f"🔍 **Résultats pour '{final_titre}'**\n\n"
+    text = f"🔍 **Résultats pour '{titre}'**
+
+"
     limit = min(len(results), 5)
     for i, res in enumerate(results[:limit], 1):
-        text += f"{i}. {res['title']} ({res.get('year', 'N/A')})\n"
+        text += f"{i}. {res['title']} ({res.get('year', 'N/A')})
+"
     
     markup = InlineKeyboardMarkup()
     btns = [

@@ -38,10 +38,9 @@ venv/
 *.pem
 *.deb
 *.sh
-!setup_leds.sh # On garde celui-ci s'il est utile au projet
-!get-docker.sh # On garde celui-ci s'il est utile au projet
 
-# --- DONNÉES MASSIVES ---
+# --- DONNÉES MASSIVES & MÉDIAS ---
+media_share/
 **/data/
 **/database/
 **/grafana-storage/

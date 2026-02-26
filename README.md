@@ -2,7 +2,6 @@
 
 [![Platform](https://img.shields.io/badge/Platform-Raspberry%20Pi%205-C51A4A?logo=raspberry-pi)](https://www.raspberrypi.com/)
 [![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
-[![AI](https://img.shields.io/badge/AI-Gemini%20Flash-4285F4?logo=google-gemini&logoColor=white)](https://deepmind.google/technologies/gemini/)
 [![Python](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 
 **Myflix** is more than just a media server. It is a smart, automated system built to use 100% of the **Raspberry Pi 5** power. It combines AI control, automated downloads, and smart storage management.

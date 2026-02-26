@@ -1,47 +1,52 @@
-# Secrets et Identités
+# --- PROJET ---
+infra/
+scripts/
+.github/
+README.md
+pyproject.toml
+.env.example
+
+# --- SÉCURITÉ (À NE JAMAIS COMMIT) ---
 .env
+.ssh/
+.gemini/
+.cloudflared/
+.git-credentials
+.bash_history
 scripts/users.json
 
-# --- IA & DONNÉES MASSIVES ---
-infra/ai/ollama_data/
-infra/ai/ai-env/
+# --- SYSTÈME & ENVIRONNEMENT LOCAL ---
+.cache/
+.config/
+.docker/
+.local/
+.npm/
+.nvm/
+.openclaw/
+.pytest_cache/
+.ruff_cache/
+__pycache__/
+venv/
+.sudo_as_admin_successful
+.wget-hsts
+.bash_profile
+.bashrc
+.gitconfig
+
+# --- FICHIERS TEMPORAIRES & BINAIRES ---
+*.log
+*.pem
+*.deb
+*.sh
+!setup_leds.sh # On garde celui-ci s'il est utile au projet
+!get-docker.sh # On garde celui-ci s'il est utile au projet
+
+# --- DONNÉES MASSIVES ---
 **/data/
 **/database/
 **/grafana-storage/
 **/portainer-data/
 /mnt/externe/
-
-# --- AFFINAGE JSON ---
-# On ignore les JSON dans les dossiers de données, mais on garde les configs racines
-**/data/**/*.json
-**/database/**/*.json
-# On ignore spécifiquement les fichiers npm qui bloquent
-infra/npm/
-
-# --- SYSTÈME ---
-**/*.log
-**/*.pem
-__pycache__/
-.pytest_cache/
-.DS_Store
-venv/
-.nvm/
-.openclaw/
-
-# Historique et Identifiants
-.bash_history
-.git-credentials
-.gemini/
-.npm/
-
-# Logs et Bases de données (Prowlarr)
-infra/ai/config/prowlarr/logs/
-infra/ai/config/prowlarr/*.db
-
-# Données de monitoring temporaires
-infra/monitoring/debug_v2.json
-infra/monitoring/current_dashboard.json
-
-# Fichiers temporaires SQLite
+*.db
 *.db-shm
 *.db-wal

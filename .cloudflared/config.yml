@@ -1,7 +1,0 @@
-tunnel: bb751f01-c2b7-4192-8022-c7dc4b778923
-credentials-file: /home/jules/.cloudflared/bb751f01-c2b7-4192-8022-c7dc4b778923.json
-
-ingress:
-  - hostname: share.juleslaconfourque.fr
-    service: http://localhost:8080
-  - service: http_status:404

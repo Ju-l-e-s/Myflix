@@ -1,40 +1,30 @@
-# --- Stage 1: Builder ---
-FROM python:3.11-slim as builder
-
+# --- Stage 1: Build ---
+FROM golang:1.22-bookworm AS builder
 WORKDIR /build
-
-# Installation des outils de compilation pour les dépendances potentielles
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    && rm -rf /var/lib/apt/lists/*
-
-# Installation des dépendances dans un répertoire local
-COPY requirements.txt .
-RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
-RUN pip install --no-cache-dir --prefix=/install pytest pytest-mock
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+# Compilation statique ARM64 (aarch64)
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -a -ldflags="-s -w" -o myflixbot main.go
 
 # --- Stage 2: Runtime ---
-FROM python:3.11-slim
-
+FROM debian:bookworm-slim
 WORKDIR /app
-
-# On ne garde que ffmpeg qui est nécessaire à l'exécution
+# Installation des dépendances système nécessaires aux scripts Python
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3 \
+    python3-pip \
     ffmpeg \
+    ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# Copie des dépendances installées depuis le builder
-COPY --from=builder /install /usr/local
+# Fix pour pip sur Debian 12 (PEP 668)
+RUN pip3 install --no-cache-dir requests --break-system-packages
 
-# Création d'un utilisateur non-root pour la sécurité
-RUN useradd -m -u 1000 appuser && \
-    chown -R appuser:appuser /app
+# Copie du binaire Go
+COPY --from=builder /build/myflixbot /app/myflixbot
+# Copie des scripts Python auxiliaires
+COPY media_manager.py share_engine.py config.py /app/
 
-# Copie du code source avec les bons droits
-COPY --chown=appuser:appuser . .
-
-# Passage à l'utilisateur non-root
-USER appuser
-
-# Par défaut, on lance le bot
-CMD ["python", "pi_bot.py"]
+RUN chmod +x /app/myflixbot
+ENTRYPOINT ["/app/myflixbot"]

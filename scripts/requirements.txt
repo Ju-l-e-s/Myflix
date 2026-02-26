@@ -1,8 +1,0 @@
-pyTelegramBotAPI
-requests
-flask
-pytest
-pytest-mock
-guessit
-pyarr
-rapidfuzz

@@ -36,11 +36,37 @@ def clean_media_name(name):
         return f"[{ep_info}] {title}"
     return title
 
+def get_progress_bar(percentage, length=15):
+    """Génère une barre de progression élégante."""
+    filled_length = int(length * percentage / 100)
+    bar = "█" * filled_length + "░" * (length - filled_length)
+    return f"`{bar}` {percentage}%"
+
+def format_size(size_bytes):
+    """Formate la taille en GB ou MB."""
+    if size_bytes >= 1024**3:
+        return f"{round(size_bytes / 1024**3, 2)} GB"
+    return f"{round(size_bytes / 1024**2, 2)} MB"
+
+def format_speed(speed_bytes_per_sec):
+    """Formate la vitesse de téléchargement."""
+    if speed_bytes_per_sec >= 1024**2:
+        return f"{round(speed_bytes_per_sec / 1024**2, 1)} MB/s"
+    return f"{round(speed_bytes_per_sec / 1024, 1)} KB/s"
+
 def get_size(p):
+    """Calcule la taille de manière optimisée via scandir."""
     try:
         if os.path.isfile(p):
             return os.path.getsize(p)
-        return sum(os.path.getsize(os.path.join(r, f)) for r, d, fs in os.walk(p) for f in fs)
+        total = 0
+        with os.scandir(p) as it:
+            for entry in it:
+                if entry.is_file():
+                    total += entry.stat().st_size
+                elif entry.is_dir():
+                    total += get_size(entry.path)
+        return total
     except Exception: return 0
 
 def find_local_media(query):

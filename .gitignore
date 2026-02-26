@@ -34,6 +34,8 @@ venv/
 *.pem
 *.deb
 *.sh
+scripts/main
+scripts/myflixbot
 
 # --- DONNÉES MASSIVES & MÉDIAS ---
 media_share/
@@ -42,6 +44,16 @@ media_share/
 **/grafana-storage/
 **/portainer-data/
 /mnt/externe/
+infra/npm/
+infra/ai/ai-env/
+**/config/
+*.xml
+*.yaml
+*.yml
+!docker-compose.yml
+!pyproject.toml
+!storage_policy.json
+!config_share.json
 *.db
 *.db-shm
 *.db-wal

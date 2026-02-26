@@ -798,10 +798,15 @@ func refreshQueue(c tele.Context, isEdit bool) error {
 		}
 	}
 
+	menu := &tele.ReplyMarkup{}
+	btnRefresh := menu.Data("🔄 Actualiser", "q_refresh")
+	btnHome := menu.Data("🏠", "status_refresh")
+	menu.Inline(menu.Row(btnRefresh, btnHome))
+
 	if isEdit {
-		return c.Edit(text, tele.ModeHTML)
+		return c.Edit(text, menu, tele.ModeHTML)
 	}
-	return c.Send(text, tele.ModeHTML)
+	return c.Send(text, menu, tele.ModeHTML)
 }
 
 // --- SYSTEM GOVERNOR ---

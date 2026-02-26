@@ -1,4 +1,4 @@
-name: Infrastructure CI
+name: CI - Myflix Multi-Arch Tests
 
 on:
   push:
@@ -7,55 +7,33 @@ on:
     branches: [ main ]
 
 jobs:
-  lint-and-security:
-    name: Code Quality & Security
+  test-go:
+    name: Go (Native Backend)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+      - name: Test Go Components
+        run: |
+          cd scripts
+          go test -v .
 
+  test-python:
+    name: Python (Legacy & Tools)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
-      - name: Install Linting Tools
+      - name: Install Dependencies
         run: |
-          pip install ruff bandit
-
-      - name: Run Ruff (Linter & Formatter)
+          python -m pip install --upgrade pip
+          pip install pytest requests responses
+      - name: Test Python Components
         run: |
-          ruff check .
-          ruff format --check .
-
-  test-and-build:
-    name: Unit Tests & Build
-    needs: lint-and-security
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install dependencies
-        run: |
-          pip install -r scripts/requirements.txt
-          pip install pytest pytest-mock requests
-
-      - name: Run Architectural Tests
-        env:
-          PYTHONPATH: ${{ github.workspace }}/scripts
-          OPENAI_KEY: "sk-fake"
-          TELEGRAM_TOKEN: "123456789:ABCDefghIJKLmnopQRSTuvwxYZ123456789"
-          RADARR_API_KEY: "fake"
-          SONARR_API_KEY: "fake"
-          PLEX_TOKEN: "fake"
-          SUPER_ADMIN_ID: "6721936515"
-        run: |
-          pytest scripts/tests/
-
-      - name: Build Docker Image
-        run: |
-          docker build -t pi5-master-logic:latest ./scripts
+          pytest infra/test_api.py

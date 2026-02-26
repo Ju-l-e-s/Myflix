@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"html"
+	"io"
 	"log"
 	"net"
 	"net/http"
@@ -37,7 +38,12 @@ var (
 	SonarrKey       = os.Getenv("SONARR_API_KEY")
 	QbitURL         = "http://gluetun:8080"
 	SuperAdmin      = int64(6721936515)
+	PosterCacheDir  = "/tmp/myflix_cache/posters/"
 )
+
+func init() {
+	os.MkdirAll(PosterCacheDir, 0755)
+}
 
 var httpClient = &http.Client{Timeout: 15 * time.Second}
 
@@ -67,11 +73,17 @@ func cleanTitle(title string) string {
 
 // --- CACHE ENGINE ---
 type Movie struct {
+	ID         int                    `json:"id"`
 	Title      string                 `json:"title"`
 	Year       int                    `json:"year"`
 	Added      string                 `json:"added"`
 	HasFile    bool                   `json:"hasFile"`
 	Path       string                 `json:"path"`
+	Runtime    int                    `json:"runtime"`
+	TmdbID     int                    `json:"tmdbId"`
+	SizeOnDisk int64                  `json:"sizeOnDisk"`
+	Director   string                 `json:"director"`
+	PosterURL  string                 `json:"posterUrl"`
 	Statistics map[string]interface{} `json:"statistics"`
 }
 
@@ -411,24 +423,109 @@ func getIndexEmoji(i int) string {
 	return fmt.Sprintf("%d.", i)
 }
 
-func getStorageEmoji(item map[string]interface{}) string {
-	hasFile, _ := item["hasFile"].(bool)
-	stats, ok := item["statistics"].(map[string]interface{})
-	epCount := 0.0
-	if ok {
-		if v, ok := stats["episodeFileCount"].(float64); ok {
-			epCount = v
-		}
-	}
-
-	if !hasFile && epCount == 0 {
-		return "🔴"
-	}
-	path, _ := item["path"].(string)
+func getStorageEmoji(path string) string {
 	if strings.Contains(path, "/mnt/externe") {
 		return "📚"
 	}
 	return "🚀"
+}
+
+func mapToMovie(item map[string]interface{}) Movie {
+	m := Movie{
+		ID:    int(item["id"].(float64)),
+		Title: item["title"].(string),
+		Year:  int(item["year"].(float64)),
+		Path:  item["path"].(string),
+	}
+	if v, ok := item["runtime"].(float64); ok {
+		m.Runtime = int(v)
+	}
+	if v, ok := item["tmdbId"].(float64); ok {
+		m.TmdbID = int(v)
+	}
+	if v, ok := item["sizeOnDisk"].(float64); ok {
+		m.SizeOnDisk = int64(v)
+	} else if stats, ok := item["statistics"].(map[string]interface{}); ok {
+		if sod, ok := stats["sizeOnDisk"].(float64); ok {
+			m.SizeOnDisk = int64(sod)
+		}
+	}
+
+	if images, ok := item["images"].([]interface{}); ok {
+		for _, img := range images {
+			imgMap := img.(map[string]interface{})
+			if imgMap["coverType"] == "poster" {
+				m.PosterURL, _ = imgMap["remoteUrl"].(string)
+				break
+			}
+		}
+	}
+	return m
+}
+
+func downloadFile(url string, filepath string) error {
+	resp, err := httpClient.Get(url)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	out, err := os.Create(filepath)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	_, err = io.Copy(out, resp.Body)
+	return err
+}
+
+func formatMovieDetails(m Movie) string {
+	var b strings.Builder
+
+	// Conversion de la durée (minutes -> Hh MM)
+	hours := m.Runtime / 60
+	mins := m.Runtime % 60
+	duration := fmt.Sprintf("%dh %02dm", hours, mins)
+
+	// Conversion du poids (Bytes -> GB)
+	sizeGB := float64(m.SizeOnDisk) / (1024 * 1024 * 1024)
+
+	b.WriteString(fmt.Sprintf("🎬 <b>%s</b> (%d)\n", m.Title, m.Year))
+	b.WriteString("⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n")
+	if m.Director != "" {
+		b.WriteString(fmt.Sprintf("👤 <b>Réal.</b> : %s\n", m.Director))
+	}
+	b.WriteString(fmt.Sprintf("⏱️ <b>Durée</b> : %s\n", duration))
+	b.WriteString(fmt.Sprintf("⚖️ <b>Poids</b> : %.2f GB\n", sizeGB))
+	b.WriteString(fmt.Sprintf("💾 <b>Stockage</b> : %s\n", getStorageEmoji(m.Path)))
+	b.WriteString("⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n")
+	b.WriteString(fmt.Sprintf("📁 <code>%s</code>", m.Path))
+
+	return b.String()
+}
+
+func sendDetailedMovie(c tele.Context, m Movie) error {
+	posterPath := fmt.Sprintf("%stmdb_%d.jpg", PosterCacheDir, m.TmdbID)
+
+	// Vérification du cache local
+	if _, err := os.Stat(posterPath); os.IsNotExist(err) && m.PosterURL != "" {
+		downloadFile(m.PosterURL, posterPath)
+	}
+
+	// Préparation de l'image Telegram
+	photo := &tele.Photo{
+		File:    tele.FromDisk(posterPath),
+		Caption: formatMovieDetails(m),
+	}
+
+	// Menu d'actions
+	menu := &tele.ReplyMarkup{}
+	btnShare := menu.Data("🔗 Partager", "m_share", "films", fmt.Sprint(m.ID))
+	btnDelete := menu.Data("🗑️ Supprimer", "m_del", "films", fmt.Sprint(m.ID))
+	menu.Inline(menu.Row(btnShare, btnDelete), menu.Row(menu.Data("⬅️ Retour", "lib", "films")))
+
+	return c.Send(photo, menu, tele.ModeHTML)
 }
 
 func getProgressBar(percentage float64) string {
@@ -534,7 +631,23 @@ func showLibrary(c tele.Context, cat string, page int, isEdit bool) error {
 	var numBtns []tele.Btn
 	
 	for i, item := range currentPageItems {
-		emoji := getStorageEmoji(item)
+		isReady := false
+		if cat == "films" {
+			isReady, _ = item["hasFile"].(bool)
+		} else {
+			stats, _ := item["statistics"].(map[string]interface{})
+			if stats != nil {
+				if epCount, _ := stats["episodeFileCount"].(float64); epCount > 0 {
+					isReady = true
+				}
+			}
+		}
+
+		emoji := "🔴"
+		if isReady {
+			emoji = getStorageEmoji(item["path"].(string))
+		}
+
 		formatted := formatTitle(item["title"].(string), item["year"], 22, 25)
 		text += fmt.Sprintf("%s <code>%s</code> %s\n", getIndexEmoji(i+1), formatted, emoji)
 		
@@ -1083,10 +1196,14 @@ func main() {
 		}
 		if item == nil { return c.Send("❌ Introuvable.") }
 
+		if cat == "films" {
+			return sendDetailedMovie(c, mapToMovie(item))
+		}
+
 		title := item["title"].(string); year := item["year"]; path := item["path"].(string)
 		msg := fmt.Sprintf("🎯 <b>Détails : %s (%v)</b>\n\n", title, year)
 		msg += fmt.Sprintf("📁 Chemin : <code>%s</code>\n", path)
-		msg += fmt.Sprintf("💾 Stockage : %s\n", getStorageEmoji(item))
+		msg += fmt.Sprintf("💾 Stockage : %s\n", getStorageEmoji(path))
 
 		menu := &tele.ReplyMarkup{}
 		menu.Inline(

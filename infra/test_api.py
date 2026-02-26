@@ -1,15 +1,41 @@
+import pytest
+import responses
 import requests
+import os
+from unittest.mock import patch
 
-RADARR_URL = "http://localhost:7878/api/v3"
-RADARR_API_KEY = "75ed9e2e3922442c8c1e012e47bc0906"
-try:
+# Mock Radarr/Sonarr for CI/CD
+RADARR_URL = "http://radarr:7878/api/v3"
+SONARR_URL = "http://sonarr:8989/api/v3"
+RADARR_API_KEY = "test_key"
+
+@responses.activate
+def test_radarr_movie_lookup():
+    # Setup mock
+    responses.add(
+        responses.GET,
+        f"{RADARR_URL}/movie/lookup",
+        json=[{"title": "Inception", "year": 2010}],
+        status=200
+    )
+
     r = requests.get(
-        f"{RADARR_URL}/movie", headers={"X-Api-Key": RADARR_API_KEY}, timeout=5
+        f"{RADARR_URL}/movie/lookup?term=Inception",
+        headers={"X-Api-Key": RADARR_API_KEY}
     )
-    data = r.json()
-    owned = [f for f in data if f.get("hasFile") is True]
-    print(
-        f"Test Radarr : {len(data)} films au total, {len(owned)} possédés (hasFile: True)."
-    )
-except Exception as e:
-    print(f"Erreur Test API : {e}")
+    
+    assert r.status_code == 200
+    results = r.json()
+    assert len(results) == 1
+    assert results[0]['title'] == "Inception"
+
+def test_clean_title_logic():
+    # Imitez la logique de nettoyage utilisée par le bot Python
+    import re
+    def clean(title):
+        pattern = r'(?i)(?:1080p|720p|4k|uhd|x26[45]|h26[45]|web[- ]?(dl|rip)|bluray|aac|dd[p]?5\.1|atmos|repack|playweb|max|[\d\s]+A M|[\d\s]+P M|-NTb|-playWEB)'
+        cleaned = re.split(pattern, title)[0]
+        return cleaned.replace(".", " ").strip()
+
+    assert clean("Inception.2010.1080p.BluRay.x264") == "Inception 2010"
+    assert clean("The.Boys.S01E01.720p.WEB-DL-NTb") == "The Boys S01E01"

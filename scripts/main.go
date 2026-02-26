@@ -1254,12 +1254,15 @@ func main() {
 
 		path, _ := item["path"].(string)
 		
-		// Si c'est une série, on cherche le premier fichier disponible
+		// Si c'est une série ou un film, on cherche le premier fichier disponible
 		filePath := path
 		filepath.Walk(path, func(p string, info os.FileInfo, err error) error {
-			if err == nil && !info.IsDir() && (strings.HasSuffix(p, ".mkv") || strings.HasSuffix(p, ".mp4")) {
-				filePath = p
-				return filepath.SkipDir
+			if err == nil && !info.IsDir() {
+				ext := strings.ToLower(filepath.Ext(p))
+				if ext == ".mkv" || ext == ".mp4" || ext == ".m2ts" || ext == ".avi" || ext == ".webm" {
+					filePath = p
+					return filepath.SkipDir
+				}
 			}
 			return nil
 		})

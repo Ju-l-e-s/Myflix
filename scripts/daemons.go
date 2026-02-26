@@ -22,8 +22,7 @@ func startVPNExporter(port string) {
 		
 		if err != nil {
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte("# Error fetching IP
-"))
+			w.Write([]byte("# Error fetching IP\n"))
 			return
 		}
 		defer resp.Body.Close()
@@ -33,14 +32,12 @@ func startVPNExporter(port string) {
 
 		if !strings.Contains(ip, ".") && !strings.Contains(ip, ":") {
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte("# Invalid IP response
-"))
+			w.Write([]byte("# Invalid IP response\n"))
 			return
 		}
 
 		w.Header().Set("Content-Type", "text/plain")
-		fmt.Fprintf(w, "vpn_public_ip_info{ip="%s"} 1
-", ip)
+		fmt.Fprintf(w, "vpn_public_ip_info{ip=\"%s\"} 1\n", ip)
 	})
 
 	log.Printf("📡 VPN Exporter (Go) démarré sur le port %s", port)

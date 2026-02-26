@@ -37,6 +37,8 @@ var (
 	SonarrURL       = "http://sonarr:8989"
 	SonarrKey       = os.Getenv("SONARR_API_KEY")
 	QbitURL         = "http://gluetun:8080"
+	PlexURL         = "http://plex:32400"
+	PlexToken       = os.Getenv("PLEX_TOKEN")
 	SuperAdmin      = int64(6721936515)
 	PosterCacheDir  = "/tmp/myflix_cache/posters/"
 )
@@ -1112,6 +1114,22 @@ func autoHealer() {
 	}
 }
 
+func triggerPlexScan() {
+	if PlexToken == "" {
+		return
+	}
+	// On déclenche le scan de toute la bibliothèque
+	scanURL := fmt.Sprintf("%s/library/sections/all/refresh?X-Plex-Token=%s", PlexURL, PlexToken)
+	req, _ := http.NewRequest("GET", scanURL, nil)
+	resp, err := httpClient.Do(req)
+	if err == nil {
+		resp.Body.Close()
+		log.Println("🎬 Plex : Scan de la bibliothèque déclenché")
+	} else {
+		log.Printf("❌ Plex Scan Error : %v", err)
+	}
+}
+
 func webhookHandler(w http.ResponseWriter, r *http.Request) {
 	var payload map[string]interface{}
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
@@ -1126,20 +1144,26 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
 		if eventType == "Download" || eventType == "MovieFileDelete" || eventType == "MovieDelete" {
 			go refreshLibrary("films")
 		}
-		if eventType == "Download" && bot != nil {
-			title, _ := movie["title"].(string)
-			msg := fmt.Sprintf("✅ <b>Téléchargement Terminé</b>\n\n🎬 %s est maintenant disponible !", title)
-			bot.Send(tele.ChatID(SuperAdmin), msg, tele.ModeHTML)
+		if eventType == "Download" {
+			go triggerPlexScan()
+			if bot != nil {
+				title, _ := movie["title"].(string)
+				msg := fmt.Sprintf("✅ <b>Téléchargement Terminé</b>\n\n🎬 %s est maintenant disponible !", title)
+				bot.Send(tele.ChatID(SuperAdmin), msg, tele.ModeHTML)
+			}
 		}
 	} else if series, ok := payload["series"].(map[string]interface{}); ok {
 		log.Printf("📥 Webhook Sonarr: %s", eventType)
 		if eventType == "Download" || eventType == "SeriesDelete" {
 			go refreshLibrary("series")
 		}
-		if eventType == "Download" && bot != nil {
-			title, _ := series["title"].(string)
-			msg := fmt.Sprintf("✅ <b>Téléchargement Terminé</b>\n\n📺 %s est maintenant disponible !", title)
-			bot.Send(tele.ChatID(SuperAdmin), msg, tele.ModeHTML)
+		if eventType == "Download" {
+			go triggerPlexScan()
+			if bot != nil {
+				title, _ := series["title"].(string)
+				msg := fmt.Sprintf("✅ <b>Téléchargement Terminé</b>\n\n📺 %s est maintenant disponible !", title)
+				bot.Send(tele.ChatID(SuperAdmin), msg, tele.ModeHTML)
+			}
 		}
 	} else {
 		go refreshLibrary("films")

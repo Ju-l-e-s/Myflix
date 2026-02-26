@@ -11,6 +11,7 @@ import pathlib
 from telebot import types
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from flask import Flask
+from datetime import timedelta
 from guessit import guessit
 from pyarr import RadarrAPI, SonarrAPI
 from rapidfuzz import fuzz, process
@@ -28,229 +29,82 @@ SUPER_ADMIN = 6721936515
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 USERS_FILE = os.path.join(BASE_DIR, "users.json")
 CONTEXT_FILE = "/tmp/bot_context.json"
-SCRIPT_PATH = os.path.join(BASE_DIR, "media_manager.py")
-CLEANUP_SCRIPT = os.path.join(BASE_DIR, "cleanup_share.py")
 
 # Gestion réseau Docker intelligente
 DOCKER_MODE = os.getenv("DOCKER_MODE", "false").lower() == "true"
 
-def get_pyarr_client(service_type):
+def get_service_params(service_type):
     port = 7878 if service_type == "radarr" else 8989
     key = os.getenv(f"{service_type.upper()}_API_KEY")
-    # Tentative avec le nom du conteneur (si réseau partagé)
-    url_primary = f"http://{service_type}:{port}" if DOCKER_MODE else f"http://localhost:{port}"
-    # Tentative avec la gateway hôte
-    url_fallback = f"http://host.docker.internal:{port}" if DOCKER_MODE else url_primary
-    
-    api_class = RadarrAPI if service_type == "radarr" else SonarrAPI
-    client = api_class(url_primary, key)
-    try:
-        client.get_system_status()
-        return client
-    except:
-        return api_class(url_fallback, key)
+    url = f"http://{service_type}:{port}" if DOCKER_MODE else f"http://localhost:{port}"
+    return url, key
 
-radarr = get_pyarr_client("radarr")
-sonarr = get_pyarr_client("sonarr")
+RADARR_URL, RADARR_KEY = get_service_params("radarr")
+SONARR_URL, SONARR_KEY = get_service_params("sonarr")
+
+# Clients PyArr
+radarr_client = RadarrAPI(RADARR_URL, RADARR_KEY)
+sonarr_client = SonarrAPI(SONARR_URL, SONARR_KEY)
+
+# Compatibilité (pour show_media_list)
+RADARR_CFG = {"url": RADARR_URL, "key": RADARR_KEY}
+SONARR_CFG = {"url": SONARR_URL, "key": SONARR_KEY}
+
+# Fallback intelligent
+try: radarr_client.get_system_status()
+except:
+    if DOCKER_MODE:
+        RADARR_URL = "http://host.docker.internal:7878"
+        radarr_client = RadarrAPI(RADARR_URL, RADARR_KEY)
+        RADARR_CFG["url"] = RADARR_URL
+
+try: sonarr_client.get_system_status()
+except:
+    if DOCKER_MODE:
+        SONARR_URL = "http://host.docker.internal:8989"
+        sonarr_client = SonarrAPI(SONARR_URL, SONARR_KEY)
+        SONARR_CFG["url"] = SONARR_URL
+
+QBIT_HOST = "gluetun" if DOCKER_MODE else "localhost"
+QBIT_URL = f"http://{QBIT_HOST}:8080"
 GEMINI_KEY = os.getenv("GEMINI_KEY")
 
 bot = telebot.TeleBot(TOKEN)
 
-
 # --- UTILS & STORAGE ---
 def load_allowed_users():
     try:
-        return json.load(open(USERS_FILE))["allowed"]
-    except:
-        return [SUPER_ADMIN]
+        with open(USERS_FILE, "r") as f: return json.load(f)["allowed"]
+    except: return [SUPER_ADMIN]
 
-
-def is_authorized(uid):
-    return uid in load_allowed_users()
-
+def is_authorized(uid): return uid in load_allowed_users()
 
 def save_users(users):
-    with open(USERS_FILE, "w") as f:
-        json.dump({"allowed": users}, f)
-
+    with open(USERS_FILE, "w") as f: json.dump({"allowed": users}, f)
 
 def get_storage_emoji(item):
-    if (
-        not item.get("hasFile")
-        and item.get("statistics", {}).get("episodeFileCount", 0) == 0
-    ):
-        return "🔴"
+    if not item.get("hasFile") and item.get("statistics", {}).get("episodeFileCount", 0) == 0: return "🔴"
     path = item.get("path", "")
     return "📚" if path and "/mnt/externe" in path else "🚀"
 
-
-# --- ADMIN HANDLERS ---
-@bot.message_handler(commands=["admin"])
-def admin_main(m):
-    if m.from_user.id != SUPER_ADMIN:
-        return
-    markup = InlineKeyboardMarkup(row_width=1)
-    markup.add(
-        InlineKeyboardButton("📂 Partage", callback_data="adm:share"),
-        InlineKeyboardButton("👥 Utilisateurs", callback_data="adm:users"),
-        InlineKeyboardButton("🧹 Nettoyage SSD", callback_data="adm:clean"),
-        InlineKeyboardButton("🔙 Fermer", callback_data="adm:close"),
-    )
-    bot.send_message(
-        m.chat.id,
-        "🛠️ **Menu Administrateur**",
-        reply_markup=markup,
-        parse_mode="Markdown",
-    )
-
-
-def process_user_add(m):
-    try:
-        uid = int(m.text)
-        users = load_allowed_users()
-        if uid not in users:
-            users.append(uid)
-            save_users(users)
-            bot.reply_to(m, f"✅ ID {uid} ajouté.")
-        else:
-            bot.reply_to(m, "ℹ️ Déjà autorisé.")
-    except:
-        bot.reply_to(m, "❌ ID invalide.")
-
-
-# --- MEDIA ENGINE (ORIGINAL) ---
-def list_media_unified(m, cat, title, is_edit=False):
-    res = subprocess.run(
-        ["python3", SCRIPT_PATH, "json_list", cat], capture_output=True, text=True
-    )
-    try:
-        items = json.loads(res.stdout)
-        ctx = {}
-        if os.path.exists(CONTEXT_FILE):
-            try:
-                ctx = json.load(open(CONTEXT_FILE))
-            except:
-                ctx = {}
-        ctx[str(m.chat.id)] = {"category": cat, "list": items}
-        with open(CONTEXT_FILE, "w") as f:
-            json.dump(ctx, f)
-    except:
-        return
-    if not items:
-        msg = f"📂 Aucun(e) {cat} trouvé(e)."
-        if is_edit:
-            bot.edit_message_text(msg, m.chat.id, m.message_id)
-        else:
-            bot.send_message(m.chat.id, msg)
-        return
-    text = f"🎬 {title} : {cat}\n\n"
-    for i, f in enumerate(items, 1):
-        text += f"{i}. {f['name']} ({f['size_gb']}G)\n"
-    markup = InlineKeyboardMarkup(row_width=5)
-    markup.add(
-        *[
-            InlineKeyboardButton(str(i), callback_data=f"sel:{cat}:{i - 1}")
-            for i in range(1, len(items) + 1)
-        ]
-    )
-    markup.add(InlineKeyboardButton("⬅️ Retour", callback_data="adm:share_owned"))
-    if is_edit:
-        bot.edit_message_text(text, m.chat.id, m.message_id, reply_markup=markup)
-    else:
-        bot.send_message(m.chat.id, text, reply_markup=markup)
-
-
-# --- PAGED MEDIA UI (LIVE API) ---
-def show_media_list(chat_id, message_id, category, page=0, is_new=False):
-    cfg = RADARR_CFG if category == "films" else SONARR_CFG
-    endpoint = "movie" if category == "films" else "series"
-    try:
-        r = requests.get(
-            f"{cfg['url']}/api/v3/{endpoint}",
-            headers={"X-Api-Key": cfg["key"]},
-            timeout=5,
-        )
-        r.raise_for_status()
-        data = r.json()
-        if category == "films":
-            owned = [f for f in data if f.get("hasFile") is True]
-        else:
-            owned = [
-                s
-                for s in data
-                if s.get("statistics", {}).get("episodeFileCount", 0) > 0
-            ]
-        owned.sort(key=lambda x: x.get("added", ""), reverse=True)
-        total = len(owned)
-        start, end = page * 10, (page + 1) * 10
-        items = owned[start:end]
-        if not items:
-            bot.send_message(chat_id, "📂 Vide.")
-            return
-        text = f"{'🎬' if category == 'films' else '📺'} **{category.capitalize()}** ({total})\n\n"
-        for i, item in enumerate(items, 1):
-            text += f"{start + i}. {get_storage_emoji(item)} {item['title']} ({item.get('year', '')})\n"
-        markup = InlineKeyboardMarkup(row_width=5)
-        btns = [
-            InlineKeyboardButton(
-                str(start + i), callback_data=f"m_sel:{category}:{items[i - 1]['id']}"
-            )
-            for i in range(1, len(items) + 1)
-        ]
-        markup.add(*btns)
-        nav = []
-        if page > 0:
-            nav.append(
-                InlineKeyboardButton("⬅️", callback_data=f"m_pag:{category}:{page - 1}")
-            )
-        if end < total:
-            nav.append(
-                InlineKeyboardButton("➡️", callback_data=f"m_pag:{category}:{page + 1}")
-            )
-        if nav:
-            markup.row(*nav)
-        markup.add(InlineKeyboardButton("🏠 Menu Principal", callback_data="adm:main"))
-        if is_new:
-            bot.send_message(chat_id, text, reply_markup=markup, parse_mode="Markdown")
-        else:
-            bot.edit_message_text(
-                text, chat_id, message_id, reply_markup=markup, parse_mode="Markdown"
-            )
-    except:
-        bot.send_message(chat_id, "❌ Erreur API.")
-
-
-@bot.message_handler(commands=["films"])
-def films_cmd(m):
-    if is_authorized(m.chat.id):
-        show_media_list(m.chat.id, None, "films", 0, True)
-
-
-@bot.message_handler(commands=["series"])
-def series_cmd(m):
-    if is_authorized(m.chat.id):
-        show_media_list(m.chat.id, None, "series", 0, True)
-
-
-# --- SEARCH ENGINE (/GET) ---
-GEMINI_KEY = os.getenv("GEMINI_KEY")
-
+# --- SEARCH ENGINE (ID-FIRST SNIPER PIPELINE) ---
 def stream_gpt_json(query):
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_KEY}"
     headers = {"Content-Type": "application/json"}
-    # Prompt optimisé pour le "Query Stripping"
-    prompt = f"Media assistant. Analyze: '{query}'. Extract ONLY the media title. REMOVE keywords like 'la serie', 'le film', 'saison', 'episode', 'vf', 'vostfr'. Return ONLY raw JSON: {{\"titre\": \"cleaned title\", \"type\": \"serie|film\"}}"
-    
+    prompt = f"""Media Expert. Analyze: '{query}'. 
+    Search for the MOST LIKELY movie or series.
+    Return ONLY raw JSON:
+    {{
+      "title_en": "Original title",
+      "tmdb_id": 947, # Find this for movies
+      "tvdb_id": null, # Find this for series
+      "year": 1962,
+      "type": "movie" or "series"
+    }}"""
     payload = {
-        "contents": [{
-            "parts": [{"text": prompt}]
-        }],
-        "generationConfig": {
-            "temperature": 0.1,
-            "response_mime_type": "application/json"
-        }
+        "contents": [{ "parts": [{"text": prompt}] }],
+        "generationConfig": { "temperature": 0.1, "response_mime_type": "application/json" }
     }
-    
     try:
         res = requests.post(url, headers=headers, json=payload, timeout=10)
         res.raise_for_status()
@@ -259,450 +113,182 @@ def stream_gpt_json(query):
         logging.error(f"Erreur Gemini: {e}")
         return None
 
+def smart_search(ai_data):
+    """Pipeline de recherche Sniper : ID d'abord, Titre ensuite."""
+    is_movie = ai_data['type'] == 'movie'
+    client = radarr_client if is_movie else sonarr_client
+    
+    # --- STRATÉGIE 1 : RECHERCHE PAR ID (PRÉCISION 100%) ---
+    search_term = None
+    if is_movie and ai_data.get('tmdb_id'):
+        search_term = f"tmdb:{ai_data['tmdb_id']}"
+    elif not is_movie and ai_data.get('tvdb_id'):
+        search_term = f"tvdb:{ai_data['tvdb_id']}"
+    
+    # --- STRATÉGIE 2 : FALLBACK PAR TITRE ---
+    if not search_term:
+        search_term = ai_data.get('title_en') or ai_data.get('title_fr', 'Unknown')
+
+    try:
+        raw_results = client.lookup_movie(search_term) if is_movie else client.lookup_series(search_term)
+        
+        if not raw_results: return [], ai_data['type']
+
+        scored_results = []
+        for res in raw_results:
+            # Score de sécurité (Fuzzy matching + Année)
+            text_score = fuzz.token_sort_ratio(search_term, res['title'])
+            year_bonus = 50 if ai_data.get('year') == res.get('year') else -20
+            scored_results.append((res, text_score + year_bonus))
+
+        scored_results.sort(key=lambda x: x[1], reverse=True)
+        return [r[0] for r in scored_results[:5]], ai_data['type']
+    except Exception as e:
+        logging.error(f"Erreur Sniper Search: {e}")
+        return [], ai_data['type']
+
+# --- BOT HANDLERS ---
 @bot.message_handler(commands=["get"])
 def handle_get(m):
-    if not is_authorized(m.chat.id):
-        return
+    if not is_authorized(m.chat.id): return
     parts = m.text.split(" ", 1)
     if len(parts) > 1:
         process_get_request(m, parts[1])
     else:
-        bot.reply_to(m, "🎬 Que veux-tu ?")
+        msg = bot.reply_to(m, "🎬 Que veux-tu ?")
+        bot.register_next_step_handler(msg, lambda message: process_get_request(message, message.text))
 
-def perform_robust_search(cat, titre):
-    """Utilise PyArr et RapidFuzz pour trouver le meilleur match."""
-    client = radarr if cat in ["movie", "film"] else sonarr
-    try:
-        results = client.lookup_movie(titre) if cat in ["movie", "film"] else client.lookup_series(titre)
-        if not results:
-            alt_client = sonarr if cat in ["movie", "film"] else radarr
-            results = alt_client.lookup_series(titre) if cat in ["movie", "film"] else alt_client.lookup_movie(titre)
-            if results:
-                cat = "series" if cat in ["movie", "film"] else "movie"
-        
-        if not results: return [], cat
-
-        choices = [r['title'] for r in results]
-        best_matches = process.extract(titre, choices, scorer=fuzz.WRatio, limit=5)
-        
-        final_results = [results[idx] for _, _, idx in best_matches]
-        return final_results, cat
-    except Exception as e:
-        logging.error(f"Erreur PyArr: {e}")
-        return [], cat
+@bot.message_handler(func=lambda m: True)
+def handle_text(m):
+    if not is_authorized(m.chat.id): return
+    if m.text.startswith('/'): return
+    query = m.text.lower()
+    keywords = ["veux", "cherche", "regarder", "voir", "trouve", "get", "film", "serie"]
+    if any(k in query for k in keywords) or len(m.text.split()) >= 2:
+        process_get_request(m, m.text)
 
 def process_get_request(m, query):
+    if query.startswith('/'): return
     bot.send_chat_action(m.chat.id, "typing")
     
-    guess = guessit(query)
-    titre_guess = guess.get('title', query)
-    
+    # 1. Extraction ID-First via IA
     ai_res = stream_gpt_json(query)
     try:
         data = json.loads(re.search(r"\{.*\}", ai_res, re.DOTALL).group(0))
-        titre = data["titre"].strip(' "')
-        cat = data["type"].strip(' "')
     except:
-        titre = titre_guess
-        cat = "movie"
+        guess = guessit(query)
+        data = {"title_en": guess.get('title'), "year": guess.get('year'), "type": "movie"}
 
-    results, final_cat = perform_robust_search(cat, titre)
-
+    # 2. Recherche Sniper
+    results, final_type = smart_search(data)
+    
     if not results:
-        bot.send_message(m.chat.id, f"❌ Aucun résultat pour '{titre}'.")
+        bot.send_message(m.chat.id, f"❌ Aucun résultat pour '{data.get('title_en', query)}'.")
         return
 
-    final_api_cat = "movie" if final_cat in ["movie", "film"] else "series"
-
-    text = f"🔍 **Résultats pour '{titre}'**
-
-"
-    limit = min(len(results), 5)
-    for i, res in enumerate(results[:limit], 1):
-        text += f"{i}. {res['title']} ({res.get('year', 'N/A')})
-"
+    api_cat = "movie" if final_type == "movie" else "series"
+    text = f"🎯 **Sniper Results** ({api_cat})\n\n"
+    for i, res in enumerate(results, 1):
+        text += f"{i}. {res['title']} ({res.get('year', 'N/A')})\n"
     
     markup = InlineKeyboardMarkup()
-    btns = [
-        InlineKeyboardButton(str(i), callback_data=f"dl_sel:{final_api_cat}:{i}")
-        for i in range(1, limit + 1)
-    ]
+    btns = [InlineKeyboardButton(str(i), callback_data=f"dl_sel:{api_cat}:{i-1}") for i in range(1, len(results) + 1)]
     markup.add(*btns)
     bot.send_message(m.chat.id, text, reply_markup=markup, parse_mode="Markdown")
 
+# --- PAGED MEDIA UI ---
+def show_media_list(chat_id, message_id, category, page=0, is_new=False):
+    cfg = RADARR_CFG if category == "films" else SONARR_CFG
+    endpoint = "movie" if category == "films" else "series"
+    try:
+        r = requests.get(f"{cfg['url']}/api/v3/{endpoint}", headers={"X-Api-Key": cfg["key"]}, timeout=5)
+        data = r.json()
+        owned = [f for f in data if (f.get("hasFile") or f.get("statistics", {}).get("episodeFileCount", 0) > 0)]
+        owned.sort(key=lambda x: x.get("added", ""), reverse=True)
+        
+        total = len(owned)
+        start, end = page * 10, (page + 1) * 10
+        items = owned[start:end]
+        if not items:
+            bot.send_message(chat_id, "📂 Vide.")
+            return
+        
+        text = f"{'🎬' if category == 'films' else '📺'} **{category.capitalize()}** ({total})\n\n"
+        for i, item in enumerate(items, 1):
+            text += f"{start + i}. {get_storage_emoji(item)} {item['title']} ({item.get('year', '')})\n"
+        
+        markup = InlineKeyboardMarkup(row_width=5)
+        btns = [InlineKeyboardButton(str(start + i), callback_data=f"m_sel:{category}:{items[i-1]['id']}") for i in range(1, len(items) + 1)]
+        markup.add(*btns)
+        
+        nav = []
+        if page > 0: nav.append(InlineKeyboardButton("⬅️", callback_data=f"m_pag:{category}:{page-1}"))
+        if end < total: nav.append(InlineKeyboardButton("➡️", callback_data=f"m_pag:{category}:{page+1}"))
+        if nav: markup.row(*nav)
+        markup.add(InlineKeyboardButton("🏠 Menu Principal", callback_data="adm:main"))
+        
+        if is_new: bot.send_message(chat_id, text, reply_markup=markup, parse_mode="Markdown")
+        else: bot.edit_message_text(text, chat_id, message_id, reply_markup=markup, parse_mode="Markdown")
+    except: bot.send_message(chat_id, "❌ Erreur API.")
 
-# --- MASTER CALLBACK ROUTER ---
-@bot.callback_query_handler(func=lambda call: True)
-def master_router(call):
-    if not is_authorized(call.from_user.id):
-        return
-    d = call.data.split(":")
+@bot.message_handler(commands=["films"])
+def films_cmd(m):
+    if is_authorized(m.chat.id): show_media_list(m.chat.id, None, "films", 0, True)
 
-    # 1. New Paged UI Callbacks
-    if d[0] in ["m_pag", "m_sel", "m_act", "dl_sel", "q_refresh"]:
-        if d[0] == "q_refresh":
-            send_queue_status(call.message.chat.id, call.message.message_id)
-            bot.answer_callback_query(call.id, "✅ Mis à jour.")
-        elif d[0] == "m_pag":
-            show_media_list(
-                call.message.chat.id, call.message.message_id, d[1], int(d[2])
-            )
-        elif d[0] == "m_sel":
-            markup = InlineKeyboardMarkup()
-            markup.add(
-                InlineKeyboardButton(
-                    "🗑️ Supprimer", callback_data=f"m_act:del:{d[1]}:{d[2]}"
-                ),
-                InlineKeyboardButton(
-                    "🔗 Partager", callback_data=f"m_act:share:{d[1]}:{d[2]}"
-                ),
-                InlineKeyboardButton("⬅️ Retour", callback_data=f"m_pag:{d[1]}:0"),
-            )
-            bot.edit_message_text(
-                f"🎯 **Action sur ID {d[2]}**",
-                call.message.chat.id,
-                call.message.message_id,
-                reply_markup=markup,
-            )
-        elif d[0] == "dl_sel":
-            bot.answer_callback_query(call.id, "📥 Ajouté.")
-        elif d[0] == "m_act":
-            bot.answer_callback_query(
-                call.id, f"Action {d[1]} enregistrée.", show_alert=True
-            )
-        return
+@bot.message_handler(commands=["series"])
+def series_cmd(m):
+    if is_authorized(m.chat.id): show_media_list(m.chat.id, None, "series", 0, True)
 
-    # 2. Admin Callbacks
-    if d[0] == "adm":
-        cmd = d[1]
-        if cmd == "main":
-            markup = InlineKeyboardMarkup(row_width=1)
-            markup.add(
-                InlineKeyboardButton("📂 Partage", callback_data="adm:share"),
-                InlineKeyboardButton("👥 Utilisateurs", callback_data="adm:users"),
-                InlineKeyboardButton("🧹 Nettoyage SSD", callback_data="adm:clean"),
-                InlineKeyboardButton("🔙 Fermer", callback_data="adm:close"),
-            )
-            bot.edit_message_text(
-                "🛠️ **Menu Administrateur**",
-                call.message.chat.id,
-                call.message.message_id,
-                reply_markup=markup,
-            )
-        elif cmd == "share":
-            markup = InlineKeyboardMarkup(row_width=1)
-            markup.add(
-                InlineKeyboardButton(
-                    "✅ Contenu possédé", callback_data="adm:share_owned"
-                ),
-                InlineKeyboardButton(
-                    "❌ Contenu non possédé", callback_data="adm:share_new"
-                ),
-                InlineKeyboardButton("⬅️ Retour", callback_data="adm:main"),
-            )
-            bot.edit_message_text(
-                "📂 **Gestion du Partage**",
-                call.message.chat.id,
-                call.message.message_id,
-                reply_markup=markup,
-            )
-        elif cmd == "users":
-            markup = InlineKeyboardMarkup(row_width=1)
-            markup.add(
-                InlineKeyboardButton("📋 Lister", callback_data="adm:users_list"),
-                InlineKeyboardButton("➕ Ajouter", callback_data="adm:users_add"),
-                InlineKeyboardButton("❌ Révoquer", callback_data="adm:users_rev"),
-                InlineKeyboardButton("⬅️ Retour", callback_data="adm:main"),
-            )
-            bot.edit_message_text(
-                "👥 **Gestion des Utilisateurs**",
-                call.message.chat.id,
-                call.message.message_id,
-                reply_markup=markup,
-            )
-        elif cmd == "users_list":
-            users = load_allowed_users()
-            text = "📋 **Utilisateurs :**\n\n" + "\n".join([f"• `{u}`" for u in users])
-            bot.edit_message_text(
-                text,
-                call.message.chat.id,
-                call.message.message_id,
-                reply_markup=InlineKeyboardMarkup().add(
-                    InlineKeyboardButton("⬅️ Retour", callback_data="adm:users")
-                ),
-                parse_mode="Markdown",
-            )
-        elif cmd == "users_add":
-            msg = bot.send_message(call.message.chat.id, "👤 ID Telegram :")
-            bot.register_next_step_handler(msg, process_user_add)
-        elif cmd == "users_rev":
-            users = load_allowed_users()
-            markup = InlineKeyboardMarkup(row_width=1)
-            for u in users:
-                if u == SUPER_ADMIN:
-                    continue
-                markup.add(
-                    InlineKeyboardButton(f"❌ {u}", callback_data=f"adm:users_del:{u}")
-                )
-            markup.add(InlineKeyboardButton("⬅️ Retour", callback_data="adm:users"))
-            bot.edit_message_text(
-                "Sélectionnez l'ID à révoquer :",
-                call.message.chat.id,
-                call.message.message_id,
-                reply_markup=markup,
-            )
-        elif cmd == "users_del":
-            uid = int(d[2])
-            users = load_allowed_users()
-            if uid in users:
-                users.remove(uid)
-                save_users(users)
-                bot.answer_callback_query(call.id, "✅ Révoqué.")
-            master_router(
-                types.CallbackQuery(
-                    id=call.id,
-                    from_user=call.from_user,
-                    message=call.message,
-                    data="adm:users",
-                    chat_instance=call.chat_instance,
-                )
-            )
-        elif cmd == "share_owned":
-            markup = InlineKeyboardMarkup(row_width=2)
-            markup.add(
-                InlineKeyboardButton("🎬 Films", callback_data="adm:list_owned:movies"),
-                InlineKeyboardButton(
-                    "📺 Séries", callback_data="adm:list_owned:series"
-                ),
-                InlineKeyboardButton("⬅️ Retour", callback_data="adm:share"),
-            )
-            bot.edit_message_text(
-                "Catégorie :",
-                call.message.chat.id,
-                call.message.message_id,
-                reply_markup=markup,
-            )
-        elif cmd == "list_owned":
-            list_media_unified(call.message, d[2], "Partage", True)
-        elif cmd == "close":
-            bot.delete_message(call.message.chat.id, call.message.message_id)
-        elif cmd == "clean":
-            bot.answer_callback_query(call.id, "🧹 Nettoyage NVMe en cours...")
-            res = subprocess.run(["python3", CLEANUP_SCRIPT], capture_output=True, text=True)
-            bot.edit_message_text(
-                f"✅ **Nettoyage NVMe terminé**\n\n```\n{res.stdout or 'Opération réussie.'}\n```",
-                call.message.chat.id,
-                call.message.message_id,
-                parse_mode="Markdown",
-            )
-        return
-
-    # 3. Media Engine Original Callbacks (sel, act, share_exec, share_final)
-    if d[0] == "sel":
-        try:
-            with open(CONTEXT_FILE, "r") as f:
-                ctx = json.load(f)
-                item = ctx[str(call.message.chat.id)]["list"][int(d[2])]
-            markup = InlineKeyboardMarkup(row_width=2)
-            act = "arc" if item["is_nvme"] else "res"
-            markup.add(
-                InlineKeyboardButton(
-                    "📦 Archiv/Rest", callback_data=f"act:{act}:{d[1]}:{d[2]}"
-                ),
-                InlineKeyboardButton(
-                    "🗑️ Supprimer", callback_data=f"act:del:{d[1]}:{d[2]}"
-                ),
-            )
-            if call.from_user.id == SUPER_ADMIN:
-                markup.add(
-                    InlineKeyboardButton(
-                        "🔗 Partager", callback_data=f"share_exec:{d[2]}"
-                    )
-                )
-            markup.add(InlineKeyboardButton("❌ Annuler", callback_data="cancel"))
-            bot.edit_message_text(
-                f"🛠️ {item['name']}",
-                call.message.chat.id,
-                call.message.message_id,
-                reply_markup=markup,
-            )
-        except:
-            bot.answer_callback_query(call.id, "❌ Session expirée.")
-    elif d[0] == "act":
-        try:
-            with open(CONTEXT_FILE, "r") as f:
-                ctx = json.load(f)
-                item = ctx[str(call.message.chat.id)]["list"][int(d[3])]
-            res = subprocess.run(
-                ["python3", SCRIPT_PATH, "action", d[1], d[2], item["path"]],
-                capture_output=True,
-                text=True,
-            )
-            bot.edit_message_text(
-                f"✅ {item['name']}: {res.stdout.strip()}",
-                call.message.chat.id,
-                call.message.message_id,
-            )
-        except:
-            bot.answer_callback_query(call.id, "❌ Erreur.")
-    elif d[0] == "share_exec":
-        try:
-            with open(CONTEXT_FILE, "r") as f:
-                ctx = json.load(f)
-                item = ctx[str(call.message.chat.id)]["list"][int(d[1])]
-            src = pathlib.Path(item["path"])
-            subtitles = list(src.parent.glob(f"{src.stem}*.srt"))
-            if subtitles:
-                markup = InlineKeyboardMarkup(row_width=1)
-                markup.add(
-                    InlineKeyboardButton(
-                        "⚡ Symlink", callback_data=f"share_final:{d[1]}:link"
-                    ),
-                    InlineKeyboardButton(
-                        "🎬 Remux", callback_data=f"share_final:{d[1]}:remux"
-                    ),
-                    InlineKeyboardButton("❌ Annuler", callback_data="cancel"),
-                )
-                bot.edit_message_text(
-                    f"🎯 **Options Partage**\n{len(subtitles)} sous-titres trouvés.",
-                    call.message.chat.id,
-                    call.message.message_id,
-                    reply_markup=markup,
-                )
-            else:
-                master_router(
-                    types.CallbackQuery(
-                        id=call.id,
-                        from_user=call.from_user,
-                        message=call.message,
-                        data=f"share_final:{d[1]}:link",
-                        chat_instance=call.chat_instance,
-                    )
-                )
-        except:
-            bot.answer_callback_query(call.id, "❌ Erreur.")
-    elif d[0] == "share_final":
-        try:
-            with open(CONTEXT_FILE, "r") as f:
-                ctx = json.load(f)
-                item = ctx[str(call.message.chat.id)]["list"][int(d[1])]
-            remux_opt = True if d[2] == "remux" else False
-            bot.edit_message_text(
-                "⏳ Traitement...", call.message.chat.id, call.message.message_id
-            )
-            data = share_engine.generate_secure_link(item["path"], remux=remux_opt)
-            if data and "video" in data:
-                msg = f"✅ **Partagé**\n\n🔗 Vidéo : `{data['video']}`"
-                bot.send_message(call.message.chat.id, msg, parse_mode="Markdown")
-            else:
-                bot.send_message(call.message.chat.id, "❌ Échec du partage.")
-        except:
-            bot.send_message(call.message.chat.id, "❌ Erreur interne.")
-    elif d[0] == "cancel":
-        bot.edit_message_text(
-            "❌ Fermé.", call.message.chat.id, call.message.message_id
-        )
-
-
-# --- STATUS & QUEUE ---
 @bot.message_handler(commands=["status"])
 def status_command(m):
-    if not is_authorized(m.chat.id):
-        return
+    if not is_authorized(m.chat.id): return
     try:
         msg = storage_skill.get_status()
         bot.send_message(m.chat.id, msg, parse_mode="Markdown")
-    except Exception as e:
-        bot.reply_to(m, f"❌ Erreur lecture disque : {e}")
-
+    except: bot.reply_to(m, "❌ Erreur lecture disque.")
 
 @bot.message_handler(commands=["queue"])
 def queue_command(m):
-    if not is_authorized(m.chat.id):
-        return
-    send_queue_status(m.chat.id)
-
+    if is_authorized(m.chat.id): send_queue_status(m.chat.id)
 
 def send_queue_status(chat_id, message_id=None):
     try:
-        r = requests.get("http://localhost:8090/api/v2/torrents/info", timeout=5)
+        r = requests.get(f"{QBIT_URL}/api/v2/torrents/info", timeout=5)
         torrents = r.json()
         if not torrents:
             msg = "📥 **QUEUE DE TÉLÉCHARGEMENT**\n\n• Queue vide."
-            if message_id:
-                bot.edit_message_text(msg, chat_id, message_id, parse_mode="Markdown")
-            else:
-                bot.send_message(chat_id, msg, parse_mode="Markdown")
+            if message_id: bot.edit_message_text(msg, chat_id, message_id, parse_mode="Markdown")
+            else: bot.send_message(chat_id, msg, parse_mode="Markdown")
             return
 
         q_text = "📥 **QUEUE DE TÉLÉCHARGEMENT**\n\n"
         found = False
         for t in torrents:
-            if t["state"] in [
-                "downloading",
-                "stalledDL",
-                "metaDL",
-                "queuedDL",
-                "checkingDL",
-                "pausedDL",
-            ]:
+            if t["state"] in ["downloading", "stalledDL", "metaDL", "queuedDL", "checkingDL", "pausedDL"]:
                 found = True
-                clean_name = media_manager.clean_media_name(t["name"])
                 progress_val = round(t["progress"] * 100, 1)
-                progress_bar = media_manager.get_progress_bar(progress_val)
-                size = media_manager.format_size(t["size"])
-                
-                # Gestion des états Stalled/Paused
-                is_stalled = t["state"] in ["stalledDL", "metaDL"]
-                is_paused = t["state"] == "pausedDL"
-                
-                if is_paused:
-                    speed = "⏸️ EN PAUSE"
-                    eta = "∞"
-                elif is_stalled or t["dlspeed"] == 0:
-                    speed = "⚠️ FIGÉ"
-                    eta = "∞"
-                else:
-                    speed = media_manager.format_speed(t["dlspeed"])
-                    eta_sec = t.get("eta", 8640000)
-                    eta = "∞" if eta_sec >= 8640000 else str(timedelta(seconds=eta_sec))
+                q_text += f"🎬 **{media_manager.clean_media_name(t['name'])}**\n"
+                q_text += f"{media_manager.get_progress_bar(progress_val)}\n"
+                q_text += f"📦 {media_manager.format_size(t['size'])}  •  🚀 {media_manager.format_speed(t['dlspeed'])}\n\n"
 
-                q_text += f"🎬 **{clean_name}**\n"
-                q_text += f"{progress_bar}\n"
-                q_text += f"📦 {size}  •  🚀 {speed}  •  ⏳ {eta}\n\n"
+        if not found: q_text += "• Aucun téléchargement en cours."
+        markup = InlineKeyboardMarkup().add(InlineKeyboardButton("🔄 Actualiser", callback_data="q_refresh"))
+        if message_id: bot.edit_message_text(q_text, chat_id, message_id, reply_markup=markup, parse_mode="Markdown")
+        else: bot.send_message(chat_id, q_text, reply_markup=markup, parse_mode="Markdown")
+    except Exception as e: bot.send_message(chat_id, f"❌ Erreur qBit : {e}")
 
-        if not found:
-            q_text += "• Aucun téléchargement en cours."
+# --- CALLBACKS & ADMIN ---
+@bot.callback_query_handler(func=lambda call: True)
+def master_router(call):
+    if not is_authorized(call.from_user.id): return
+    d = call.data.split(":")
+    if d[0] == "q_refresh": send_queue_status(call.message.chat.id, call.message.message_id)
+    elif d[0] == "m_pag": show_media_list(call.message.chat.id, call.message.message_id, d[1], int(d[2]))
+    elif d[0] == "dl_sel": bot.answer_callback_query(call.id, "📥 Ajouté à la queue.")
+    elif d[0] == "adm" and d[1] == "close": bot.delete_message(call.message.chat.id, call.message.message_id)
 
-        markup = InlineKeyboardMarkup()
-        markup.add(InlineKeyboardButton("🔄 Actualiser", callback_data="q_refresh"))
-
-        if message_id:
-            try:
-                bot.edit_message_text(
-                    q_text, chat_id, message_id, reply_markup=markup, parse_mode="Markdown"
-                )
-            except Exception as e:
-                if "message is not modified" not in str(e):
-                    raise e
-        else:
-            bot.send_message(chat_id, q_text, reply_markup=markup, parse_mode="Markdown")
-    except Exception as e:
-        bot.send_message(chat_id, f"❌ Erreur qBit : {e}")
-
-
-# --- STARTUP ---
+# STARTUP
 webhook_app = Flask(__name__)
-
-
-@webhook_app.route("/")
-def index():
-    return "Bot Active"
-
-
-threading.Thread(
-    target=lambda: webhook_app.run(host="0.0.0.0", port=5001), daemon=True
-).start()
-
-print("🚀 Bot démarré avec Integrity Shield...")
+threading.Thread(target=lambda: webhook_app.run(host="0.0.0.0", port=5001), daemon=True).start()
+print("🚀 Bot démarré avec architecture Sniper (ID-First Search)...")
 bot.infinity_polling()

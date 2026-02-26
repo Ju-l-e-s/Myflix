@@ -134,8 +134,8 @@ type LibraryCache struct {
 var (
 	cache       = &LibraryCache{}
 	refreshLock sync.Map
+	bot         *tele.Bot
 )
-
 func getCachedLibrary(cat string) ([]map[string]interface{}, bool) {
 	cache.mu.RLock()
 	defer cache.mu.RUnlock()
@@ -1117,14 +1117,30 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		return
 	}
-	
+
+	eventType, _ := payload["eventType"].(string)
+
 	// Détection auto du type via le payload Radarr/Sonarr
-	if _, ok := payload["movie"]; ok {
-		log.Println("📥 Webhook: Mise à jour Films")
-		go refreshLibrary("films")
-	} else if _, ok := payload["series"]; ok {
-		log.Println("📥 Webhook: Mise à jour Séries")
-		go refreshLibrary("series")
+	if movie, ok := payload["movie"].(map[string]interface{}); ok {
+		log.Printf("📥 Webhook Radarr: %s", eventType)
+		if eventType == "Download" || eventType == "MovieFileDelete" || eventType == "MovieDelete" {
+			go refreshLibrary("films")
+		}
+		if eventType == "Download" && bot != nil {
+			title, _ := movie["title"].(string)
+			msg := fmt.Sprintf("✅ <b>Téléchargement Terminé</b>\n\n🎬 %s est maintenant disponible !", title)
+			bot.Send(tele.ChatID(SuperAdmin), msg, tele.ModeHTML)
+		}
+	} else if series, ok := payload["series"].(map[string]interface{}); ok {
+		log.Printf("📥 Webhook Sonarr: %s", eventType)
+		if eventType == "Download" || eventType == "SeriesDelete" {
+			go refreshLibrary("series")
+		}
+		if eventType == "Download" && bot != nil {
+			title, _ := series["title"].(string)
+			msg := fmt.Sprintf("✅ <b>Téléchargement Terminé</b>\n\n📺 %s est maintenant disponible !", title)
+			bot.Send(tele.ChatID(SuperAdmin), msg, tele.ModeHTML)
+		}
 	} else {
 		go refreshLibrary("films")
 		go refreshLibrary("series")
@@ -1198,24 +1214,29 @@ func main() {
 		http.ListenAndServe(":5001", nil)
 	}()
 
-	b, err := tele.NewBot(tele.Settings{
-		Token: Token, Poller: &tele.LongPoller{Timeout: 10 * time.Second},
-	})
-	if err != nil { log.Fatal(err); return }
-
-	b.Handle("/start", func(c tele.Context) error {
-		return c.Send("🏗️ <b>Myflix v11.1 (Go Architect)</b>", buildMainMenu(), tele.ModeHTML)
-	})
-
-	// --- SHORTCUT COMMANDS ---
-	b.Handle("/films", func(c tele.Context) error { return showLibrary(c, "films", 0, false) })
-	b.Handle("/series", func(c tele.Context) error { return showLibrary(c, "series", 0, false) })
-	b.Handle("/status", func(c tele.Context) error {
-		return c.Send(getStorageStatus(), tele.ModeHTML)
-	})
-	b.Handle("/queue", func(c tele.Context) error { return refreshQueue(c, false) })
-
-	b.Handle(tele.OnText, func(c tele.Context) error {
+		var err error
+		bot, err = tele.NewBot(tele.Settings{
+			Token: Token, Poller: &tele.LongPoller{Timeout: 10 * time.Second},
+		})
+		if err != nil {
+			log.Fatal(err)
+			return
+		}
+	
+		bot.Handle("/start", func(c tele.Context) error {
+			return c.Send("🏗️ <b>Myflix v11.1 (Go Architect)</b>", buildMainMenu(), tele.ModeHTML)
+		})
+	
+		// --- SHORTCUT COMMANDS ---
+		bot.Handle("/films", func(c tele.Context) error { return showLibrary(c, "films", 0, false) })
+		bot.Handle("/series", func(c tele.Context) error { return showLibrary(c, "series", 0, false) })
+		bot.Handle("/status", func(c tele.Context) error {
+			return c.Send(getStorageStatus(), tele.ModeHTML)
+		})
+		bot.Handle("/queue", func(c tele.Context) error { return refreshQueue(c, false) })
+	
+		bot.Handle(tele.OnText, func(c tele.Context) error {
+	
 		if c.Sender().ID != SuperAdmin { return nil }
 		query := c.Text()
 		if strings.HasPrefix(query, "/") || len(query) < 3 { return nil }
@@ -1258,18 +1279,18 @@ func main() {
 		return c.Send(text, menu, tele.ModeHTML)
 	})
 
-	// --- HANDLERS D'ACTIONS ---
-	b.Handle(&tele.Btn{Unique: "lib"}, func(c tele.Context) error { return showLibrary(c, c.Args()[0], 0, true) })
-	b.Handle(&tele.Btn{Unique: "lib_page"}, func(c tele.Context) error {
-		page, _ := strconv.Atoi(c.Args()[1])
-		return showLibrary(c, c.Args()[0], page, true)
-	})
-	b.Handle(&tele.Btn{Unique: "q_refresh"}, func(c tele.Context) error { return refreshQueue(c, true) })
-	b.Handle(&tele.Btn{Unique: "status_refresh"}, func(c tele.Context) error {
-		return c.Edit(getStorageStatus(), buildMainMenu(), tele.ModeHTML)
-	})
-
-	b.Handle(&tele.Btn{Unique: "m_sel"}, func(c tele.Context) error {
+		// --- HANDLERS D'ACTIONS ---
+		bot.Handle(&tele.Btn{Unique: "lib"}, func(c tele.Context) error { return showLibrary(c, c.Args()[0], 0, true) })
+		bot.Handle(&tele.Btn{Unique: "lib_page"}, func(c tele.Context) error {
+			page, _ := strconv.Atoi(c.Args()[1])
+			return showLibrary(c, c.Args()[0], page, true)
+		})
+		bot.Handle(&tele.Btn{Unique: "q_refresh"}, func(c tele.Context) error { return refreshQueue(c, true) })
+		bot.Handle(&tele.Btn{Unique: "status_refresh"}, func(c tele.Context) error {
+			return c.Edit(getStorageStatus(), buildMainMenu(), tele.ModeHTML)
+		})
+			bot.Handle(&tele.Btn{Unique: "m_sel"}, func(c tele.Context) error {
+		
 		cat := c.Args()[0]
 		itemID := c.Args()[1]
 		items, _ := getCachedLibrary(cat)
@@ -1287,7 +1308,8 @@ func main() {
 		return sendDetailedSeries(c, mapToSeries(item))
 	})
 
-	b.Handle(&tele.Btn{Unique: "m_del"}, func(c tele.Context) error {
+		bot.Handle(&tele.Btn{Unique: "m_del"}, func(c tele.Context) error {
+	
 		cat := c.Args()[0]
 		itemID := c.Args()[1]
 		endpoint := "/api/v3/movie/"
@@ -1308,7 +1330,8 @@ func main() {
 		return showLibrary(c, cat, 0, true)
 	})
 
-	b.Handle(&tele.Btn{Unique: "m_share"}, func(c tele.Context) error {
+		bot.Handle(&tele.Btn{Unique: "m_share"}, func(c tele.Context) error {
+	
 		cat := c.Args()[0]
 		itemID := c.Args()[1]
 		items, _ := getCachedLibrary(cat)
@@ -1349,7 +1372,8 @@ func main() {
 		return c.Send(msg, tele.ModeHTML)
 	})
 
-	b.Handle(&tele.Btn{Unique: "dl_add"}, func(c tele.Context) error {
+		bot.Handle(&tele.Btn{Unique: "dl_add"}, func(c tele.Context) error {
+	
 		mType, id := c.Args()[0], c.Args()[1]
 		lookupURL := RadarrURL + "/api/v3/movie/lookup?term=tmdb:" + id
 		key := RadarrKey
@@ -1385,6 +1409,7 @@ func main() {
 		return c.Send("❌ Erreur ajout.")
 	})
 
-	log.Println("🚀 Bot v11.1 (Go Architect) démarré...")
-	b.Start()
-}
+		log.Println("🚀 Bot v11.1 (Go Architect) démarré...")
+		bot.Start()
+	}
+	

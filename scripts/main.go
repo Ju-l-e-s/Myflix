@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"crypto/rand"
 	"encoding/json"
 	"fmt"
 	"html"
@@ -936,6 +937,50 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+// --- SHARE ENGINE (GO ARCHITECT) ---
+type ShareEngine struct {
+	mu     sync.RWMutex
+	Links  map[string]string // Token -> Full Path
+	Domain string            // ex: "https://share.tondomaine.com"
+}
+
+var shareEngine = &ShareEngine{
+	Links:  make(map[string]string),
+	Domain: os.Getenv("SHARE_DOMAIN"), // À définir dans .env
+}
+
+func (s *ShareEngine) GenerateLink(filePath string) string {
+	token := make([]byte, 8)
+	rand.Read(token)
+	tStr := fmt.Sprintf("%x", token)
+
+	s.mu.Lock()
+	s.Links[tStr] = filePath
+	s.mu.Unlock()
+
+	return fmt.Sprintf("%s/v/%s", s.Domain, tStr)
+}
+
+func (s *ShareEngine) StartServer(port string) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v/", func(w http.ResponseWriter, r *http.Request) {
+		token := r.URL.Path[len("/v/"):]
+
+		s.mu.RLock()
+		path, ok := s.Links[token]
+		s.mu.RUnlock()
+
+		if !ok {
+			http.Error(w, "Lien expiré ou invalide", 404)
+			return
+		}
+		// ServeFile est ultra-optimisé en Go (Direct I/O via sendfile)
+		http.ServeFile(w, r, path)
+	})
+	log.Printf("📡 Share Server démarré sur le port %s", port)
+	http.ListenAndServe(port, mux)
+}
+
 func main() {
 	if !DockerMode {
 		RadarrURL = "http://localhost:7878"; SonarrURL = "http://localhost:8989"; QbitURL = "http://localhost:8080"
@@ -948,7 +993,7 @@ func main() {
 	go updateQbitTrackers()
 	go autoHealer()
 	go logAggregator()
-
+	go shareEngine.StartServer(":3000") // Port pour Cloudflare Tunnel
 	go func() {
 		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("OK")) })
 		http.HandleFunc("/api/webhook", webhookHandler) // Intercepteur Radarr/Sonarr
@@ -1047,7 +1092,7 @@ func main() {
 		menu.Inline(
 			menu.Row(
 				menu.Data("🗑️ Supprimer", "m_del", cat, itemID),
-				menu.Data("🔗 Partager", "m_share", itemID),
+				menu.Data("🔗 Partager", "m_share", cat, itemID),
 			),
 			menu.Row(menu.Data("⬅️ Retour", "lib", cat)),
 		)
@@ -1076,7 +1121,41 @@ func main() {
 	})
 
 	b.Handle(&tele.Btn{Unique: "m_share"}, func(c tele.Context) error {
-		return c.Send("🔗 Partage bientôt dispo.")
+		cat := c.Args()[0]
+		itemID := c.Args()[1]
+		items, _ := getCachedLibrary(cat)
+		var item map[string]interface{}
+		for _, v := range items {
+			if fmt.Sprintf("%v", v["id"]) == itemID {
+				item = v; break
+			}
+		}
+		if item == nil { return c.Send("❌ Introuvable.") }
+
+		path, _ := item["path"].(string)
+		
+		// Si c'est une série, on cherche le premier fichier disponible
+		filePath := path
+		filepath.Walk(path, func(p string, info os.FileInfo, err error) error {
+			if err == nil && !info.IsDir() && (strings.HasSuffix(p, ".mkv") || strings.HasSuffix(p, ".mp4")) {
+				filePath = p
+				return filepath.SkipDir
+			}
+			return nil
+		})
+
+		if filePath == path {
+			return c.Send("❌ Aucun fichier vidéo trouvé.")
+		}
+
+		shareLink := shareEngine.GenerateLink(filePath)
+		
+		msg := fmt.Sprintf("🔗 <b>Lien de Partage (Streaming/Direct)</b>\n\n")
+		msg += fmt.Sprintf("🎬 <b>%s</b>\n", item["title"])
+		msg += fmt.Sprintf("<code>%s</code>\n\n", shareLink)
+		msg += "⚠️ <i>Ce lien est actif tant que le serveur est en ligne.</i>"
+
+		return c.Send(msg, tele.ModeHTML)
 	})
 
 	b.Handle(&tele.Btn{Unique: "dl_add"}, func(c tele.Context) error {

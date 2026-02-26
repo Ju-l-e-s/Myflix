@@ -1,68 +1,61 @@
-# 🏛️ Myflix - Go Architect Edition
+# 🏛️ Myflix - AI-Powered Multimedia Ecosystem
 
-Une infrastructure de gestion média ultra-performante pour **Raspberry Pi 5**, migrée de Python vers **Go** pour une efficacité maximale. Ce projet combine automatisation, intelligence artificielle et monitoring de pointe.
+A high-performance, all-in-one multimedia server infrastructure designed for **Raspberry Pi 5**, migrated to **Go** for maximum efficiency. Myflix automates the entire lifecycle of your media: discovery, high-speed downloading, intelligent storage, and seamless streaming—all controlled via a powerful Telegram bot.
 
-## 🚀 Migration Go (Architect Edition)
+## 🌟 Core Mission
+Myflix transforms your hardware into a "set-it-and-forget-it" media powerhouse. From requesting a movie in natural language to watching it in 4K on Plex, every step is optimized for the ARM64 architecture.
 
-- **Performance Native** : Réponse Telegram quasi-instantanée grâce à un cache RAM optimisé avec verrouillage `RWMutex`.
-- **UI Pixel-Perfect** : Rendu Telegram optimisé avec Rune Slicing pour un alignement parfait des icônes de stockage et des barres de progression.
-- **Frugalité Systémique** : Gestion intelligente des logs (agrégation en RAM, écriture disque sélective) pour protéger la durée de vie du stockage (NVMe/SD).
-- **Auto-Healing** : Surveillance active des conteneurs Docker (Radarr, Sonarr, qBit) avec redémarrage automatique via le socket Docker.
+## 🚀 Key Features
 
-## 🧠 Intelligence Artificielle & Recherche
+### 🤖 Telegram Control Center
+No more complex web UIs. Manage your entire server through an intuitive Telegram bot:
+- **Natural Language Requests**: Powered by **Gemini 1.5 Flash**, the bot understands what you want to watch.
+- **Instant Status**: Real-time storage stats, download queues, and VPN health.
+- **Smart Catalog**: Browse your actual library directly from the chat.
 
-### 🎯 Sniper Search (ID-First)
-Implémentation d'une recherche ultra-précise utilisant les identifiants **TMDB/TVDB**. Plus d'erreurs d'appariement : le bot identifie exactement le contenu demandé avant l'injection.
+### 🎯 Intelligent Search & Acquisition
+- **Sniper Search (ID-First)**: Ultra-precise matching using **TMDB/TVDB** identifiers to ensure the right content is added every time.
+- **Search-Brain Architecture**: A multi-layered engine using **GuessIt**, **PyArr**, and **RapidFuzz** to handle typos and complex queries.
+- **Auto-Inject**: Automatic injection of top-tier public trackers to maximize download speeds.
 
-### 🧠 Search-Brain Architecture
-Système de recherche multi-couches utilisant :
-- **GuessIt** : Analyse sémantique des noms de fichiers.
-- **PyArr** : Intégration profonde avec les APIs Servarr.
-- **RapidFuzz** : Algorithmes de matching flou pour gérer les fautes de frappe et les variantes de titres.
+### 💾 Optimized Storage & I/O
+- **Storage Tiering**: Intelligent management between high-speed **NVMe** (OS/Cache) and massive **HDD** storage.
+- **I/O Garbage Collector**: Automated cleanup of completed tasks to maintain a minimal memory footprint (<50MB).
+- **Thermal Governor**: Real-time CPU monitoring that throttles downloads if temperatures exceed **75°C**, ensuring Plex streaming remains smooth.
 
-### 🤖 Gemini 1.5 Flash
-Intelligence conversationnelle intégrée via l'API **Gemini 1.5 Flash**. Le bot comprend les requêtes complexes en langage naturel pour la gestion du catalogue.
+### 🔒 Privacy & Connectivity
+- **VPN Port Sync**: Automatic, bi-directional synchronization between **Gluetun** and qBittorrent for constant "Active Mode" connectivity.
+- **Security-First**: All traffic is routed through a secure VPN tunnel with automated IP leak monitoring.
 
-## 🏗️ Architecture & Automatisation
+## 📊 Advanced Monitoring (Grafana & Prometheus)
+Keep an eye on your infrastructure with a dedicated dashboard:
+- **Real-time Connectivity**: Public IP vs. Secure VPN IP tracking.
+- **System Health**: CPU temperature, RAM saturation, and I/O load.
+- **Network Flows**: Detailed bandwidth usage for Gluetun and qBittorrent.
 
-### 🌡️ Thermal Governor
-Surveillance thermique en temps réel (`/sys/class/thermal`). Bridage automatique de qBittorrent au-delà de **75°C** pour éviter le "Thermal Throttling" et garantir la fluidité de Plex.
+## 🛠️ Tech Stack
+- **Language**: Go (Architect Edition) for native performance and low latency (<2ms response time).
+- **AI**: Gemini 1.5 Flash for conversational intelligence.
+- **Automation**: Radarr, Sonarr, Bazarr, and Prowlarr.
+- **Download**: qBittorrent (Secured via Gluetun).
+- **Streaming**: Plex Media Server.
+- **Infrastructure**: Docker & Docker Compose.
 
-### 🔌 VPN Port Sync
-Synchronisation bidirectionnelle entre le port forwardé par **Gluetun** et qBittorrent toutes les 15 minutes. Maintient une connectivité "Active Mode" constante.
+## 🚀 Getting Started
 
-### 🧹 I/O & Storage Garbage Collector
-- Nettoyage automatique des torrents terminés toutes les heures.
-- **Storage Tiering** : Gestion intelligente entre NVMe (OS/Cache) et HDD (Stockage de masse).
-- Injection automatique des meilleurs trackers publics pour booster les débits.
-
-### ✨ AI Upscaling (Preview)
-Infrastructure prête pour l'upscaling AI (4K HDR) via des pipelines dédiés (voir `infra/ai`).
-
-## 📊 Monitoring Avancé (Grafana & Prometheus)
-
-Dashboard temps réel surveillant :
-- **Connectivité** : IP Publique vs IP VPN (Sécurisée).
-- **Santé Système** : Température CPU, Saturation RAM, Charge I/O.
-- **Réseau** : Flux VPN (Gluetun) et débits qBittorrent.
-- **Stockage** : Analyse granulaire NVMe vs HDD avec alertes de saturation.
-
-## 🛠️ Installation
-
-1. **Docker Stack** : 
+1. **Deployment**:
    ```bash
    docker compose -f infra/ai/docker-compose.yml up -d --build
    docker compose -f infra/monitoring/docker-monitoring.yml up -d
    ```
-2. **Configuration** :
-   Les clés API (`TELEGRAM_TOKEN`, `RADARR_API_KEY`, `GEMINI_KEY`, etc.) doivent être placées dans un fichier `.env` à la racine.
+2. **Configuration**:
+   Add your API keys (`TELEGRAM_TOKEN`, `RADARR_API_KEY`, `GEMINI_KEY`, etc.) to a `.env` file in the root directory.
 
-## 🎬 Commandes Telegram
-
-- `/start` : Menu principal interactif.
-- `/films` / `/series` : Liste votre catalogue réel (filtre le contenu non téléchargé).
-- `/status` : État détaillé du stockage (NVMe vs HDD) et santé du VPN.
-- `/queue` : État des téléchargements qBittorrent en temps réel.
+## 🎬 Telegram Commands
+- `/start` : Interactive main menu.
+- `/films` / `/series` : List your downloaded library.
+- `/status` : Detailed storage health and VPN status.
+- `/queue` : Real-time download progress.
 
 ---
-*Développé pour l'efficacité, la stabilité et le plaisir du visionnage sur architecture ARM64.*
+*Built for efficiency, stability, and the ultimate viewing experience on Raspberry Pi 5.*

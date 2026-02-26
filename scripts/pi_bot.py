@@ -29,7 +29,7 @@ SCRIPT_PATH = os.path.join(BASE_DIR, "media_manager.py")
 CLEANUP_SCRIPT = os.path.join(BASE_DIR, "cleanup_share.py")
 RADARR_CFG = {"url": "http://localhost:7878", "key": os.getenv("RADARR_API_KEY")}
 SONARR_CFG = {"url": "http://localhost:8989", "key": os.getenv("SONARR_API_KEY")}
-OPENAI_KEY = os.getenv("OPENAI_KEY")
+GEMINI_KEY = os.getenv("GEMINI_KEY")
 
 bot = telebot.TeleBot(TOKEN)
 
@@ -210,25 +210,29 @@ def series_cmd(m):
 
 
 # --- SEARCH ENGINE (/GET) ---
+GEMINI_KEY = os.getenv("GEMINI_KEY")
+
 def stream_gpt_json(query):
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {OPENAI_KEY}",
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_KEY}"
+    headers = {"Content-Type": "application/json"}
+    prompt = f"Analyse : '{query}'. Renvoie UNIQUEMENT un JSON brut (sans markdown) : {{\"titre\": \"nom du film ou serie\", \"type\": \"serie|film\"}}"
+    
+    payload = {
+        "contents": [{
+            "parts": [{"text": prompt}]
+        }],
+        "generationConfig": {
+            "temperature": 0.1,
+            "response_mime_type": "application/json"
+        }
     }
-    prompt = f'Analyse : \'{query}\'. Renvoie JSON : {{"titre": "str", "type": "serie|film"}}'
+    
     try:
-        res = requests.post(
-            "https://api.openai.com/v1/chat/completions",
-            headers=headers,
-            json={
-                "model": "gpt-4o-mini",
-                "messages": [{"role": "user", "content": prompt}],
-                "temperature": 0.1,
-            },
-            timeout=10,
-        )
-        return res.json()["choices"][0]["message"]["content"]
-    except:
+        res = requests.post(url, headers=headers, json=payload, timeout=10)
+        res.raise_for_status()
+        return res.json()['candidates'][0]['content']['parts'][0]['text']
+    except Exception as e:
+        logging.error(f"Erreur Gemini: {e}")
         return None
 
 

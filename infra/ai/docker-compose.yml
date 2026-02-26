@@ -1,5 +1,5 @@
 services:
-  # L'orchestrateur de maintenance (Bot)
+  # L'orchestrateur de maintenance (Bot Go Architect)
   maintenance:
     build: /home/jules/scripts
     container_name: maintenance
@@ -15,7 +15,7 @@ services:
       - TMDB_API_KEY=${TMDB_API_KEY}
       - SONARR_API_KEY=${SONARR_API_KEY}
       - GEMINI_KEY=${GEMINI_KEY}
-      - OPENAI_KEY=${OPENAI_KEY}
+      - SHARE_DOMAIN=${SHARE_DOMAIN}
     volumes:
       - /home/jules/media_share:/media_share
       - ./data:/data/internal
@@ -28,22 +28,10 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock # Privilège Auto-Healing
     ports:
       - 5001:5001
+      - 3001:3000 # Changé pour éviter le conflit avec Grafana (3000)
+      - 8001:8001
     restart: always
     networks: [arr_network, npm-nw]
-
-  # Le planificateur de tâches Docker
-  ofelia:
-    image: mcuadros/ofelia:latest
-    container_name: ofelia
-    depends_on: [maintenance]
-    command: daemon --docker
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    labels:
-      ofelia.job-exec.clean-ssd.schedule: "@daily"
-      ofelia.job-exec.clean-ssd.command: "python /app/media_manager.py action clean /app"
-      ofelia.job-exec.clean-ssd.container: "maintenance"
-    restart: always
 
   # Sauvegarde automatisée
   duplicati:

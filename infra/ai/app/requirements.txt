@@ -1,7 +1,0 @@
-python-telegram-bot
-openai
-aiohttp
-fastapi
-uvicorn
-requests
-schedule

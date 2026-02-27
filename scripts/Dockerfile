@@ -1,26 +1,26 @@
 # --- Stage 1: Build ---
 FROM golang:1.22-bookworm AS builder
 WORKDIR /build
+
+# Montage du cache pour les modules Go
 COPY go.mod go.sum ./
-RUN go mod download
+RUN --mount=type=cache,target=/go/pkg/mod \
+    go mod download
+
 COPY . .
-# Compilation statique pour la performance et la portabilité
-RUN CGO_ENABLED=0 GOOS=linux go build -a -ldflags="-s -w" -o myflixbot *.go
 
-# --- Stage 2: Runtime (Ultra Léger) ---
-FROM debian:bookworm-slim
+# Compilation optimisée avec cache (gain massif sur RPi 5)
+RUN --mount=type=cache,target=/root/.cache/go-build \
+    --mount=type=cache,target=/go/pkg/mod \
+    CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o myflixbot *.go
+
+# --- Stage 2: Runtime (Ultra Léger & Sécurisé) ---
+# Distroless est 40x plus petit que Debian Slim et contient déjà les CA certs
+FROM gcr.io/distroless/static-debian12
 WORKDIR /app
-
-# Installation de certificats pour les requêtes HTTPS (ex: API TMDB, Gemini, ipify)
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates \
-    tzdata \
-    && rm -rf /var/lib/apt/lists/*
 
 # Copie du binaire Go compilé
 COPY --from=builder /build/myflixbot /app/myflixbot
-
-RUN chmod +x /app/myflixbot
 
 # Le binaire Go expose les ports suivants:
 # 5001: Webhook (Radarr/Sonarr)

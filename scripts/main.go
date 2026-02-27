@@ -50,11 +50,16 @@ func getSecretOrEnv(key, fallback string) string {
 	// 1. Essayer de lire le Docker Secret
 	secretPath := "/run/secrets/" + strings.ToLower(key)
 	if data, err := os.ReadFile(secretPath); err == nil {
-		return strings.TrimSpace(string(data))
+		val := strings.TrimSpace(string(data))
+		if val != "" {
+			return val
+		}
 	}
 	// 2. Fallback sur la variable d'environnement
 	if value, ok := os.LookupEnv(key); ok {
-		return value
+		if value != "" {
+			return value
+		}
 	}
 	return fallback
 }
@@ -698,9 +703,35 @@ func buildMainMenu() *tele.ReplyMarkup {
 	btnF := menu.Data("🎬 Films", "lib", "films")
 	btnS := menu.Data("📺 Séries", "lib", "series")
 	btnQ := menu.Data("📥 Queue", "q_refresh")
-	btnSt := menu.Data("📊 Status", "status_refresh")
-	menu.Inline(menu.Row(btnF, btnS), menu.Row(btnQ, btnSt))
+	btnSt := menu.Data("📊 Status", "sys_status")
+	btnVpn := menu.Data("🛡️ VPN", "vpn_refresh")
+	
+	// Layout 2x2 + 1
+	menu.Inline(
+		menu.Row(btnF, btnS),
+		menu.Row(btnQ, btnSt),
+		menu.Row(btnVpn),
+	)
 	return menu
+}
+
+func showVpnStatus(c tele.Context, isEdit bool) error {
+	ip := vpnMgr.GetCurrentIP()
+	if ip == "" {
+		ip = "Inconnue"
+	}
+	msg := fmt.Sprintf("🛡️ <b>Système : Statut VPN</b>\n\n🌍 IP Publique : <code>%s</code>\n🇨🇭 Région : Suisse (CH)\n⏰ Rotation : 04:00 AM", ip)
+	
+	menu := &tele.ReplyMarkup{}
+	btnRotate := menu.Data("🔄 Rotation Manuelle", "vpn_rotate")
+	btnRefresh := menu.Data("🔄 Refresh", "vpn_refresh")
+	btnHome := menu.Data("🏠 Home", "status_refresh")
+	menu.Inline(menu.Row(btnRotate, btnRefresh), menu.Row(btnHome))
+	
+	if isEdit {
+		return c.Edit(msg, menu, tele.ModeHTML)
+	}
+	return c.Send(msg, menu, tele.ModeHTML)
 }
 
 func showLibrary(c tele.Context, cat string, page int, isEdit bool) error {
@@ -748,10 +779,8 @@ func showLibrary(c tele.Context, cat string, page int, isEdit bool) error {
 		return c.Send(fmt.Sprintf("📂 <b>Bibliothèque : %s</b> (0)\n\nAucun contenu téléchargé pour le moment.", titleLabel), tele.ModeHTML)
 	}
 
-	currentPageItems := items[start:end]
-
-	text := fmt.Sprintf("🎬 <b>Bibliothèque : %s</b> (%d)\n", titleLabel, len(items))
-	text += "⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n\n"
+	msg := fmt.Sprintf("📂 <b>Bibliothèque : %s</b> (%d)\n", titleLabel, len(items))
+	msg += "⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n\n"
 	
 	menu := &tele.ReplyMarkup{}
 	var numBtns []tele.Btn
@@ -775,13 +804,13 @@ func showLibrary(c tele.Context, cat string, page int, isEdit bool) error {
 		}
 
 		formatted := formatTitle(item["title"].(string), item["year"], 22, 25)
-		text += fmt.Sprintf("%s <code>%s</code> %s\n", getIndexEmoji(i+1), formatted, emoji)
+		msg += fmt.Sprintf("%s <code>%s</code> %s\n", getIndexEmoji(i+1), formatted, emoji)
 		
 		itemID := fmt.Sprintf("%v", item["id"])
 		numBtns = append(numBtns, menu.Data(strconv.Itoa(i+1), "m_sel", cat, itemID))
 	}
 	
-	text += "\n🚀 NVMe | 📚 HDD" // On retire "🔴 Manquant"
+	msg += "\n🚀 NVMe | 📚 HDD"
 
 	var rows []tele.Row
 	for i := 0; i < len(numBtns); i += 5 {
@@ -790,7 +819,7 @@ func showLibrary(c tele.Context, cat string, page int, isEdit bool) error {
 		rows = append(rows, menu.Row(numBtns[i:limit]...))
 	}
 	
-	navRow := []tele.Btn{menu.Data("🏠", "status_refresh")}
+	navRow := []tele.Btn{menu.Data("🏠 Home", "status_refresh")}
 	if end < len(items) {
 		navRow = append(navRow, menu.Data("Suivant ➡️", "lib_page", cat, strconv.Itoa(page+1)))
 	}
@@ -798,9 +827,9 @@ func showLibrary(c tele.Context, cat string, page int, isEdit bool) error {
 	menu.Inline(rows...)
 
 	if isEdit {
-		return c.Edit(text, menu, tele.ModeHTML)
+		return c.Edit(msg, menu, tele.ModeHTML)
 	}
-	return c.Send(text, menu, tele.ModeHTML)
+	return c.Send(msg, menu, tele.ModeHTML)
 }
 
 func refreshQueue(c tele.Context, isEdit bool) error {
@@ -849,7 +878,7 @@ func refreshQueue(c tele.Context, isEdit bool) error {
 
 	menu := &tele.ReplyMarkup{}
 	btnRefresh := menu.Data("🔄 Actualiser", "q_refresh")
-	btnHome := menu.Data("🏠", "status_refresh")
+	btnHome := menu.Data("🏠 Home", "status_refresh")
 	menu.Inline(menu.Row(btnRefresh, btnHome))
 
 	if isEdit {
@@ -1329,7 +1358,17 @@ func main() {
 		RadarrURL = "http://localhost:7878"; SonarrURL = "http://localhost:8989"; QbitURL = "http://localhost:8080"
 	}
 
-	// Initialisation des services système (Routines)
+	// 1. Initialisation du Bot (nécessaire pour les routines)
+	var err error
+	bot, err = tele.NewBot(tele.Settings{
+		Token: Token, Poller: &tele.LongPoller{Timeout: 10 * time.Second},
+	})
+	if err != nil {
+		log.Fatalf("❌ Erreur Bot Telegram : %v", err)
+		return
+	}
+
+	// 2. Initialisation des services système (Routines)
 	go thermalGovernor()
 	go cleanupQbit()
 	go syncVpnPort()
@@ -1348,8 +1387,8 @@ func main() {
 	go startAutoTiering(nvmePath, hddPath, 80.0)
 	go startMaintenanceCycle()
 
-	// VPN Manager initialization
-	vpnMgr = vpnmanager.NewManager(nil, SuperAdmin, RealIP, QbitURL, DockerMode, "gluetun")
+	// VPN Manager initialization (avec le bot déjà créé)
+	vpnMgr = vpnmanager.NewManager(bot, SuperAdmin, RealIP, QbitURL, DockerMode, "gluetun")
 	go vpnMgr.RunHealthCheck()
 	go vpnMgr.StartScheduler()
 
@@ -1359,40 +1398,18 @@ func main() {
 		http.ListenAndServe(":5001", nil)
 	}()
 
-		var err error
-		bot, err = tele.NewBot(tele.Settings{
-			Token: Token, Poller: &tele.LongPoller{Timeout: 10 * time.Second},
-		})
-		if err != nil {
-			log.Fatal(err)
-			return
-		}
-		
-		// Bind bot to vpn manager
-		vpnMgr.SetBot(bot)
-	
-		bot.Handle("/start", func(c tele.Context) error {
-			return c.Send("🏗️ <b>Myflix v11.1 (Go Architect)</b>", buildMainMenu(), tele.ModeHTML)
-		})
+	bot.Handle("/start", func(c tele.Context) error {
+		return c.Send("🏗️ <b>Myflix v11.1 (Go Architect)</b>", buildMainMenu(), tele.ModeHTML)
+	})
 	
 		// --- SHORTCUT COMMANDS ---
 		bot.Handle("/films", func(c tele.Context) error { return showLibrary(c, "films", 0, false) })
 		bot.Handle("/series", func(c tele.Context) error { return showLibrary(c, "series", 0, false) })
 		bot.Handle("/status", func(c tele.Context) error {
-			return c.Send(getStorageStatus(), tele.ModeHTML)
+			return c.Send(getStorageStatus(), buildMainMenu(), tele.ModeHTML)
 		})
 		bot.Handle("/vpn", func(c tele.Context) error {
-			ip := vpnMgr.GetCurrentIP()
-			if ip == "" {
-				ip = "Inconnue"
-			}
-			msg := fmt.Sprintf("🛡️ <b>Statut VPN</b>\n\n🌍 IP Publique : <code>%s</code>\n🇨🇭 Région : Suisse (CH)\n⏰ Rotation : 04:00 AM", ip)
-			
-			menu := &tele.ReplyMarkup{}
-			btnRotate := menu.Data("🔄 Rotation Manuelle", "vpn_rotate")
-			menu.Inline(menu.Row(btnRotate))
-			
-			return c.Send(msg, menu, tele.ModeHTML)
+			return showVpnStatus(c, false)
 		})
 		bot.Handle("/queue", func(c tele.Context) error { return refreshQueue(c, false) })
 	
@@ -1448,7 +1465,13 @@ func main() {
 		})
 		bot.Handle(&tele.Btn{Unique: "q_refresh"}, func(c tele.Context) error { return refreshQueue(c, true) })
 		bot.Handle(&tele.Btn{Unique: "status_refresh"}, func(c tele.Context) error {
+			return c.Edit("🏗️ <b>Myflix v11.1 (Go Architect)</b>", buildMainMenu(), tele.ModeHTML)
+		})
+		bot.Handle(&tele.Btn{Unique: "sys_status"}, func(c tele.Context) error {
 			return c.Edit(getStorageStatus(), buildMainMenu(), tele.ModeHTML)
+		})
+		bot.Handle(&tele.Btn{Unique: "vpn_refresh"}, func(c tele.Context) error {
+			return showVpnStatus(c, true)
 		})
 		bot.Handle(&tele.Btn{Unique: "vpn_rotate"}, func(c tele.Context) error {
 			if c.Sender().ID != SuperAdmin { return nil }
@@ -1547,18 +1570,22 @@ func main() {
 			lookupURL = SonarrURL + "/api/v3/series/lookup?term=tvdb:" + id
 			key = SonarrKey
 		}
+		
 		req, _ := http.NewRequest("GET", lookupURL, nil)
 		req.Header.Set("X-Api-Key", key)
-		resp, _ := httpClient.Do(req)
+		resp, err := httpClient.Do(req)
+		if err != nil { return c.Send("❌ API Unreachable") }
+		defer resp.Body.Close()
+
 		var results []map[string]interface{}
 		json.NewDecoder(resp.Body).Decode(&results)
 		if len(results) > 0 {
 			item := results[0]
 			item["monitored"] = true
 			item["qualityProfileId"] = 1
-			item["rootFolderPath"] = "/data/internal/media/movies"
+			item["rootFolderPath"] = "/movies"
 			if mType != "movie" {
-				item["rootFolderPath"] = "/data/internal/media/tv"
+				item["rootFolderPath"] = "/tv"
 				item["languageProfileId"] = 1
 				item["addOptions"] = map[string]interface{}{"searchForMissingEpisodes": true}
 			}
@@ -1570,13 +1597,16 @@ func main() {
 			reqA, _ := http.NewRequest("POST", addURL, bytes.NewBuffer(payload))
 			reqA.Header.Set("X-Api-Key", key)
 			reqA.Header.Set("Content-Type", "application/json")
-			respA, _ := httpClient.Do(reqA)
-			if respA != nil && respA.StatusCode >= 400 {
+			respA, err := httpClient.Do(reqA)
+			if err != nil { return c.Send("❌ Add API Unreachable") }
+			defer respA.Body.Close()
+
+			if respA.StatusCode >= 400 {
 				return c.Send(fmt.Sprintf("❌ Erreur API %d. Déjà présent ?", respA.StatusCode))
 			}
 			return c.Edit(fmt.Sprintf("✅ <b>Ajouté</b> : %s", item["title"]), tele.ModeHTML)
 		}
-		return c.Send("❌ Erreur ajout.")
+		return c.Send("❌ Aucun résultat API pour cet ID.")
 	})
 
 		log.Println("🚀 Bot v11.1 (Go Architect) démarré...")

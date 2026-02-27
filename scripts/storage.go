@@ -19,11 +19,21 @@ func getDiskUsage(path string) (usedGB, totalGB float64) {
 
 func getStatus() string {
 	report := "🏛 SYSTÈME : ÉTAT DU STOCKAGE\n\n"
+	
+	nvmePath := os.Getenv("STORAGE_NVME_PATH")
+	if nvmePath == "" {
+		nvmePath = "/"
+	}
+	hddPath := os.Getenv("STORAGE_HDD_PATH")
+	if hddPath == "" {
+		hddPath = "/mnt/externe"
+	}
+
 	paths := []struct {
 		name, path, icon, tier string
 	}{
-		{"NVMe", "/", "🚀", "Hot Tier"},
-		{"HDD", "/mnt/externe", "📚", "Archive"},
+		{"NVMe", nvmePath, "🚀", "Hot Tier"},
+		{"HDD", hddPath, "📚", "Archive"},
 	}
 
 	for _, p := range paths {

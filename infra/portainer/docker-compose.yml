@@ -10,4 +10,4 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./data:/data
     ports:
-      - 9443:9443
+      - 127.0.0.1:9443:9443

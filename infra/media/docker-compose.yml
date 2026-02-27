@@ -8,9 +8,9 @@ services:
       - PGID=1000
       - TZ=Europe/Paris
     volumes:
-      - /home/jules/infra/ai/config/prowlarr:/config
+      - ${NVME_DATA_PATH:-/home/jules/infra/ai/data}/prowlarr/config:/config
     ports:
-      - 9696:9696
+      - 127.0.0.1:9696:9696
     restart: unless-stopped
     networks:
       - npm-nw
@@ -25,10 +25,10 @@ services:
       - PGID=1000
       - TZ=Europe/Paris
     volumes:
-      - /home/jules/infra/ai/data/radarr/config:/config
+      - ${NVME_DATA_PATH:-/home/jules/infra/ai/data}/radarr/config:/config
       - /mnt/pool:/data
     ports:
-      - 7878:7878
+      - 127.0.0.1:7878:7878
     restart: unless-stopped
     networks:
       - npm-nw
@@ -43,10 +43,10 @@ services:
       - PGID=1000
       - TZ=Europe/Paris
     volumes:
-      - /home/jules/infra/ai/data/sonarr/config:/config
+      - ${NVME_DATA_PATH:-/home/jules/infra/ai/data}/sonarr/config:/config
       - /mnt/pool:/data
     ports:
-      - 8989:8989
+      - 127.0.0.1:8989:8989
     restart: unless-stopped
     networks:
       - npm-nw
@@ -61,10 +61,10 @@ services:
       - PGID=1000
       - TZ=Europe/Paris
     volumes:
-      - /home/jules/infra/ai/data/bazarr/config:/config
+      - ${NVME_DATA_PATH:-/home/jules/infra/ai/data}/bazarr/config:/config
       - /mnt/pool:/data
     ports:
-      - 6767:6767
+      - 127.0.0.1:6767:6767
     restart: unless-stopped
     networks:
       - npm-nw
@@ -79,10 +79,10 @@ services:
       - PGID=1000
       - TZ=Europe/Paris
     volumes:
-      - /home/jules/infra/ai/data/syncthing/config:/config
+      - ${NVME_DATA_PATH:-/home/jules/infra/ai/data}/syncthing/config:/config
       - /mnt/pool/media:/data
     ports:
-      - 8384:8384
+      - 127.0.0.1:8384:8384
       - 22000:22000/tcp
       - 22000:22000/udp
     restart: unless-stopped

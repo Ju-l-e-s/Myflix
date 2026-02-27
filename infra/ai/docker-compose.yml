@@ -10,6 +10,7 @@ services:
       - PGID=${PGID:-1000}
       - TZ=${TZ:-Europe/Paris}
       - DOCKER_MODE=true
+      - REAL_IP=${REAL_IP}
       - TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
       - RADARR_API_KEY=${RADARR_API_KEY}
       - TMDB_API_KEY=${TMDB_API_KEY}
@@ -29,9 +30,9 @@ services:
       - ${NVME_DATA_PATH:-./data}/gluetun:/tmp/gluetun:ro
       - /var/run/docker.sock:/var/run/docker.sock # Privilège Auto-Healing
     ports:
-      - 5001:5001
-      - 3001:3000 # Changé pour éviter le conflit avec Grafana (3000)
-      - 8001:8001
+      - 127.0.0.1:5001:5001
+      - 127.0.0.1:3001:3000 # Changé pour éviter le conflit avec Grafana (3000)
+      - 127.0.0.1:8001:8001
     restart: always
     networks: [arr_network, npm-nw]
 
@@ -49,7 +50,7 @@ services:
       - ${DOCKER_BASE_DIR:-/home/jules}/scripts:/source/scripts:ro
       - ${NVME_DATA_PATH:-./data}/duplicati/backups:/backups
     ports:
-      - 8200:8200
+      - 127.0.0.1:8200:8200
     restart: unless-stopped
     networks: [arr_network, npm-nw]
 
@@ -77,7 +78,7 @@ services:
     volumes:
       - ${NVME_DATA_PATH:-./data}/gluetun:/tmp/gluetun
     ports:
-      - 8090:8080 # qBittorrent WebUI
+      - 127.0.0.1:8090:8080 # qBittorrent WebUI
       - 6881:6881
       - 6881:6881/udp
     restart: always
@@ -102,7 +103,7 @@ services:
   flaresolverr:
     image: ghcr.io/flaresolverr/flaresolverr:latest
     container_name: flaresolverr
-    ports: [8191:8191]
+    ports: [127.0.0.1:8191:8191]
     restart: unless-stopped
     networks: [arr_network, npm-nw]
 
@@ -122,6 +123,18 @@ services:
       - ${NVME_DATA_PATH:-./data}/media/movies:/movies
       - ${NVME_DATA_PATH:-./data}/media/tv:/tv
       - ${HDD_STORAGE_PATH:-/mnt/externe}:/mnt/externe
+    restart: unless-stopped
+
+  watchtower:
+    image: containrrr/watchtower
+    container_name: watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_SCHEDULE=0 15 4 * * *
+      - WATCHTOWER_NOTIFICATIONS=shoutrrr
+      - WATCHTOWER_NOTIFICATION_URL=generic+https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage?format=HTML&notification=true
     restart: unless-stopped
 
 networks:

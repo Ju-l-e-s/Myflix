@@ -23,6 +23,8 @@ import (
 	"syscall"
 	"time"
 
+	"myflixbot/vpnmanager"
+
 	tele "gopkg.in/telebot.v3"
 )
 
@@ -32,32 +34,65 @@ var (
 	GeminiKey       = os.Getenv("GEMINI_KEY")
 	TmdbBearerToken = os.Getenv("TMDB_API_KEY")
 	DockerMode      = strings.ToLower(os.Getenv("DOCKER_MODE")) == "true"
-	RadarrURL       = "http://radarr:7878"
+	RealIP          = os.Getenv("REAL_IP")
+	RadarrURL       = getEnv("RADARR_URL", "http://radarr:7878")
 	RadarrKey       = os.Getenv("RADARR_API_KEY")
-	SonarrURL       = "http://sonarr:8989"
+	SonarrURL       = getEnv("SONARR_URL", "http://sonarr:8989")
 	SonarrKey       = os.Getenv("SONARR_API_KEY")
-	QbitURL         = "http://gluetun:8080"
-	PlexURL         = "http://plex:32400"
+	QbitURL         = getEnv("QBIT_URL", "http://gluetun:8080")
+	PlexURL         = getEnv("PLEX_URL", "http://plex:32400")
 	PlexToken       = os.Getenv("PLEX_TOKEN")
-	SuperAdmin      = int64(6721936515)
-	PosterCacheDir  = "/tmp/myflix_cache/posters/"
+	SuperAdmin      = getEnvInt64("SUPER_ADMIN", 6721936515)
+	PosterCacheDir  = getEnv("POSTER_CACHE_DIR", "/tmp/myflix_cache/posters/")
 )
+
+func getEnv(key, fallback string) string {
+	if value, ok := os.LookupEnv(key); ok {
+		return value
+	}
+	return fallback
+}
+
+func getEnvInt64(key string, fallback int64) int64 {
+	if value, ok := os.LookupEnv(key); ok {
+		if i, err := strconv.ParseInt(value, 10, 64); err == nil {
+			return i
+		}
+	}
+	return fallback
+}
 
 func init() {
 	os.MkdirAll(PosterCacheDir, 0755)
 }
 
-var httpClient = &http.Client{Timeout: 15 * time.Second}
+var (
+	httpClient = &http.Client{
+		Timeout: 15 * time.Second,
+		Transport: &http.Transport{
+			MaxIdleConns:        100,
+			IdleConnTimeout:     90 * time.Second,
+			MaxIdleConnsPerHost: 20,
+		},
+	}
+	vpnMgr  *vpnmanager.Manager
+	reClean    = regexp.MustCompile(`(?i)(?:1080p|720p|4k|uhd|x26[45]|h26[45]|web[- ]?(dl|rip)|bluray|aac|dd[p]?5\.1|atmos|repack|playweb|max|[\d\s]+A M|[\d\s]+P M|-NTb|-playWEB)`)
+	reSpaces   = regexp.MustCompile(`\s+`)
+	reTMDB     = regexp.MustCompile(`^(?i)(série|serie|film)?\s*(.+?)\s*(\b(19|20)\d{2}\b)?$`)
+)
 
 // --- NATIVE MEDIA UTILS ---
 func getDirSize(path string) (int64, error) {
 	var size int64
-	err := filepath.Walk(path, func(_ string, info os.FileInfo, err error) error {
+	err := filepath.WalkDir(path, func(_ string, d os.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
-		if !info.IsDir() {
-			size += info.Size()
+		if !d.IsDir() {
+			info, err := d.Info()
+			if err == nil {
+				size += info.Size()
+			}
 		}
 		return nil
 	})
@@ -65,11 +100,8 @@ func getDirSize(path string) (int64, error) {
 }
 
 func cleanTitle(title string) string {
-	pattern := `(?i)(?:1080p|720p|4k|uhd|x26[45]|h26[45]|web[- ]?(dl|rip)|bluray|aac|dd[p]?5\.1|atmos|repack|playweb|max|[\d\s]+A M|[\d\s]+P M|-NTb|-playWEB)`
-	re := regexp.MustCompile(pattern)
-	cleaned := re.Split(title, -1)[0]
+	cleaned := reClean.Split(title, -1)[0]
 	cleaned = strings.ReplaceAll(cleaned, ".", " ")
-	reSpaces := regexp.MustCompile(`\s+`)
 	return strings.TrimSpace(reSpaces.ReplaceAllString(cleaned, " "))
 }
 
@@ -177,7 +209,7 @@ func refreshLibrary(cat string) []map[string]interface{} {
 }
 
 func searchLocalCache(query string) []map[string]interface{} {
-	query = strings.ToLower(query)
+	target := strings.ToLower(query)
 	var results []map[string]interface{}
 	cache.mu.RLock()
 	defer cache.mu.RUnlock()
@@ -185,25 +217,28 @@ func searchLocalCache(query string) []map[string]interface{} {
 	search := func(items []map[string]interface{}, mType string) {
 		for _, item := range items {
 			title, _ := item["title"].(string)
+			lowerTitle := strings.ToLower(title)
 			
-			// Vérif présence fichier
-			isReady := false
-			if mType == "films" {
-				isReady, _ = item["hasFile"].(bool)
-			} else {
-				stats, ok := item["statistics"].(map[string]interface{})
-				if ok {
-					if epCount, _ := stats["episodeFileCount"].(float64); epCount > 0 {
-						isReady = true
+			if strings.Contains(lowerTitle, target) {
+				// Vérif présence fichier
+				isReady := false
+				if mType == "films" {
+					isReady, _ = item["hasFile"].(bool)
+				} else {
+					stats, ok := item["statistics"].(map[string]interface{})
+					if ok {
+						if epCount, _ := stats["episodeFileCount"].(float64); epCount > 0 {
+							isReady = true
+						}
 					}
 				}
-			}
 
-			if isReady && strings.Contains(strings.ToLower(title), query) {
-				results = append(results, map[string]interface{}{
-					"tmdb_id": 0, "title": title, "year": fmt.Sprintf("%v", item["year"]), "type": mType, "is_local": true,
-				})
-				if len(results) >= 5 { return }
+				if isReady {
+					results = append(results, map[string]interface{}{
+						"tmdb_id": 0, "title": title, "year": fmt.Sprintf("%v", item["year"]), "type": mType, "is_local": true,
+					})
+					if len(results) >= 5 { return }
+				}
 			}
 		}
 	}
@@ -301,8 +336,7 @@ func streamGptJson(query string) string {
 
 // --- TMDB SMART RESOLVER ---
 func tmdbSmartResolve(query string) []map[string]interface{} {
-	re := regexp.MustCompile(`^(?i)(série|serie|film)?\s*(.+?)\s*(\b(19|20)\d{2}\b)?$`)
-	m := re.FindStringSubmatch(strings.TrimSpace(query))
+	m := reTMDB.FindStringSubmatch(strings.TrimSpace(query))
 	
 	aiData := map[string]interface{}{"title": query, "type": "", "year": 0}
 	useGemini := false
@@ -1238,6 +1272,12 @@ func main() {
 	if hddPath == "" { hddPath = "/data/external" }
 	
 	go startAutoTiering(nvmePath, hddPath, 80.0)
+	go startMaintenanceCycle()
+
+	// VPN Manager initialization
+	vpnMgr = vpnmanager.NewManager(nil, SuperAdmin, RealIP, QbitURL, DockerMode, "gluetun")
+	go vpnMgr.RunHealthCheck()
+	go vpnMgr.StartScheduler()
 
 	go func() {
 		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("OK")) })
@@ -1253,6 +1293,9 @@ func main() {
 			log.Fatal(err)
 			return
 		}
+		
+		// Bind bot to vpn manager
+		vpnMgr.SetBot(bot)
 	
 		bot.Handle("/start", func(c tele.Context) error {
 			return c.Send("🏗️ <b>Myflix v11.1 (Go Architect)</b>", buildMainMenu(), tele.ModeHTML)
@@ -1263,6 +1306,19 @@ func main() {
 		bot.Handle("/series", func(c tele.Context) error { return showLibrary(c, "series", 0, false) })
 		bot.Handle("/status", func(c tele.Context) error {
 			return c.Send(getStorageStatus(), tele.ModeHTML)
+		})
+		bot.Handle("/vpn", func(c tele.Context) error {
+			ip := vpnMgr.GetCurrentIP()
+			if ip == "" {
+				ip = "Inconnue"
+			}
+			msg := fmt.Sprintf("🛡️ <b>Statut VPN</b>\n\n🌍 IP Publique : <code>%s</code>\n🇨🇭 Région : Suisse (CH)\n⏰ Rotation : 04:00 AM", ip)
+			
+			menu := &tele.ReplyMarkup{}
+			btnRotate := menu.Data("🔄 Rotation Manuelle", "vpn_rotate")
+			menu.Inline(menu.Row(btnRotate))
+			
+			return c.Send(msg, menu, tele.ModeHTML)
 		})
 		bot.Handle("/queue", func(c tele.Context) error { return refreshQueue(c, false) })
 	
@@ -1319,6 +1375,11 @@ func main() {
 		bot.Handle(&tele.Btn{Unique: "q_refresh"}, func(c tele.Context) error { return refreshQueue(c, true) })
 		bot.Handle(&tele.Btn{Unique: "status_refresh"}, func(c tele.Context) error {
 			return c.Edit(getStorageStatus(), buildMainMenu(), tele.ModeHTML)
+		})
+		bot.Handle(&tele.Btn{Unique: "vpn_rotate"}, func(c tele.Context) error {
+			if c.Sender().ID != SuperAdmin { return nil }
+			go vpnMgr.RotateVPN()
+			return c.Send("🔄 Rotation VPN forcée. Le benchmark commence...")
 		})
 			bot.Handle(&tele.Btn{Unique: "m_sel"}, func(c tele.Context) error {
 		

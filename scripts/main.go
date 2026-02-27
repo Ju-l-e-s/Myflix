@@ -209,11 +209,23 @@ func refreshLibrary(cat string) []map[string]interface{} {
 	req, _ := http.NewRequest("GET", urlArr, nil)
 	req.Header.Set("X-Api-Key", key)
 	resp, err := httpClient.Do(req)
-	if err != nil { return nil }
+	if err != nil { 
+		log.Printf("❌ Erreur connexion %s : %v", cat, err)
+		return nil 
+	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode != 200 {
+		log.Printf("❌ Erreur API %s (Code %d). Vérifiez votre clé API.", cat, resp.StatusCode)
+		return nil
+	}
+
 	var items []map[string]interface{}
-	json.NewDecoder(resp.Body).Decode(&items)
+	if err := json.NewDecoder(resp.Body).Decode(&items); err != nil {
+		log.Printf("❌ Erreur décodage %s : %v", cat, err)
+		return nil
+	}
+	
 	sort.Slice(items, func(i, j int) bool {
 		aI, _ := items[i]["added"].(string); aJ, _ := items[j]["added"].(string)
 		return aI > aJ
@@ -223,6 +235,7 @@ func refreshLibrary(cat string) []map[string]interface{} {
 	if cat == "films" { cache.Movies = items } else { cache.Series = items }
 	cache.UpdatedAt = time.Now()
 	cache.mu.Unlock()
+	log.Printf("✅ Bibliothèque %s rafraîchie (%d items)", cat, len(items))
 	return items
 }
 
@@ -476,8 +489,25 @@ func tmdbSmartResolve(query string) []map[string]interface{} {
 			y = yearStr.(string)[:4]
 		}
 
+		finalID := int(r["id"].(float64))
+		
+		// Si c'est une série, on tente de récupérer l'ID TVDB car Sonarr en a besoin
+		if resType == "tv" {
+			extURL := fmt.Sprintf("https://api.themoviedb.org/3/tv/%d/external_ids", finalID)
+			reqE, _ := http.NewRequest("GET", extURL, nil)
+			reqE.Header.Set("Authorization", "Bearer "+TmdbBearerToken)
+			if respE, errE := httpClient.Do(reqE); errE == nil {
+				var ext struct { TvdbID int `json:"tvdb_id"` }
+				json.NewDecoder(respE.Body).Decode(&ext)
+				respE.Body.Close()
+				if ext.TvdbID > 0 {
+					finalID = ext.TvdbID
+				}
+			}
+		}
+
 		output = append(output, map[string]interface{}{
-			"tmdb_id": int(r["id"].(float64)), "title": title, "year": y, "type": resType,
+			"tmdb_id": finalID, "title": title, "year": y, "type": resType,
 		})
 	}
 	return output
@@ -778,6 +808,8 @@ func showLibrary(c tele.Context, cat string, page int, isEdit bool) error {
 	if len(items) == 0 {
 		return c.Send(fmt.Sprintf("📂 <b>Bibliothèque : %s</b> (0)\n\nAucun contenu téléchargé pour le moment.", titleLabel), tele.ModeHTML)
 	}
+
+	currentPageItems := items[start:end]
 
 	msg := fmt.Sprintf("📂 <b>Bibliothèque : %s</b> (%d)\n", titleLabel, len(items))
 	msg += "⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n\n"
@@ -1223,7 +1255,7 @@ func autoHealer() {
 	}
 
 	failures := make(map[string]int)
-	ticker := time.NewTicker(60 * time.Second)
+	ticker := time.NewTicker(5 * time.Minute) // Augmenté à 5 min
 
 	for range ticker.C {
 		for _, s := range services {
@@ -1232,20 +1264,22 @@ func autoHealer() {
 				req.Header.Set("X-Api-Key", s.key)
 			}
 			
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 			resp, err := httpClient.Do(req.WithContext(ctx))
 			cancel()
 
 			if err != nil || (resp != nil && resp.StatusCode >= 500) {
 				failures[s.name]++
-				log.Printf("⚠️ Auto-Healer : %s ne répond pas (%d/2)", s.name, failures[s.name])
-				if failures[s.name] >= 2 {
+				log.Printf("⚠️ Auto-Healer : %s ne répond pas (%d/5)", s.name, failures[s.name])
+				if failures[s.name] >= 5 { // Augmenté à 5 échecs
+					// On ne redémarre que si on est sûr que c'est pas juste un démarrage lent
+					log.Printf("🔄 Auto-Healer : %s semble vraiment planté. Tentative redémarrage...", s.name)
 					restartContainer(s.name)
 					failures[s.name] = 0
 				}
 			} else {
 				if resp != nil { resp.Body.Close() }
-				failures[s.name] = 0 // Reset si ça répond
+				failures[s.name] = 0
 			}
 		}
 	}
@@ -1564,6 +1598,10 @@ func main() {
 		bot.Handle(&tele.Btn{Unique: "dl_add"}, func(c tele.Context) error {
 	
 		mType, id := c.Args()[0], c.Args()[1]
+		
+		// Log technique pour débug
+		log.Printf("📥 Demande d'ajout %s ID: %s", mType, id)
+
 		lookupURL := RadarrURL + "/api/v3/movie/lookup?term=tmdb:" + id
 		key := RadarrKey
 		if mType != "movie" {
@@ -1574,39 +1612,64 @@ func main() {
 		req, _ := http.NewRequest("GET", lookupURL, nil)
 		req.Header.Set("X-Api-Key", key)
 		resp, err := httpClient.Do(req)
-		if err != nil { return c.Send("❌ API Unreachable") }
+		if err != nil { 
+			log.Printf("❌ API %s inaccessible : %v", mType, err)
+			return c.Send("❌ Serveur distant inaccessible.") 
+		}
 		defer resp.Body.Close()
+
+		if resp.StatusCode != 200 {
+			body, _ := io.ReadAll(resp.Body)
+			log.Printf("❌ Erreur lookup %s (Code %d) : %s", mType, resp.StatusCode, string(body))
+			return c.Send(fmt.Sprintf("❌ Erreur API %d.", resp.StatusCode))
+		}
 
 		var results []map[string]interface{}
 		json.NewDecoder(resp.Body).Decode(&results)
-		if len(results) > 0 {
-			item := results[0]
-			item["monitored"] = true
-			item["qualityProfileId"] = 1
-			item["rootFolderPath"] = "/movies"
-			if mType != "movie" {
-				item["rootFolderPath"] = "/tv"
-				item["languageProfileId"] = 1
-				item["addOptions"] = map[string]interface{}{"searchForMissingEpisodes": true}
-			}
-			payload, _ := json.Marshal(item)
-			addURL := RadarrURL + "/api/v3/movie"
-			if mType != "movie" {
-				addURL = SonarrURL + "/api/v3/series"
-			}
-			reqA, _ := http.NewRequest("POST", addURL, bytes.NewBuffer(payload))
-			reqA.Header.Set("X-Api-Key", key)
-			reqA.Header.Set("Content-Type", "application/json")
-			respA, err := httpClient.Do(reqA)
-			if err != nil { return c.Send("❌ Add API Unreachable") }
-			defer respA.Body.Close()
-
-			if respA.StatusCode >= 400 {
-				return c.Send(fmt.Sprintf("❌ Erreur API %d. Déjà présent ?", respA.StatusCode))
-			}
-			return c.Edit(fmt.Sprintf("✅ <b>Ajouté</b> : %s", item["title"]), tele.ModeHTML)
+		
+		if len(results) == 0 {
+			log.Printf("⚠️ Aucun résultat pour ID %s sur l'API %s", id, mType)
+			return c.Send("❌ Ce contenu n'est pas reconnu par le serveur. Tentez une autre version.")
 		}
-		return c.Send("❌ Aucun résultat API pour cet ID.")
+
+		item := results[0]
+		// Vérifier si déjà présent
+		if existingID, ok := item["id"].(float64); ok && existingID > 0 {
+			return c.Send(fmt.Sprintf("✅ <b>%s</b> est déjà dans votre bibliothèque !", item["title"]))
+		}
+
+		item["monitored"] = true
+		item["qualityProfileId"] = 1
+		item["rootFolderPath"] = "/movies"
+		if mType != "movie" {
+			item["rootFolderPath"] = "/tv"
+			item["languageProfileId"] = 1
+			item["addOptions"] = map[string]interface{}{"searchForMissingEpisodes": true}
+		}
+		
+		payload, _ := json.Marshal(item)
+		addURL := RadarrURL + "/api/v3/movie"
+		if mType != "movie" {
+			addURL = SonarrURL + "/api/v3/series"
+		}
+		
+		reqA, _ := http.NewRequest("POST", addURL, bytes.NewBuffer(payload))
+		reqA.Header.Set("X-Api-Key", key)
+		reqA.Header.Set("Content-Type", "application/json")
+		respA, err := httpClient.Do(reqA)
+		if err != nil { return c.Send("❌ Add API Unreachable") }
+		defer respA.Body.Close()
+
+		if respA.StatusCode >= 400 {
+			body, _ := io.ReadAll(respA.Body)
+			log.Printf("❌ Erreur Ajout %s (Code %d) : %s", mType, respA.StatusCode, string(body))
+			return c.Send(fmt.Sprintf("❌ Erreur API %d lors de l'ajout.", respA.StatusCode))
+		}
+		
+		title, _ := item["title"].(string)
+		if title == "" { title, _ = item["name"].(string) }
+		
+		return c.Edit(fmt.Sprintf("✅ <b>Ajouté</b> : %s", title), tele.ModeHTML)
 	})
 
 		log.Println("🚀 Bot v11.1 (Go Architect) démarré...")

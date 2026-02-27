@@ -6,7 +6,7 @@
         widget:
           type: sonarr
           url: http://172.23.0.12:8989
-          key: dfa7da413b48480097f6a399080be393
+          key: 7be8638a56a44228a807ea850c997a12
 
     - Radarr:
         icon: radarr.png
@@ -15,7 +15,7 @@
         widget:
           type: radarr
           url: http://172.23.0.8:7878
-          key: 75ed9e2e3922442c8c1e012e47bc0906
+          key: 65ea98c94c02492396e19b2a05785034
 
 - Download:
     - qBittorrent:

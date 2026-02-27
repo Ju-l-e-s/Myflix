@@ -28,17 +28,18 @@ import (
 	tele "gopkg.in/telebot.v3"
 )
 
-// --- CONFIGURATION ---
+// --- CONFIGURATION DYNAMIQUE ---
+func getRadarrKey() string { return getSecretOrEnv("MYFLIX_RADARR_KEY", "") }
+func getSonarrKey() string { return getSecretOrEnv("MYFLIX_SONARR_KEY", "") }
+func getRadarrURL() string { return getEnv("RADARR_URL", "http://radarr:7878") }
+func getSonarrURL() string { return getEnv("SONARR_URL", "http://sonarr:8989") }
+
 var (
 	Token           = getSecretOrEnv("TELEGRAM_TOKEN", "")
 	GeminiKey       = getSecretOrEnv("GEMINI_KEY", "")
 	TmdbBearerToken = getSecretOrEnv("TMDB_API_KEY", "")
 	DockerMode      = strings.ToLower(os.Getenv("DOCKER_MODE")) == "true"
 	RealIP          = os.Getenv("REAL_IP")
-	RadarrURL       = getEnv("RADARR_URL", "http://radarr:7878")
-	RadarrKey       = getSecretOrEnv("RADARR_API_KEY", "")
-	SonarrURL       = getEnv("SONARR_URL", "http://sonarr:8989")
-	SonarrKey       = getSecretOrEnv("SONARR_API_KEY", "")
 	QbitURL         = getEnv("QBIT_URL", "http://gluetun:8080")
 	PlexURL         = getEnv("PLEX_URL", "http://plex:32400")
 	PlexToken       = getSecretOrEnv("PLEX_TOKEN", "")
@@ -47,18 +48,18 @@ var (
 )
 
 func getSecretOrEnv(key, fallback string) string {
-	// 1. Essayer de lire le Docker Secret
+	// 1. On privilégie la variable d'environnement du .env (Docker Compose)
+	if value, ok := os.LookupEnv(key); ok {
+		if value != "" {
+			return value
+		}
+	}
+	// 2. Fallback sur les Docker Secrets si besoin
 	secretPath := "/run/secrets/" + strings.ToLower(key)
 	if data, err := os.ReadFile(secretPath); err == nil {
 		val := strings.TrimSpace(string(data))
 		if val != "" {
 			return val
-		}
-	}
-	// 2. Fallback sur la variable d'environnement
-	if value, ok := os.LookupEnv(key); ok {
-		if value != "" {
-			return value
 		}
 	}
 	return fallback
@@ -81,7 +82,9 @@ func getEnvInt64(key string, fallback int64) int64 {
 }
 
 func init() {
-	os.MkdirAll(PosterCacheDir, 0755)
+	if err := os.MkdirAll(PosterCacheDir, 0750); err != nil {
+		log.Printf("⚠️ Erreur création PosterCacheDir: %v", err)
+	}
 }
 
 var (
@@ -203,20 +206,31 @@ func refreshLibrary(cat string) []map[string]interface{} {
 	if _, loading := refreshLock.LoadOrStore(cat, true); loading { return nil }
 	defer refreshLock.Delete(cat)
 
-	urlArr := RadarrURL + "/api/v3/movie"; key := RadarrKey
-	if cat == "series" { urlArr = SonarrURL + "/api/v3/series"; key = SonarrKey }
+	baseURL := getRadarrURL()
+	apiKey := getRadarrKey()
+	endpoint := "/api/v3/movie"
 
-	req, _ := http.NewRequest("GET", urlArr, nil)
-	req.Header.Set("X-Api-Key", key)
+	if cat == "series" { 
+		baseURL = getSonarrURL()
+		apiKey = getSonarrKey()
+		endpoint = "/api/v3/series"
+	}
+
+	if len(apiKey) > 4 {
+		log.Printf("DEBUG [%s]: Utilisation de la clé API commençant par %s...", cat, apiKey[:4])
+	}
+
+	req, _ := http.NewRequest("GET", baseURL+endpoint, nil)
+	req.Header.Set("X-Api-Key", apiKey)
 	resp, err := httpClient.Do(req)
 	if err != nil { 
-		log.Printf("❌ Erreur connexion %s : %v", cat, err)
+		log.Printf("❌ Erreur connexion %s vers %s : %v", cat, baseURL, err)
 		return nil 
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
-		log.Printf("❌ Erreur API %s (Code %d). Vérifiez votre clé API.", cat, resp.StatusCode)
+		log.Printf("❌ Erreur API %s (Code %d) via %s. Clé: %s", cat, resp.StatusCode, baseURL, apiKey[:4]+"...")
 		return nil
 	}
 
@@ -325,8 +339,8 @@ func getStorageStatus() string {
 		}
 		var stat syscall.Statfs_t
 		if err := syscall.Statfs(p.path, &stat); err == nil {
-			total := float64(stat.Blocks*uint64(stat.Bsize)) / (1024 * 1024 * 1024)
-			free := float64(stat.Bavail*uint64(stat.Bsize)) / (1024 * 1024 * 1024)
+			total := float64(uint64(stat.Blocks)) * float64(uint64(stat.Bsize)) / (1024 * 1024 * 1024)
+			free := float64(uint64(stat.Bavail)) * float64(uint64(stat.Bsize)) / (1024 * 1024 * 1024)
 			used := total - free
 			report += createStatusMsg(used, total, p.name, p.icon, p.tier) + "\n"
 		}
@@ -925,7 +939,7 @@ func setQbitSpeedLimit(limit int) {
 	data.Set("limit", strconv.Itoa(limit))
 	resp, err := httpClient.PostForm(QbitURL+"/api/v2/transfer/setDownloadLimit", data)
 	if err == nil {
-		resp.Body.Close()
+		_ = resp.Body.Close()
 	}
 }
 
@@ -936,7 +950,10 @@ func thermalGovernor() {
 		if err != nil {
 			continue
 		}
-		tempMilli, _ := strconv.Atoi(strings.TrimSpace(string(data)))
+		tempMilli, err := strconv.Atoi(strings.TrimSpace(string(data)))
+		if err != nil {
+			continue
+		}
 		tempC := tempMilli / 1000
 
 		if tempC > 75 {
@@ -949,38 +966,47 @@ func thermalGovernor() {
 }
 
 func cleanupQbit() {
-	ticker := time.NewTicker(2 * time.Hour)
-	for range ticker.C {
+	for {
 		resp, err := httpClient.Get(QbitURL + "/api/v2/torrents/info")
 		if err != nil {
+			time.Sleep(2 * time.Hour)
 			continue
 		}
+		
 		var torrents []map[string]interface{}
-		json.NewDecoder(resp.Body).Decode(&torrents)
-		resp.Body.Close()
+		err = json.NewDecoder(resp.Body).Decode(&torrents)
+		_ = resp.Body.Close()
+		if err != nil {
+			time.Sleep(2 * time.Hour)
+			continue
+		}
 
 		now := time.Now().Unix()
 		for _, t := range torrents {
-			hash := t["hash"].(string)
-			name := t["name"].(string)
-			state := t["state"].(string)
+			hash, _ := t["hash"].(string)
+			name, _ := t["name"].(string)
+			state, _ := t["state"].(string)
 			category, _ := t["category"].(string)
-			lastActivity := int64(t["last_activity"].(float64))
+			addedOn, _ := t["added_on"].(float64)
 			
-			// Si le torrent est bloqué depuis plus de 48h
-			if state == "stalledDL" && (now-lastActivity) > 172800 {
+			// Si le torrent est bloqué (ou en erreur) depuis plus de 12h
+			if (state == "stalledDL" || state == "error" || state == "missingFiles") && (now-int64(addedOn)) > 43200 {
 				log.Printf("🚨 Torrent bloqué détecté : %s (Cat: %s)", name, category)
 				
 				success := false
 				if category == "radarr" {
-					success = failAndSearchNext(RadarrURL, RadarrKey, hash)
+					success = failAndSearchNext(getRadarrURL(), getRadarrKey(), hash)
 				} else if category == "sonarr" || category == "tv-sonarr" {
-					success = failAndSearchNext(SonarrURL, SonarrKey, hash)
+					success = failAndSearchNext(getSonarrURL(), getSonarrKey(), hash)
 				}
 
 				if success {
 					msg := fmt.Sprintf("♻️ <b>Optimisation Source</b>\n\nFichier abandonné : <code>%s</code>\n🚀 <i>Radarr/Sonarr cherchent une autre source plus saine...</i>", name)
-					if bot != nil { bot.Send(tele.ChatID(SuperAdmin), msg, tele.ModeHTML) }
+					if bot != nil { 
+						if _, err := bot.Send(tele.ChatID(SuperAdmin), msg, tele.ModeHTML); err != nil {
+							log.Printf("⚠️ Erreur notification bot: %v", err)
+						}
+					}
 				} else {
 					// Fallback si l'API *arr échoue : on supprime quand même de qBit
 					deleteTorrent(hash, true)
@@ -993,22 +1019,26 @@ func cleanupQbit() {
 				deleteTorrent(hash, false)
 			}
 		}
+		time.Sleep(2 * time.Hour)
 	}
 }
 
 // failAndSearchNext utilise l'API Radarr/Sonarr pour bloquer la release et en chercher une autre
 func failAndSearchNext(baseURL, apiKey, hash string) bool {
 	// 1. Trouver l'ID du téléchargement dans la file d'attente Radarr/Sonarr
-	req, _ := http.NewRequest("GET", baseURL+"/api/v3/queue", nil)
+	req, err := http.NewRequest("GET", baseURL+"/api/v3/queue", nil)
+	if err != nil { return false }
 	req.Header.Set("X-Api-Key", apiKey)
 	resp, err := httpClient.Do(req)
 	if err != nil { return false }
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	var queue struct {
 		Records []map[string]interface{} `json:"records"`
 	}
-	json.NewDecoder(resp.Body).Decode(&queue)
+	if err := json.NewDecoder(resp.Body).Decode(&queue); err != nil {
+		return false
+	}
 
 	for _, rec := range queue.Records {
 		dlID, _ := rec["downloadId"].(string)
@@ -1016,11 +1046,12 @@ func failAndSearchNext(baseURL, apiKey, hash string) bool {
 			id := fmt.Sprintf("%v", rec["id"])
 			// 2. Supprimer de la file d'attente avec blocklist=true pour forcer la recherche d'un autre fichier
 			delURL := fmt.Sprintf("%s/api/v3/queue/%s?blocklist=true&skipRedownload=false", baseURL, id)
-			reqDel, _ := http.NewRequest("DELETE", delURL, nil)
+			reqDel, err := http.NewRequest("DELETE", delURL, nil)
+			if err != nil { continue }
 			reqDel.Header.Set("X-Api-Key", apiKey)
 			respDel, err := httpClient.Do(reqDel)
 			if err == nil {
-				respDel.Body.Close()
+				_ = respDel.Body.Close()
 				return respDel.StatusCode == 200
 			}
 		}
@@ -1038,7 +1069,7 @@ func deleteTorrent(hash string, deleteFiles bool) {
 	}
 	resp, err := httpClient.PostForm(QbitURL+"/api/v2/torrents/delete", data)
 	if err == nil {
-		resp.Body.Close()
+		_ = resp.Body.Close()
 	}
 }
 
@@ -1066,14 +1097,17 @@ func syncVpnPort() {
 		prefs := map[string]interface{}{
 			"listen_port": newPort,
 		}
-		jsonStr, _ := json.Marshal(prefs)
+		jsonStr, err := json.Marshal(prefs)
+		if err != nil {
+			continue
+		}
 		
 		val := url.Values{}
 		val.Set("json", string(jsonStr))
 		
 		resp, err := httpClient.PostForm(QbitURL+"/api/v2/app/setPreferences", val)
 		if err == nil {
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			lastPort = newPort
 			log.Printf("🔌 Port VPN synchronisé : %s (qBittorrent)", newPort)
 		}
@@ -1089,8 +1123,11 @@ func updateQbitTrackers() {
 			continue
 		}
 		buf := new(bytes.Buffer)
-		buf.ReadFrom(respT.Body)
-		respT.Body.Close()
+		_, err = buf.ReadFrom(respT.Body)
+		_ = respT.Body.Close()
+		if err != nil {
+			continue
+		}
 		trackers := strings.TrimSpace(buf.String())
 
 		if trackers == "" {
@@ -1099,10 +1136,15 @@ func updateQbitTrackers() {
 
 		// 2. Mettre à jour les préférences globales (pour les futurs torrents)
 		prefs := map[string]interface{}{"add_trackers": trackers, "add_trackers_enabled": true}
-		jsonStr, _ := json.Marshal(prefs)
-		val := url.Values{}
-		val.Set("json", string(jsonStr))
-		httpClient.PostForm(QbitURL+"/api/v2/app/setPreferences", val)
+		jsonStr, err := json.Marshal(prefs)
+		if err == nil {
+			val := url.Values{}
+			val.Set("json", string(jsonStr))
+			resp, err := httpClient.PostForm(QbitURL+"/api/v2/app/setPreferences", val)
+			if err == nil {
+				_ = resp.Body.Close()
+			}
+		}
 
 		// 3. Injecter dans les torrents existants (Uniquement publics)
 		respI, err := httpClient.Get(QbitURL + "/api/v2/torrents/info")
@@ -1110,8 +1152,11 @@ func updateQbitTrackers() {
 			continue
 		}
 		var torrents []map[string]interface{}
-		json.NewDecoder(respI.Body).Decode(&torrents)
-		respI.Body.Close()
+		err = json.NewDecoder(respI.Body).Decode(&torrents)
+		_ = respI.Body.Close()
+		if err != nil {
+			continue
+		}
 
 		updatedCount := 0
 		for _, t := range torrents {
@@ -1120,14 +1165,14 @@ func updateQbitTrackers() {
 				continue // Sécurité absolue pour tes trackers privés
 			}
 
-			hash := t["hash"].(string)
+			hash, _ := t["hash"].(string)
 			data := url.Values{}
 			data.Set("hash", hash)
 			data.Set("urls", trackers)
 			
 			respA, err := httpClient.PostForm(QbitURL+"/api/v2/torrents/addTrackers", data)
 			if err == nil {
-				respA.Body.Close()
+				_ = respA.Body.Close()
 				updatedCount++
 			}
 		}
@@ -1172,16 +1217,24 @@ func flushLogsToDisk(triggerService string) {
 	if err != nil {
 		return
 	}
-	defer f.Close()
+	defer func() {
+		if err := f.Close(); err != nil {
+			log.Printf("⚠️ Erreur fermeture log crash: %v", err)
+		}
+	}()
 
 	ringMu.Lock()
 	defer ringMu.Unlock()
 	
-	f.WriteString(fmt.Sprintf("--- CRASH REPORT TRIGGERED BY %s AT %v ---\n", triggerService, time.Now()))
+	if _, err := f.WriteString(fmt.Sprintf("--- CRASH REPORT TRIGGERED BY %s AT %v ---\n", triggerService, time.Now())); err != nil {
+		log.Printf("⚠️ Erreur écriture log crash (header): %v", err)
+	}
 	for i := 0; i < len(ringBuffer); i++ {
 		l := ringBuffer[(ringIdx+i)%len(ringBuffer)]
 		if l.Text != "" {
-			f.WriteString(fmt.Sprintf("[%s] %s: %s\n", l.Timestamp.Format("15:04:05"), l.Service, l.Text))
+			if _, err := f.WriteString(fmt.Sprintf("[%s] %s: %s\n", l.Timestamp.Format("15:04:05"), l.Service, l.Text)); err != nil {
+				log.Printf("⚠️ Erreur écriture log crash line: %v", err)
+			}
 		}
 	}
 	log.Printf("💾 Logs sauvegardés sur disque suite à une erreur dans %s", triggerService)
@@ -1245,15 +1298,12 @@ func restartContainer(name string) {
 
 func autoHealer() {
 	services := []struct {
-		name string
-		url  string
-		key  string
+		name, url, key string
 	}{
-		{"radarr", RadarrURL + "/api/v3/system/status", RadarrKey},
-		{"sonarr", SonarrURL + "/api/v3/system/status", SonarrKey},
+		{"radarr", getRadarrURL() + "/api/v3/system/status", getRadarrKey()},
+		{"sonarr", getSonarrURL() + "/api/v3/system/status", getSonarrKey()},
 		{"gluetun", QbitURL + "/api/v2/app/version", ""}, // qBit via Gluetun
 	}
-
 	failures := make(map[string]int)
 	ticker := time.NewTicker(5 * time.Minute) // Augmenté à 5 min
 
@@ -1352,7 +1402,7 @@ type ShareEngine struct {
 
 var shareEngine = &ShareEngine{
 	Links:  make(map[string]string),
-	Domain: os.Getenv("SHARE_DOMAIN"), // À définir dans .env
+	Domain: getEnv("SHARE_DOMAIN", "https://share.juleslaconfourque.fr"),
 }
 
 func (s *ShareEngine) GenerateLink(filePath string) string {
@@ -1377,9 +1427,20 @@ func (s *ShareEngine) StartServer(port string) {
 		s.mu.RUnlock()
 
 		if !ok {
+			log.Printf("❌ Share : Token invalide %s", token)
 			http.Error(w, "Lien expiré ou invalide", 404)
 			return
 		}
+
+		// Debug log pour voir le chemin réel
+		log.Printf("📂 Share : Tentative d'accès au fichier : %s", path)
+
+		if _, err := os.Stat(path); os.IsNotExist(err) {
+			log.Printf("❌ Share : Fichier introuvable sur le disque : %s", path)
+			http.Error(w, "Fichier introuvable sur le serveur", 404)
+			return
+		}
+
 		// ServeFile est ultra-optimisé en Go (Direct I/O via sendfile)
 		http.ServeFile(w, r, path)
 	})
@@ -1389,9 +1450,8 @@ func (s *ShareEngine) StartServer(port string) {
 
 func main() {
 	if !DockerMode {
-		RadarrURL = "http://localhost:7878"; SonarrURL = "http://localhost:8989"; QbitURL = "http://localhost:8080"
+		log.Println("Mode local activé")
 	}
-
 	// 1. Initialisation du Bot (nécessaire pour les routines)
 	var err error
 	bot, err = tele.NewBot(tele.Settings{
@@ -1423,6 +1483,7 @@ func main() {
 
 	// VPN Manager initialization (avec le bot déjà créé)
 	vpnMgr = vpnmanager.NewManager(bot, SuperAdmin, RealIP, QbitURL, DockerMode, "gluetun")
+	go vpnMgr.UpdateIP()
 	go vpnMgr.RunHealthCheck()
 	go vpnMgr.StartScheduler()
 
@@ -1533,15 +1594,14 @@ func main() {
 
 		bot.Handle(&tele.Btn{Unique: "m_del"}, func(c tele.Context) error {
 	
-		cat := c.Args()[0]
-		itemID := c.Args()[1]
-		endpoint := "/api/v3/movie/"
-		key := RadarrKey
-		if cat == "series" { endpoint = "/api/v3/series/"; key = SonarrKey }
-		
-		baseURL := RadarrURL
-		if cat == "series" { baseURL = SonarrURL }
-
+				cat := c.Args()[0]
+				itemID := c.Args()[1]
+				endpoint := "/api/v3/movie/"
+				key := getRadarrKey()
+				if cat == "series" { endpoint = "/api/v3/series/"; key = getSonarrKey() }
+				
+				baseURL := getRadarrURL()
+				if cat == "series" { baseURL = getSonarrURL() }
 		req, _ := http.NewRequest("DELETE", baseURL+endpoint+itemID+"?deleteFiles=true", nil)
 		req.Header.Set("X-Api-Key", key)
 		resp, err := httpClient.Do(req)
@@ -1602,11 +1662,11 @@ func main() {
 		// Log technique pour débug
 		log.Printf("📥 Demande d'ajout %s ID: %s", mType, id)
 
-		lookupURL := RadarrURL + "/api/v3/movie/lookup?term=tmdb:" + id
-		key := RadarrKey
+		lookupURL := getRadarrURL() + "/api/v3/movie/lookup?term=tmdb:" + id
+		key := getRadarrKey()
 		if mType != "movie" {
-			lookupURL = SonarrURL + "/api/v3/series/lookup?term=tvdb:" + id
-			key = SonarrKey
+			lookupURL = getSonarrURL() + "/api/v3/series/lookup?term=tvdb:" + id
+			key = getSonarrKey()
 		}
 		
 		req, _ := http.NewRequest("GET", lookupURL, nil)
@@ -1648,9 +1708,9 @@ func main() {
 		}
 		
 		payload, _ := json.Marshal(item)
-		addURL := RadarrURL + "/api/v3/movie"
+		addURL := getRadarrURL() + "/api/v3/movie"
 		if mType != "movie" {
-			addURL = SonarrURL + "/api/v3/series"
+			addURL = getSonarrURL() + "/api/v3/series"
 		}
 		
 		reqA, _ := http.NewRequest("POST", addURL, bytes.NewBuffer(payload))
@@ -1669,10 +1729,12 @@ func main() {
 		title, _ := item["title"].(string)
 		if title == "" { title, _ = item["name"].(string) }
 		
-		return c.Edit(fmt.Sprintf("✅ <b>Ajouté</b> : %s", title), tele.ModeHTML)
+		return c.Edit(fmt.Sprintf("✅ <b>Téléchargement lancé</b> : %s", title), tele.ModeHTML)
 	})
 
 		log.Println("🚀 Bot v11.1 (Go Architect) démarré...")
+		go refreshLibrary("films")
+		go refreshLibrary("series")
 		bot.Start()
 	}
 	

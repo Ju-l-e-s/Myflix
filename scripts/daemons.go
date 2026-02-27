@@ -22,26 +22,48 @@ func startVPNExporter(port string) {
 		
 		if err != nil {
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte("# Error fetching IP\n"))
+			if _, err := w.Write([]byte("# Error fetching IP\n")); err != nil {
+				log.Printf("⚠️ Erreur écriture metrics response (error): %v", err)
+			}
 			return
 		}
-		defer resp.Body.Close()
+		defer func() {
+			if err := resp.Body.Close(); err != nil {
+				log.Printf("⚠️ Erreur fermeture body IPify: %v", err)
+			}
+		}()
 
-		ipBytes, _ := io.ReadAll(resp.Body)
+		ipBytes, err := io.ReadAll(resp.Body)
+		if err != nil {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte("# Error reading IP body\n"))
+			return
+		}
 		ip := strings.TrimSpace(string(ipBytes))
 
 		if !strings.Contains(ip, ".") && !strings.Contains(ip, ":") {
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte("# Invalid IP response\n"))
+			if _, err := w.Write([]byte("# Invalid IP response\n")); err != nil {
+				log.Printf("⚠️ Erreur écriture metrics response (invalid): %v", err)
+			}
 			return
 		}
 
 		w.Header().Set("Content-Type", "text/plain")
-		fmt.Fprintf(w, "vpn_public_ip_info{ip=\"%s\"} 1\n", ip)
+		if _, err := fmt.Fprintf(w, "vpn_public_ip_info{ip=\"%s\"} 1\n", ip); err != nil {
+			log.Printf("⚠️ Erreur écriture metrics: %v", err)
+		}
 	})
 
 	log.Printf("📡 VPN Exporter (Go) démarré sur le port %s", port)
-	http.ListenAndServe(port, mux)
+	server := &http.Server{
+		Addr:              port,
+		Handler:           mux,
+		ReadHeaderTimeout: 3 * time.Second,
+	}
+	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		log.Printf("❌ Erreur VPN Exporter: %v", err)
+	}
 }
 
 // --- STORAGE TIERING (NVMe -> HDD) ---
@@ -50,9 +72,11 @@ func getUsagePercent(path string) float64 {
 	if err := syscall.Statfs(path, &stat); err != nil {
 		return 100.0 // Sécurité : on suppose plein si erreur
 	}
-	total := float64(stat.Blocks * uint64(stat.Bsize))
-	free := float64(stat.Bavail * uint64(stat.Bsize))
+	// G115: Integer overflow conversion. Cast each to float64 before multiplying.
+	total := float64(uint64(stat.Blocks)) * float64(uint64(stat.Bsize))
+	free := float64(uint64(stat.Bavail)) * float64(uint64(stat.Bsize))
 	used := total - free
+	if total == 0 { return 100.0 }
 	return (used / total) * 100.0
 }
 
@@ -61,21 +85,25 @@ func moveFileCrossDevice(source, dest string) error {
 	if err != nil {
 		return err
 	}
-	defer in.Close()
+	defer func() { _ = in.Close() }()
 
 	out, err := os.Create(dest)
 	if err != nil {
 		return err
 	}
-	defer out.Close()
+	defer func() { _ = out.Close() }()
 
 	if _, err = io.Copy(out, in); err != nil {
 		return err
 	}
 	
-	// Close files before removing source
-	in.Close()
-	out.Close()
+	// Close files before removing source to ensure handle is released
+	if err := in.Close(); err != nil {
+		log.Printf("⚠️ Erreur fermeture source %s: %v", source, err)
+	}
+	if err := out.Close(); err != nil {
+		log.Printf("⚠️ Erreur fermeture destination %s: %v", dest, err)
+	}
 	
 	return os.Remove(source)
 }
@@ -96,7 +124,7 @@ func startAutoTiering(nvmePath, hddPath string, targetPercent float64) {
 		}
 		var files []fileStat
 
-		filepath.Walk(nvmePath, func(path string, info os.FileInfo, err error) error {
+		err := filepath.Walk(nvmePath, func(path string, info os.FileInfo, err error) error {
 			if err != nil || info.IsDir() {
 				return nil
 			}
@@ -112,6 +140,10 @@ func startAutoTiering(nvmePath, hddPath string, targetPercent float64) {
 			}
 			return nil
 		})
+		if err != nil {
+			log.Printf("❌ Erreur parcours NVMe pour tiering: %v", err)
+			continue
+		}
 
 		// Trier par date d'accès (le plus vieux en premier)
 		sort.Slice(files, func(i, j int) bool {
@@ -130,7 +162,10 @@ func startAutoTiering(nvmePath, hddPath string, targetPercent float64) {
 			}
 
 			destPath := filepath.Join(hddPath, relPath)
-			os.MkdirAll(filepath.Dir(destPath), 0755)
+			if err := os.MkdirAll(filepath.Dir(destPath), 0755); err != nil {
+				log.Printf("❌ Erreur création dossier %s: %v", filepath.Dir(destPath), err)
+				continue
+			}
 
 			err = moveFileCrossDevice(f.path, destPath)
 			if err == nil {

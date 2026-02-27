@@ -34,24 +34,41 @@ func executeMaintenance() {
 	notifyAdminMsg(`🔄 <b>Maintenance Nocturne</b>
 Début de l'optimisation système...`)
 
-	// 1. Nettoyage du cache des posters (> 7 jours)
+	// 1. Sauvegarde des bases de données
+	runConfigBackup()
+
+	// 2. Nettoyage du cache des posters (> 7 jours)
 	cleanOldCache(7)
 
-	// 2. Nettoyage Docker (Prune hebdomadaire le dimanche)
+	// 3. Nettoyage Docker (Prune hebdomadaire le dimanche)
 	if time.Now().Weekday() == time.Sunday {
 		cleanDockerSystem()
 	}
 
-	// 3. Mise à jour du Projet (Self-Update)
+	// 4. Mise à jour du Projet (Self-Update)
 	checkAndSelfUpdate()
 
 	notifyAdminMsg(`✅ <b>Maintenance Terminée</b>
-Système optimisé et à jour.`)
+Système sauvegardé et optimisé.`)
+}
+
+func runConfigBackup() {
+	log.Println("📦 Sauvegarde : Démarrage du backup des configurations...")
+	cmd := exec.Command("/bin/bash", "/app/maintenance/backup_configs.sh")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Printf("❌ Erreur Sauvegarde : %v - Output: %s", err, string(output))
+		notifyAdminMsg("⚠️ <b>Erreur Sauvegarde</b>\nÉchec du backup automatique des configurations.")
+		return
+	}
+	log.Printf("✅ Sauvegarde réussie : %s", string(output))
 }
 
 func notifyAdminMsg(msg string) {
 	if bot != nil {
-		bot.Send(tele.ChatID(SuperAdmin), msg, tele.ModeHTML)
+		if _, err := bot.Send(tele.ChatID(SuperAdmin), msg, tele.ModeHTML); err != nil {
+			log.Printf("❌ Erreur envoi notification Admin: %v", err)
+		}
 	}
 }
 
@@ -59,13 +76,19 @@ func cleanOldCache(days int) {
 	count := 0
 	threshold := time.Now().AddDate(0, 0, -days)
 
-	filepath.Walk(PosterCacheDir, func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk(PosterCacheDir, func(path string, info os.FileInfo, err error) error {
 		if err == nil && !info.IsDir() && info.ModTime().Before(threshold) {
-			os.Remove(path)
-			count++
+			if err := os.Remove(path); err != nil {
+				log.Printf("⚠️ Erreur suppression cache %s: %v", path, err)
+			} else {
+				count++
+			}
 		}
 		return nil
 	})
+	if err != nil {
+		log.Printf("❌ Erreur parcours cache: %v", err)
+	}
 	log.Printf("🧹 Cache : %d posters anciens supprimés.", count)
 }
 
@@ -82,8 +105,14 @@ func cleanDockerSystem() {
 	// Prune images inutilisées (Correction JSON échappé)
 	resp, err := client.Post(`http://localhost/v1.41/images/prune?filters={"unusedposters":["true"]}`, "application/json", nil)
 	if err == nil {
-		resp.Body.Close()
+		defer func() {
+			if err := resp.Body.Close(); err != nil {
+				log.Printf("⚠️ Erreur fermeture body Docker Prune: %v", err)
+			}
+		}()
 		log.Println("✅ Docker : Images inutilisées supprimées.")
+	} else {
+		log.Printf("❌ Erreur Docker Prune: %v", err)
 	}
 }
 
@@ -92,6 +121,7 @@ func checkAndSelfUpdate() {
 	
 	cmd := exec.Command("git", "fetch")
 	if err := cmd.Run(); err != nil {
+		log.Printf("❌ Erreur git fetch: %v", err)
 		return
 	}
 
@@ -101,7 +131,9 @@ func checkAndSelfUpdate() {
 Un nouveau commit a été détecté sur GitHub. Watchtower tentera la mise à jour si configuré.`)
 		
 		// Optionnel : Déclencher un git pull et laisser Watchtower redémarrer
-		exec.Command("git", "pull").Run()
+		if err := exec.Command("git", "pull").Run(); err != nil {
+			log.Printf("❌ Erreur git pull: %v", err)
+		}
 	}
 }
 

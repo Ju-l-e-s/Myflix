@@ -72,7 +72,11 @@ func (m *Manager) UpdateIP() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.Printf("⚠️ Erreur fermeture body UpdateIP: %v", err)
+		}
+	}()
 
 	ipBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -102,7 +106,7 @@ func (m *Manager) PauseTorrents() {
 		log.Printf("Error pausing torrents: %v", err)
 		return
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 	log.Println("🛑 Torrents mis en pause via Killswitch")
 }
 
@@ -113,7 +117,7 @@ func (m *Manager) ResumeTorrents() {
 		log.Printf("Error resuming torrents: %v", err)
 		return
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 	log.Println("⏯️ Torrents relancés")
 }
 
@@ -125,7 +129,9 @@ func (m *Manager) NotifyAdmin(msg string) {
 	m.mu.RUnlock()
 	
 	if bot != nil && adminID != 0 {
-		bot.Send(tele.ChatID(adminID), msg, tele.ModeHTML)
+		if _, err := bot.Send(tele.ChatID(adminID), msg, tele.ModeHTML); err != nil {
+			log.Printf("⚠️ Erreur notification Admin (VPN Manager): %v", err)
+		}
 	}
 }
 
@@ -160,7 +166,9 @@ func (m *Manager) BenchmarkServer(ctx context.Context, s *Server) error {
 		return err
 	}
 	s.Latency = time.Since(start)
-	conn.Close()
+	if err := conn.Close(); err != nil {
+		log.Printf("⚠️ Erreur fermeture connexion benchmark latency: %v", err)
+	}
 
 	// 2. Speed Test (10MB Download)
 	// Using a reliable Swiss source for speed test if we can't find one on the Nord server
@@ -168,7 +176,10 @@ func (m *Manager) BenchmarkServer(ctx context.Context, s *Server) error {
 	// otherwise we use a fixed high-speed Swiss mirror.
 	testURL := "https://mirror.init7.net/archlinux/iso/latest/archlinux-x86_64.iso"
 	
-	req, _ := http.NewRequestWithContext(ctx, "GET", testURL, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", testURL, nil)
+	if err != nil {
+		return err
+	}
 	// Request only first 10MB
 	req.Header.Set("Range", "bytes=0-10485760")
 	
@@ -177,7 +188,11 @@ func (m *Manager) BenchmarkServer(ctx context.Context, s *Server) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.Printf("⚠️ Erreur fermeture body benchmark speed: %v", err)
+		}
+	}()
 
 	if resp.StatusCode != http.StatusPartialContent && resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("unexpected status: %d", resp.StatusCode)
@@ -206,7 +221,11 @@ func (m *Manager) FetchSwissServers() ([]Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.Printf("⚠️ Erreur fermeture body FetchSwissServers: %v", err)
+		}
+	}()
 
 	var data []map[string]interface{}
 	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
@@ -313,7 +332,7 @@ func (m *Manager) restartDockerContainer() {
 	
 	resp, err := client.Post(fmt.Sprintf("http://localhost/v1.41/containers/%s/restart", m.containerName), "application/json", nil)
 	if err == nil {
-		resp.Body.Close()
+		_ = resp.Body.Close()
 	} else {
 		log.Printf("Docker restart error: %v", err)
 	}

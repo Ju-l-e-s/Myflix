@@ -888,7 +888,7 @@ func thermalGovernor() {
 }
 
 func cleanupQbit() {
-	ticker := time.NewTicker(2 * time.Hour) // Vérification toutes les 2h
+	ticker := time.NewTicker(2 * time.Hour)
 	for range ticker.C {
 		resp, err := httpClient.Get(QbitURL + "/api/v2/torrents/info")
 		if err != nil {
@@ -903,26 +903,68 @@ func cleanupQbit() {
 			hash := t["hash"].(string)
 			name := t["name"].(string)
 			state := t["state"].(string)
+			category, _ := t["category"].(string)
 			lastActivity := int64(t["last_activity"].(float64))
 			
-			// LOGIQUE 1 : Purge des téléchargements BLOQUÉS (Stalled DL)
-			// Si le torrent est bloqué depuis plus de 48h (172800 secondes)
+			// Si le torrent est bloqué depuis plus de 48h
 			if state == "stalledDL" && (now-lastActivity) > 172800 {
-				deleteTorrent(hash, true) // Supprime aussi les fichiers pour reset Radarr
-				msg := fmt.Sprintf("🗑️ <b>Purge Automatique</b>\n\nTorrent bloqué supprimé : <code>%s</code>\n<i>(Aucune activité depuis 48h)</i>", name)
-				if bot != nil { bot.Send(tele.ChatID(SuperAdmin), msg, tele.ModeHTML) }
-				log.Printf("🧹 Purge StalledDL : %s", name)
+				log.Printf("🚨 Torrent bloqué détecté : %s (Cat: %s)", name, category)
+				
+				success := false
+				if category == "radarr" {
+					success = failAndSearchNext(RadarrURL, RadarrKey, hash)
+				} else if category == "sonarr" || category == "tv-sonarr" {
+					success = failAndSearchNext(SonarrURL, SonarrKey, hash)
+				}
+
+				if success {
+					msg := fmt.Sprintf("♻️ <b>Optimisation Source</b>\n\nFichier abandonné : <code>%s</code>\n🚀 <i>Radarr/Sonarr cherchent une autre source plus saine...</i>", name)
+					if bot != nil { bot.Send(tele.ChatID(SuperAdmin), msg, tele.ModeHTML) }
+				} else {
+					// Fallback si l'API *arr échoue : on supprime quand même de qBit
+					deleteTorrent(hash, true)
+				}
 				continue
 			}
 
-			// LOGIQUE 2 : Nettoyage des torrents FINIS (Seeding/StalledUP)
-			// On supprime uniquement le torrent de la liste, on garde les fichiers sur le disque
+			// Nettoyage des torrents finis (Public Trackers)
 			if state == "stalledUP" || state == "pausedUP" || (state == "uploading" && t["progress"].(float64) >= 1.0) {
 				deleteTorrent(hash, false)
-				log.Printf("🧹 Cleanup Seeding : %s", name)
 			}
 		}
 	}
+}
+
+// failAndSearchNext utilise l'API Radarr/Sonarr pour bloquer la release et en chercher une autre
+func failAndSearchNext(baseURL, apiKey, hash string) bool {
+	// 1. Trouver l'ID du téléchargement dans la file d'attente Radarr/Sonarr
+	req, _ := http.NewRequest("GET", baseURL+"/api/v3/queue", nil)
+	req.Header.Set("X-Api-Key", apiKey)
+	resp, err := httpClient.Do(req)
+	if err != nil { return false }
+	defer resp.Body.Close()
+
+	var queue struct {
+		Records []map[string]interface{} `json:"records"`
+	}
+	json.NewDecoder(resp.Body).Decode(&queue)
+
+	for _, rec := range queue.Records {
+		dlID, _ := rec["downloadId"].(string)
+		if strings.EqualFold(dlID, hash) {
+			id := fmt.Sprintf("%v", rec["id"])
+			// 2. Supprimer de la file d'attente avec blocklist=true pour forcer la recherche d'un autre fichier
+			delURL := fmt.Sprintf("%s/api/v3/queue/%s?blocklist=true&skipRedownload=false", baseURL, id)
+			reqDel, _ := http.NewRequest("DELETE", delURL, nil)
+			reqDel.Header.Set("X-Api-Key", apiKey)
+			respDel, err := httpClient.Do(reqDel)
+			if err == nil {
+				respDel.Body.Close()
+				return respDel.StatusCode == 200
+			}
+		}
+	}
+	return false
 }
 
 func deleteTorrent(hash string, deleteFiles bool) {

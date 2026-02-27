@@ -20,6 +20,7 @@ Just text your bot: *"I want to watch the movie with the guy stranded on Mars"*,
 * 🧠 **Conversational Discovery (Gemini 1.5):** Natural language processing. The AI understands context, typos, and genres natively.
 * ⚡ **Ultra-Fast Go Engine:** Optimized with **pre-compiled Regex**, **HTTP Pooling**, and **WalkDir** for sub-millisecond response times on Raspberry Pi 5.
 * 🛡️ **Advanced VPN Manager:** Automatic daily rotation (04:00 AM) with **Swiss-optimized benchmarking** (Latency/Speed tests) and a **real-IP killswitch** for qBittorrent.
+* ♻️ **Smart Source Optimization:** Automatically detects stalled downloads, **blocklists** bad releases via Radarr/Sonarr APIs, and triggers an immediate search for a **healthier file**.
 * 🛠️ **Autonomous Maintenance:** Self-updating system via **Watchtower** and **unattended-upgrades**. Automatic cache cleaning and Docker pruning.
 * 🔗 **Instant Sharing Engine:** Generate secure, Cloudflare-tunneled streaming links instantly via Telegram.
 * 🗄️ **Smart Tiering:** Seamlessly manages fast NVMe cache drives and massive external HDD/NAS storage.
@@ -65,6 +66,10 @@ Myflix is engineered for the Raspberry Pi 5's ARM architecture:
 ### 🛡️ VPN Security & Performance
 - **The Probe**: Before each rotation, the bot benchmarks 5 Swiss servers. It downloads a 10MB test file to RAM (`io.Discard`) to calculate a **Performance Score** ($Speed / Latency$).
 - **Killswitch**: If the public IP matches your `REAL_IP`, the bot immediately pauses all active torrents in qBittorrent to prevent leaks.
+
+### ♻️ Automated Failure Handling
+- **API Orchestration**: The bot monitors qBittorrent for `stalledDL` states. 
+- **Blocklisting**: If a download stalls for >48h, the bot calls the `DELETE /api/v3/queue/{id}` endpoint in Radarr/Sonarr with `blocklist=true`, forcing the system to find an **alternate release** for the same content.
 
 ### 🛠️ Maintenance & Reliability
 - **03:30 AM**: OS Security updates via `unattended-upgrades`.

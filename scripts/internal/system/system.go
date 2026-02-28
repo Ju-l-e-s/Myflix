@@ -15,9 +15,9 @@ import (
 	"time"
 	"log/slog"
 
-	"github.com/Ju-l-e-s/Myflix/internal/config"
-	"github.com/Ju-l-e-s/Myflix/internal/arrclient"
-	"github.com/Ju-l-e-s/Myflix/vpnmanager"
+	"myflixbot.local/internal/config"
+	"myflixbot.local/internal/arrclient"
+	"myflixbot.local/vpnmanager"
 	tele "gopkg.in/telebot.v3"
 )
 

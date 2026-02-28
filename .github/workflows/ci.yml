@@ -22,8 +22,6 @@ jobs:
       - name: Go Test
         working-directory: scripts
         run: |
-          # Correction du nom du module pour GitHub Actions
+          # Go va maintenant trouver les modules localement car il y a un point dans le nom du module
           go mod tidy
-          go mod download
-          # Lancement des tests récursifs
           go test -v ./...

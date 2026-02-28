@@ -11,13 +11,13 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Ju-l-e-s/Myflix/internal/ai"
-	"github.com/Ju-l-e-s/Myflix/internal/arrclient"
-	"github.com/Ju-l-e-s/Myflix/internal/bot"
-	"github.com/Ju-l-e-s/Myflix/internal/config"
-	"github.com/Ju-l-e-s/Myflix/internal/share"
-	"github.com/Ju-l-e-s/Myflix/internal/system"
-	"github.com/Ju-l-e-s/Myflix/vpnmanager"
+	"myflixbot.local/internal/ai"
+	"myflixbot.local/internal/arrclient"
+	"myflixbot.local/internal/bot"
+	"myflixbot.local/internal/config"
+	"myflixbot.local/internal/share"
+	"myflixbot.local/internal/system"
+	"myflixbot.local/vpnmanager"
 )
 
 func main() {

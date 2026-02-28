@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/Ju-l-e-s/Myflix/internal/config"
+	"myflixbot.local/internal/config"
 )
 
 type GeminiClient struct {

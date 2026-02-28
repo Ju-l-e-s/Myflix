@@ -105,6 +105,7 @@ func (s *SystemManager) ExecuteMaintenance() {
 	if time.Now().Weekday() == time.Sunday { 
 		s.cleanDockerSystem() 
 		s.RunSecurityScan()
+		s.notifyAdminMsg(s.GenerateWeeklyUsageReport())
 	}
 	s.checkAndSelfUpdate()
 	s.notifyAdminMsg("✅ <b>Maintenance Terminée</b>\nSystème sauvegardé et optimisé.")

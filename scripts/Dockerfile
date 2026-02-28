@@ -4,20 +4,21 @@ WORKDIR /build
 COPY go.mod go.sum ./
 RUN --mount=type=cache,target=/go/pkg/mod go mod download
 COPY . .
+RUN go mod tidy
 RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg/mod \
-    CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o myflixbot *.go
+    CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o myflixbot cmd/myflixbot/main.go
 
 # --- Stage 2: Runtime ---
 FROM debian:bookworm-slim
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    sqlite3 ca-certificates bash tar gzip gnupg rclone \
+    sqlite3 ca-certificates bash tar gzip gnupg rclone git iputils-ping \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /build/myflixbot /app/myflixbot
-RUN chmod +x /app/myflixbot
+COPY --from=builder /build/myflixbot /usr/local/bin/myflixbot
+RUN chmod +x /usr/local/bin/myflixbot
 
 EXPOSE 5001 3000 8001
-ENTRYPOINT ["/app/myflixbot"]
+ENTRYPOINT ["/usr/local/bin/myflixbot"]

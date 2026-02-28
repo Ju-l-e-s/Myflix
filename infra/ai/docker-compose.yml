@@ -10,16 +10,21 @@ services:
       - PGID=${PGID:-1000}
       - TZ=${TZ:-Europe/Paris}
       - DOCKER_MODE=true
+      - PROJECT_ROOT=/app
       - REAL_IP=${REAL_IP}
       - TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
       - MYFLIX_RADARR_KEY=75ed9e2e3922442c8c1e012e47bc0906
       - TMDB_API_KEY=${TMDB_API_KEY}
       - MYFLIX_SONARR_KEY=dfa7da413b48480097f6a399080be393
       - GEMINI_KEY=${GEMINI_KEY}
+      - SOPS_AGE_KEY=${SOPS_AGE_KEY}
       - SHARE_DOMAIN=${SHARE_DOMAIN}
       - STORAGE_NVME_PATH=/data/internal
       - STORAGE_HDD_PATH=/data/external
+    working_dir: /app
     volumes:
+      - ../..:/app:rw
+      - ./maintenance:/app/maintenance:ro
       - ${MEDIA_SHARE_PATH:-/home/jules/media_share}:/media_share
       - ${NVME_DATA_PATH:-./data}:/data/internal
       - ${HDD_STORAGE_PATH:-/mnt/externe}:/data/external

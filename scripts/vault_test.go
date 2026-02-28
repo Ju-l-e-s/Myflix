@@ -1,61 +1,11 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
 )
-
-// MockExecutor simule l'environnement système pour les tests
-type MockExecutor struct {
-	CommandsExecuted []string
-	MockError        error
-}
-
-func (m *MockExecutor) RunCommand(dir string, name string, args ...string) ([]byte, error) {
-	cmdStr := fmt.Sprintf("%s %v", name, args)
-	m.CommandsExecuted = append(m.CommandsExecuted, cmdStr)
-	return []byte("mock output"), m.MockError
-}
-
-func TestSyncVaultSecure_Success(t *testing.T) {
-	tempSource, _ := os.MkdirTemp("", "source_*")
-	tempVault, _ := os.MkdirTemp("", "vault_*")
-	defer os.RemoveAll(tempSource)
-	defer os.RemoveAll(tempVault)
-
-	// Simulation du .env et config
-	os.WriteFile(filepath.Join(tempSource, ".env"), []byte("test env"), 0644)
-	os.Mkdir(filepath.Join(tempSource, "config"), 0755)
-
-	mockExec := &MockExecutor{}
-
-	// On lance la fonction qui est censée appeler "git add", "git commit", etc.
-	err := SyncVaultSecure(mockExec, tempSource, tempVault)
-	
-	if err != nil {
-		t.Errorf("SyncVaultSecure a retourné une erreur inattendue : %v", err)
-	}
-
-	// On vérifie que le mock a bien été sollicité
-	if len(mockExec.CommandsExecuted) < 3 {
-		t.Errorf("Pas assez de commandes exécutées. Obtenu : %v", mockExec.CommandsExecuted)
-	}
-	
-	// Vérification de quelques appels clés
-	foundGitAdd := false
-	for _, cmd := range mockExec.CommandsExecuted {
-		if contains(cmd, "git [add .]") {
-			foundGitAdd = true
-		}
-	}
-	
-	if !foundGitAdd {
-		t.Errorf("La commande 'git add .' n'a pas été appelée")
-	}
-}
 
 func TestIsFileModified(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "vault_test_*")

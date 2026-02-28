@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"net"
 	"net/http"
 	"net/url"
@@ -38,6 +38,7 @@ type Manager struct {
 	isDocker      bool
 	containerName string
 	httpClient    *http.Client
+	ipCheckerURL  string
 }
 
 func NewManager(bot *tele.Bot, adminID int64, realIP string, qbitURL string, isDocker bool, containerName string) *Manager {
@@ -49,6 +50,7 @@ func NewManager(bot *tele.Bot, adminID int64, realIP string, qbitURL string, isD
 		isDocker:      isDocker,
 		containerName: containerName,
 		httpClient:    &http.Client{Timeout: 10 * time.Second},
+		ipCheckerURL:  "https://ifconfig.me/ip",
 	}
 }
 
@@ -56,6 +58,13 @@ func NewManager(bot *tele.Bot, adminID int64, realIP string, qbitURL string, isD
 func (m *Manager) SetBot(bot *tele.Bot) {
 	m.mu.Lock()
 	m.telegramBot = bot
+	m.mu.Unlock()
+}
+
+// SetIPCheckerURL allows overriding the IP service for testing
+func (m *Manager) SetIPCheckerURL(url string) {
+	m.mu.Lock()
+	m.ipCheckerURL = url
 	m.mu.Unlock()
 }
 
@@ -68,13 +77,17 @@ func (m *Manager) GetCurrentIP() string {
 
 // UpdateIP fetches the current public IP and checks for leaks
 func (m *Manager) UpdateIP() (string, error) {
-	resp, err := m.httpClient.Get("https://ifconfig.me/ip")
+	m.mu.RLock()
+	url := m.ipCheckerURL
+	m.mu.RUnlock()
+
+	resp, err := m.httpClient.Get(url)
 	if err != nil {
 		return "", err
 	}
 	defer func() {
 		if err := resp.Body.Close(); err != nil {
-			log.Printf("⚠️ Erreur fermeture body UpdateIP: %v", err)
+			slog.Error("Erreur fermeture body UpdateIP", "error", err)
 		}
 	}()
 
@@ -103,22 +116,22 @@ VPN déconnecté ! IP réelle détectée. Arrêt des torrents...`)
 func (m *Manager) PauseTorrents() {
 	resp, err := m.httpClient.PostForm(m.qbitURL+"/api/v2/torrents/pause", url.Values{"hashes": {"all"}})
 	if err != nil {
-		log.Printf("Error pausing torrents: %v", err)
+		slog.Error("Error pausing torrents", "error", err)
 		return
 	}
 	_ = resp.Body.Close()
-	log.Println("🛑 Torrents mis en pause via Killswitch")
+	slog.Info("Torrents mis en pause via Killswitch")
 }
 
 // ResumeTorrents resumes all downloads in qBittorrent
 func (m *Manager) ResumeTorrents() {
 	resp, err := m.httpClient.PostForm(m.qbitURL+"/api/v2/torrents/resume", url.Values{"hashes": {"all"}})
 	if err != nil {
-		log.Printf("Error resuming torrents: %v", err)
+		slog.Error("Error resuming torrents", "error", err)
 		return
 	}
 	_ = resp.Body.Close()
-	log.Println("⏯️ Torrents relancés")
+	slog.Info("Torrents relancés")
 }
 
 // NotifyAdmin sends a Telegram message
@@ -130,7 +143,7 @@ func (m *Manager) NotifyAdmin(msg string) {
 	
 	if bot != nil && adminID != 0 {
 		if _, err := bot.Send(tele.ChatID(adminID), msg, tele.ModeHTML); err != nil {
-			log.Printf("⚠️ Erreur notification Admin (VPN Manager): %v", err)
+			slog.Error("Erreur notification Admin (VPN Manager)", "error", err)
 		}
 	}
 }
@@ -138,7 +151,7 @@ func (m *Manager) NotifyAdmin(msg string) {
 // RunHealthCheck starts the periodic IP monitoring
 func (m *Manager) RunHealthCheck() {
 	ticker := time.NewTicker(30 * time.Minute)
-	log.Println("📡 Surveillance IP démarrée (30 min)")
+	slog.Info("Surveillance IP démarrée", "interval", "30m")
 	
 	for range ticker.C {
 		oldIP := m.GetCurrentIP()
@@ -167,20 +180,15 @@ func (m *Manager) BenchmarkServer(ctx context.Context, s *Server) error {
 	}
 	s.Latency = time.Since(start)
 	if err := conn.Close(); err != nil {
-		log.Printf("⚠️ Erreur fermeture connexion benchmark latency: %v", err)
+		slog.Error("Erreur fermeture connexion benchmark latency", "error", err)
 	}
 
-	// 2. Speed Test (10MB Download)
-	// Using a reliable Swiss source for speed test if we can't find one on the Nord server
-	// Here we try to download a test file via the server hostname if available, 
-	// otherwise we use a fixed high-speed Swiss mirror.
 	testURL := "https://mirror.init7.net/archlinux/iso/latest/archlinux-x86_64.iso"
 	
 	req, err := http.NewRequestWithContext(ctx, "GET", testURL, nil)
 	if err != nil {
 		return err
 	}
-	// Request only first 10MB
 	req.Header.Set("Range", "bytes=0-10485760")
 	
 	start = time.Now()
@@ -190,7 +198,7 @@ func (m *Manager) BenchmarkServer(ctx context.Context, s *Server) error {
 	}
 	defer func() {
 		if err := resp.Body.Close(); err != nil {
-			log.Printf("⚠️ Erreur fermeture body benchmark speed: %v", err)
+			slog.Error("Erreur fermeture body benchmark speed", "error", err)
 		}
 	}()
 
@@ -206,7 +214,6 @@ func (m *Manager) BenchmarkServer(ctx context.Context, s *Server) error {
 	duration := time.Since(start).Seconds()
 	s.Speed = (float64(n) / (1024 * 1024)) / duration // MB/s
 	
-	// Score calculation (Vitesse / Latence en ms)
 	latMs := float64(s.Latency.Milliseconds())
 	if latMs == 0 { latMs = 1 }
 	s.Score = s.Speed / latMs
@@ -216,14 +223,13 @@ func (m *Manager) BenchmarkServer(ctx context.Context, s *Server) error {
 
 // FetchSwissServers gets a list of Swiss servers from NordVPN API
 func (m *Manager) FetchSwissServers() ([]Server, error) {
-	// country_id 208 is Switzerland
-	resp, err := m.httpClient.Get("https://api.nordvpn.com/v1/servers/recommendations?filters[country_id]=208&limit=10")
+	resp, err := m.httpClient.Get("https://api.nordvpn.com/v1/servers/recommendations?filters[country_id]=209&limit=10")
 	if err != nil {
 		return nil, err
 	}
 	defer func() {
 		if err := resp.Body.Close(); err != nil {
-			log.Printf("⚠️ Erreur fermeture body FetchSwissServers: %v", err)
+			slog.Error("Erreur fermeture body FetchSwissServers", "error", err)
 		}
 	}()
 
@@ -237,7 +243,14 @@ func (m *Manager) FetchSwissServers() ([]Server, error) {
 		name, _ := s["name"].(string)
 		hostname, _ := s["hostname"].(string)
 		ip, _ := s["station"].(string)
+		if ip == "" {
+			ip = hostname
+		}
 		servers = append(servers, Server{Name: name, Hostname: hostname, IP: ip})
+	}
+
+	if len(servers) == 0 {
+		return nil, fmt.Errorf("aucun serveur suisse trouvé dans l'API")
 	}
 
 	return servers, nil
@@ -253,7 +266,6 @@ func (m *Manager) RotateVPN() {
 		return
 	}
 
-	// Benchmark parallelly (limit to 5)
 	if len(servers) > 5 {
 		servers = servers[:5]
 	}
@@ -273,6 +285,8 @@ func (m *Manager) RotateVPN() {
 				mu.Lock()
 				benchmarked = append(benchmarked, s)
 				mu.Unlock()
+			} else {
+				slog.Error("Benchmark échoué pour serveur", "name", s.Name, "hostname", s.Hostname, "error", err)
 			}
 		}(servers[i])
 	}
@@ -283,7 +297,6 @@ func (m *Manager) RotateVPN() {
 		return
 	}
 
-	// Sort by score descending
 	sort.Slice(benchmarked, func(i, j int) bool {
 		return benchmarked[i].Score > benchmarked[j].Score
 	})
@@ -301,28 +314,23 @@ Vitesse : %.1f MB/s`,
 		m.connectNordVPN(best.Name)
 	}
 
-	// Verify IP after reconnection
 	time.Sleep(10 * time.Second)
 	newIP, _ := m.UpdateIP()
 	m.NotifyAdmin("✅ <b>VPN Rotation</b> : Reconnexion réussie. IP : " + newIP)
 	
-	// Resume torrents if they were paused
 	m.ResumeTorrents()
 }
 
 func (m *Manager) connectNordVPN(serverName string) {
-	log.Printf("Connecting to NordVPN: %s", serverName)
-	// Extract number from name like "Switzerland #123" -> "Switzerland" or "CH123"
-	// The nordvpn CLI usually accepts server names or country names.
+	slog.Info("Connecting to NordVPN", "server", serverName)
 	cmd := exec.Command("nordvpn", "connect", serverName)
 	if err := cmd.Run(); err != nil {
-		log.Printf("NordVPN connect error: %v", err)
+		slog.Error("NordVPN connect error", "error", err)
 	}
 }
 
 func (m *Manager) restartDockerContainer() {
-	log.Printf("Restarting Docker container: %s", m.containerName)
-	// We use the Docker socket via HTTP as seen in main.go
+	slog.Info("Restarting Docker container", "container", m.containerName)
 	transport := &http.Transport{
 		DialContext: func(_ context.Context, _, _ string) (net.Conn, error) {
 			return net.Dial("unix", "/var/run/docker.sock")
@@ -334,7 +342,7 @@ func (m *Manager) restartDockerContainer() {
 	if err == nil {
 		_ = resp.Body.Close()
 	} else {
-		log.Printf("Docker restart error: %v", err)
+		slog.Error("Docker restart error", "error", err)
 	}
 }
 
@@ -347,7 +355,7 @@ func (m *Manager) StartScheduler() {
 			next = next.Add(24 * time.Hour)
 		}
 		
-		log.Printf("⏰ Prochaine rotation VPN à : %v", next)
+		slog.Info("Prochaine rotation VPN prévue", "time", next)
 		time.Sleep(time.Until(next))
 		m.RotateVPN()
 	}

@@ -25,8 +25,10 @@ services:
       - PGID=1000
       - TZ=Europe/Paris
     volumes:
-      - ${NVME_DATA_PATH:-/home/jules/infra/ai/data}/radarr/config:/config
-      - /mnt/pool:/data
+      - ${HDD_STORAGE_PATH:-/mnt/externe}/radarr/config:/config
+      - ${POOL_STORAGE_PATH:-/mnt/pool}:/data
+      - ${POOL_STORAGE_PATH:-/mnt/pool}/movies:/movies
+      - ${POOL_STORAGE_PATH:-/mnt/pool}/tv:/tv
     ports:
       - 127.0.0.1:7878:7878
     restart: unless-stopped
@@ -43,8 +45,9 @@ services:
       - PGID=1000
       - TZ=Europe/Paris
     volumes:
-      - ${NVME_DATA_PATH:-/home/jules/infra/ai/data}/sonarr/config:/config
-      - /mnt/pool:/data
+      - ${HDD_STORAGE_PATH:-/mnt/externe}/sonarr/config:/config
+      - ${POOL_STORAGE_PATH:-/mnt/pool}:/data
+      - ${POOL_STORAGE_PATH:-/mnt/pool}/tv:/tv
     ports:
       - 127.0.0.1:8989:8989
     restart: unless-stopped
@@ -62,7 +65,7 @@ services:
       - TZ=Europe/Paris
     volumes:
       - ${NVME_DATA_PATH:-/home/jules/infra/ai/data}/bazarr/config:/config
-      - /mnt/pool:/data
+      - ${POOL_STORAGE_PATH:-/mnt/pool}:/data
     ports:
       - 127.0.0.1:6767:6767
     restart: unless-stopped
@@ -80,7 +83,7 @@ services:
       - TZ=Europe/Paris
     volumes:
       - ${NVME_DATA_PATH:-/home/jules/infra/ai/data}/syncthing/config:/config
-      - /mnt/pool/media:/data
+      - ${POOL_STORAGE_PATH:-/mnt/pool}/media:/data
     ports:
       - 127.0.0.1:8384:8384
       - 22000:22000/tcp

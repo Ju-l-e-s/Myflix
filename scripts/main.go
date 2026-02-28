@@ -6,6 +6,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"html"
 	"io"
@@ -230,7 +231,11 @@ func refreshLibrary(cat string) []map[string]interface{} {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
-		log.Printf("❌ Erreur API %s (Code %d) via %s. Clé: %s", cat, resp.StatusCode, baseURL, apiKey[:4]+"...")
+		keyPrefix := "N/A"
+		if len(apiKey) >= 4 {
+			keyPrefix = apiKey[:4]
+		}
+		log.Printf("❌ Erreur API %s (Code %d) via %s. Clé: %s", cat, resp.StatusCode, baseURL, keyPrefix+"...")
 		return nil
 	}
 
@@ -1393,6 +1398,32 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+
+
+var errFoundVideo = errors.New("fichier vidéo trouvé")
+
+// findFirstVideoFile parcourt un dossier et s'arrête immédiatement dès le premier fichier vidéo trouvé
+func findFirstVideoFile(root string) string {
+	var foundPath string
+	err := filepath.WalkDir(root, func(p string, d os.DirEntry, err error) error {
+		if err != nil {
+			return nil
+		}
+		if !d.IsDir() {
+			ext := strings.ToLower(filepath.Ext(p))
+			if ext == ".mkv" || ext == ".mp4" || ext == ".m2ts" || ext == ".avi" || ext == ".webm" {
+				foundPath = p
+				return errFoundVideo // Stopper immédiatement
+			}
+		}
+		return nil
+	})
+	if err == errFoundVideo {
+		return foundPath
+	}
+	return ""
+}
+
 // --- SHARE ENGINE (GO ARCHITECT) ---
 type ShareEngine struct {
 	mu     sync.RWMutex
@@ -1480,6 +1511,7 @@ func main() {
 	
 	go startAutoTiering(nvmePath, hddPath, 80.0)
 	go startMaintenanceCycle()
+	go startVaultDaemon(".", "/home/jules/MyFlixSecrets")
 
 	// VPN Manager initialization (avec le bot déjà créé)
 	vpnMgr = vpnmanager.NewManager(bot, SuperAdmin, RealIP, QbitURL, DockerMode, "gluetun")
@@ -1628,20 +1660,18 @@ func main() {
 
 		path, _ := item["path"].(string)
 		
-		// Si c'est une série ou un film, on cherche le premier fichier disponible
-		filePath := path
-		filepath.Walk(path, func(p string, info os.FileInfo, err error) error {
-			if err == nil && !info.IsDir() {
-				ext := strings.ToLower(filepath.Ext(p))
-				if ext == ".mkv" || ext == ".mp4" || ext == ".m2ts" || ext == ".avi" || ext == ".webm" {
-					filePath = p
-					return filepath.SkipDir
-				}
-			}
-			return nil
-		})
+		// Remplacement dynamique : on extrait le nom du dossier final et on le mappe sur nos volumes
+		baseFolder := filepath.Base(path)
+		if cat == "films" {
+			path = filepath.Join(getEnv("MOVIES_MOUNT", "/movies"), baseFolder)
+		} else if cat == "series" {
+			path = filepath.Join(getEnv("TV_MOUNT", "/tv"), baseFolder)
+		}
 
-		if filePath == path {
+		// Si c'est une série ou un film, on cherche le premier fichier disponible
+		filePath := findFirstVideoFile(path)
+
+		if filePath == "" {
 			return c.Send("❌ Aucun fichier vidéo trouvé.")
 		}
 

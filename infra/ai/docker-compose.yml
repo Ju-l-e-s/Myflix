@@ -12,9 +12,9 @@ services:
       - DOCKER_MODE=true
       - REAL_IP=${REAL_IP}
       - TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
-      - RADARR_API_KEY=${RADARR_API_KEY}
+      - MYFLIX_RADARR_KEY=75ed9e2e3922442c8c1e012e47bc0906
       - TMDB_API_KEY=${TMDB_API_KEY}
-      - SONARR_API_KEY=${SONARR_API_KEY}
+      - MYFLIX_SONARR_KEY=dfa7da413b48480097f6a399080be393
       - GEMINI_KEY=${GEMINI_KEY}
       - SHARE_DOMAIN=${SHARE_DOMAIN}
       - STORAGE_NVME_PATH=/data/internal
@@ -24,8 +24,8 @@ services:
       - ${NVME_DATA_PATH:-./data}:/data/internal
       - ${HDD_STORAGE_PATH:-/mnt/externe}:/data/external
       # --- Legacy Bridge ---
-      - ${NVME_DATA_PATH:-./data}/media/movies:/movies
-      - ${NVME_DATA_PATH:-./data}/media/tv:/tv
+      - ${POOL_STORAGE_PATH:-${POOL_STORAGE_PATH:-/mnt/pool}}/movies:/movies
+      - ${POOL_STORAGE_PATH:-${POOL_STORAGE_PATH:-/mnt/pool}}/tv:/tv
       - ${HDD_STORAGE_PATH:-/mnt/externe}:/mnt/externe
       - ${NVME_DATA_PATH:-./data}/gluetun:/tmp/gluetun:ro
       - /var/run/docker.sock:/var/run/docker.sock # Privilège Auto-Healing
@@ -96,8 +96,7 @@ services:
       - WEBUI_PORT=8080
     volumes:
       - ${NVME_DATA_PATH:-./data}/qbittorrent/config:/config
-      - ${NVME_DATA_PATH:-./data}:/data/internal
-      - ${NVME_DATA_PATH:-./data}/downloads:/downloads
+      - ${POOL_STORAGE_PATH:-/mnt/pool}:/data
     restart: always
 
   flaresolverr:
@@ -120,8 +119,8 @@ services:
       - ${NVME_DATA_PATH:-./data}:/data/internal
       - ${HDD_STORAGE_PATH:-/mnt/externe}:/data/external
       # --- Legacy Bridge ---
-      - ${NVME_DATA_PATH:-./data}/media/movies:/movies
-      - ${NVME_DATA_PATH:-./data}/media/tv:/tv
+      - ${POOL_STORAGE_PATH:-${POOL_STORAGE_PATH:-/mnt/pool}}/movies:/movies
+      - ${POOL_STORAGE_PATH:-${POOL_STORAGE_PATH:-/mnt/pool}}/tv:/tv
       - ${HDD_STORAGE_PATH:-/mnt/externe}:/mnt/externe
     restart: unless-stopped
 

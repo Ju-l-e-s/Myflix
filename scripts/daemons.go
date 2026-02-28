@@ -176,3 +176,27 @@ func startAutoTiering(nvmePath, hddPath string, targetPercent float64) {
 		}
 	}
 }
+
+// --- CONFIG-AS-CODE VAULT (Nightly @ 04:45) ---
+func startVaultDaemon(sourceDir, vaultDir string) {
+	log.Printf("🔐 Vault Daemon : Planifié pour 04:45 chaque nuit.")
+	for {
+		now := time.Now()
+		nextRun := time.Date(now.Year(), now.Month(), now.Day(), 4, 45, 0, 0, now.Location())
+		if now.After(nextRun) {
+			nextRun = nextRun.Add(24 * time.Hour)
+		}
+
+		time.Sleep(time.Until(nextRun))
+
+		log.Printf("🔐 Vault Daemon : Lancement de la sauvegarde sécurisée...")
+		if err := SyncVaultSecure(sourceDir, vaultDir); err != nil {
+			log.Printf("❌ Vault Daemon Erreur: %v", err)
+			// Ici, tu pourrais appeler une fonction d'alerte Telegram
+			// ex: sendTelegramAlert(fmt.Sprintf("🚨 Vault Error: %v", err))
+		} else {
+			log.Printf("✅ Vault Daemon : Sauvegarde réussie.")
+		}
+	}
+}
+

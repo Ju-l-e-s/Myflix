@@ -42,6 +42,9 @@ type Manager struct {
 }
 
 func NewManager(bot *tele.Bot, adminID int64, realIP string, qbitURL string, isDocker bool, containerName string) *Manager {
+	proxyURL, _ := url.Parse("http://gluetun:8888")
+	transport := &http.Transport{Proxy: http.ProxyURL(proxyURL)}
+
 	return &Manager{
 		realIP:        realIP,
 		telegramBot:   bot,
@@ -49,7 +52,10 @@ func NewManager(bot *tele.Bot, adminID int64, realIP string, qbitURL string, isD
 		qbitURL:       qbitURL,
 		isDocker:      isDocker,
 		containerName: containerName,
-		httpClient:    &http.Client{Timeout: 10 * time.Second},
+		httpClient:    &http.Client{
+			Timeout: 10 * time.Second,
+			Transport: transport,
+		},
 		ipCheckerURL:  "https://ifconfig.me/ip",
 	}
 }

@@ -241,12 +241,10 @@ func (s *SystemManager) moveFile(src, dst string) error {
 func (s *SystemManager) StartVPNExporter(ctx context.Context, port string) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
-		// 1. IP Metrics
-		resp, _ := s.httpClient.Get("https://api.ipify.org")
-		if resp != nil {
-			defer resp.Body.Close()
-			ip, _ := io.ReadAll(resp.Body)
-			fmt.Fprintf(w, "myflix_vpn_public_ip{ip=\"%s\"} 1\n", string(ip))
+		// 1. IP Metrics (via VPN Manager Cache)
+		vpnIP := s.vpn.GetCurrentIP()
+		if vpnIP != "" {
+			fmt.Fprintf(w, "myflix_vpn_public_ip{ip=\"%s\"} 1\n", vpnIP)
 		}
 
 		// 2. Service Health Metrics

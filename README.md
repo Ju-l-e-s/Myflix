@@ -1,4 +1,4 @@
-# 🏛️ Myflix - The AI-Powered Media Ecosystem
+# 🏛️ Myflix - The Autonomous Media Orchestrator
 
 ![Go](https://img.shields.io/badge/go-%2300ADD8.svg?style=for-the-badge&logo=go&logoColor=white)
 ![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)
@@ -7,84 +7,81 @@
 ![Prometheus](https://img.shields.io/badge/Prometheus-E6522C?style=for-the-badge&logo=Prometheus&logoColor=white)
 ![Raspberry Pi](https://img.shields.io/badge/-RaspberryPi-C51A4A?style=for-the-badge&logo=Raspberry-Pi)
 
-> **Your self-hosted, AI-driven media empire. Built in Go. Optimized for Raspberry Pi 5.**
+> **Your resilient, high-performance media empire. Built in Go. Engineered for Raspberry Pi 5.**
 
-Tired of juggling between Radarr, Sonarr, qBittorrent UIs, and VPN settings? **Myflix** automates your entire media lifecycle through a single, lightning-fast Telegram bot. 
-
-Just text your bot: *"I want to watch the movie with the guy stranded on Mars"*, and Myflix's AI (Gemini 1.5) will identify *The Martian*, route the request to your indexers, monitor the download, and notify you when it's ready. **Zero clicks required.**
+**Myflix v11.4** is an industrial-grade orchestration suite. It unifies Radarr, Sonarr, qBittorrent, and NordVPN behind a single interface, driven by robust business logic and a conversational entry point powered by Gemini 1.5.
 
 ---
 
-## ✨ Killer Features
+## ✨ Core Capabilities
 
-* 🧠 **Conversational Discovery (Gemini 1.5):** Natural language processing. The AI understands context, typos, and genres natively.
-* ⚡ **Ultra-Fast Go Engine:** Optimized with **pre-compiled Regex**, **HTTP Pooling**, and **WalkDir** for sub-millisecond response times on Raspberry Pi 5.
-* 🛡️ **Advanced VPN Manager:** Automatic daily rotation (04:00 AM) with **Swiss-optimized benchmarking** (Latency/Speed tests) and a **real-IP killswitch** for qBittorrent.
-* ♻️ **Smart Source Optimization:** Automatically detects stalled downloads, **blocklists** bad releases via Radarr/Sonarr APIs, and triggers an immediate search for a **healthier file**.
-* 🛠️ **Autonomous Maintenance:** Self-updating system via **Watchtower** and **unattended-upgrades**. Automatic cache cleaning and Docker pruning.
-* 🔗 **Instant Sharing Engine:** Generate secure, Cloudflare-tunneled streaming links instantly via Telegram.
-* 🗄️ **Smart Tiering:** Seamlessly manages fast NVMe cache drives and massive external HDD/NAS storage.
+### 🧠 Conversational Entry Point
+AI is no longer just a product; it's the interface. Thanks to Gemini 1.5 integration, Myflix translates your natural intentions into precise API commands. It understands context, genres, and descriptions without requiring rigid syntax.
+
+### 🏎️ High-Performance Go Engine
+Designed for raw efficiency on ARM64 architecture:
+- **Concurrency**: Multi-threaded library refreshes and background task management.
+- **I/O Optimization**: Utilizes `filepath.WalkDir` to minimize system calls when indexing terabytes of data.
+- **Zero-Latency**: Asynchronous cache with surgical Mutex locking for instantaneous responses.
+
+### 🛡️ Defensive Networking & Killswitch
+Security is an automation, not an option:
+- **Dynamic Benchmarking**: Automatically tests and selects the best VPN server (Switzerland) every night based on Latency/Speed scores.
+- **Verified Killswitch**: Active public IP monitoring. In the event of a leak, downloads are halted immediately (< 500ms).
+
+### ♻️ Self-Healing Lifecycle
+Myflix manages failures without human intervention:
+- **Stalled Logic**: Automatically detects stuck downloads, removes them, and adds them to the blocklist to force a search for a healthier source.
+- **Auto-Maintenance**: Nightly cycles for cache cleaning, container updates via Watchtower, and encrypted backups (SOPS).
+
+### 🗄️ Industrial Storage Tiering
+Intelligent storage hierarchy management:
+- **Hot Tier (NVMe)**: For active downloads and metadata cache.
+- **Archive Tier (HDD/NAS)**: Automatic migration of older files based on last access time to free up high-speed space.
+
+### 🔗 Secured Share Gateway
+Integrated sharing server for remote access:
+- **Security First**: Strict path validation (Anti-Path Traversal).
+- **Stability**: Per-IP rate-limiting to protect the Raspberry Pi 5 bandwidth.
 
 ---
 
-## 🚀 Installation Tutorial
+## 🏗️ Technical Architecture
 
-### 1. Initial Setup
-```bash
-git clone https://github.com/Ju-l-e-s/Myflix.git
-cd Myflix
-cp .env.example .env
+### 📂 Project Structure
+```text
+.
+├── infra/                   # Infrastructure as Code (Docker stack)
+├── scripts/                 # Core Go Engine
+│   ├── cmd/myflixbot/       # Application Entry Point
+│   ├── internal/            # Private Modular Packages
+│   │   ├── ai/              # Gemini 1.5 NLP Logic
+│   │   ├── arrclient/       # Surgical Locking API Client
+│   │   ├── bot/             # Premium UI/UX Engine
+│   │   ├── config/          # Dependency Injection Config
+│   │   ├── share/           # Rate-limited Share Server
+│   │   └── system/          # Maintenance & Storage Tiering
+│   └── vpnmanager/          # Benchmarking & Killswitch Logic
+└── data/                    # Media & Database mounts
 ```
 
-### 2. Configuration (`.env`)
-Open `.env` and fill in your API keys.
-- `TELEGRAM_TOKEN`: From @BotFather.
-- `GEMINI_KEY`: Your Google AI Studio key.
-- `REAL_IP`: Your ISP public IP (used for the VPN killswitch).
-- `NORDVPN_USER/PASS`: Your VPN credentials for secure downloading.
-
-### 3. Storage Adaptation (Crucial for NAS/HDD)
-Edit these variables in your `.env` to match your hardware:
-- `NVME_DATA_PATH`: Fast storage for cache and config files (e.g., `./data`).
-- `HDD_STORAGE_PATH`: Your massive media library (e.g., `/mnt/nas_movies`).
-
-### 4. Ignite the Engine
-```bash
-docker compose -f infra/ai/docker-compose.yml up -d --build
-```
+### 🛑 Resilience & Shutdown
+- **Panic Recovery**: All background routines are protected by the `GoSafe` middleware.
+- **Graceful Shutdown**: Signal capture (`SIGTERM`) ensuring critical I/O operations finish before exit.
+- **Observability**: Structured JSON logging for advanced monitoring.
 
 ---
 
-## 🏗️ Technical Architecture (Deep Dive)
+## 🚀 Setup & Maintenance
 
-### 🏎️ High-Performance Go "Architect"
-Myflix is engineered for the Raspberry Pi 5's ARM architecture:
-- **I/O Efficiency**: Uses `filepath.WalkDir` to reduce kernel syscalls by 90% during library scans.
-- **Memory Frugality**: Zero-allocation text cleaning via global pre-compiled Regex DFA.
-- **Network Optimization**: Persistent HTTP connection pooling for instantaneous API interaction.
+1. **Initial Setup:** `git clone`, `cp .env.example .env`, and configure your API keys.
+2. **Deploy:** `docker compose -f infra/ai/docker-compose.yml up -d --build`.
 
-### 🛡️ VPN Security & Performance
-- **The Probe**: Before each rotation, the bot benchmarks 5 Swiss servers. It downloads a 10MB test file to RAM (`io.Discard`) to calculate a **Performance Score** ($Speed / Latency$).
-- **Killswitch**: If the public IP matches your `REAL_IP`, the bot immediately pauses all active torrents in qBittorrent to prevent leaks.
-
-### ♻️ Automated Failure Handling
-- **API Orchestration**: The bot monitors qBittorrent for `stalledDL` states. 
-- **Blocklisting**: If a download stalls for >48h, the bot calls the `DELETE /api/v3/queue/{id}` endpoint in Radarr/Sonarr with `blocklist=true`, forcing the system to find an **alternate release** for the same content.
-
-### 🛠️ Maintenance & Reliability
-- **03:30 AM**: OS Security updates via `unattended-upgrades`.
-- **04:00 AM**: VPN Rotation & Health check.
-- **04:15 AM**: Docker Image updates via **Watchtower** with auto-cleanup.
-- **04:30 AM**: Project self-cleaning (Cache, Logs, and Docker Prune).
+### 🛠️ Schedule
+- **03:30 AM**: OS Security updates.
+- **04:00 AM**: VPN Rotation & Benchmarking.
+- **04:30 AM**: System self-cleaning (Docker Prune, Cache).
+- **04:45 AM**: **Vault Backup**: Encrypted configuration sync via SOPS.
 
 ---
-
-## 🎬 Telegram Commands Reference
-- `/start` - Launch the interactive dashboard.
-- `/films` & `/series` - Browse your library with posters and rich metadata.
-- `/vpn` - Check current VPN status, Public IP, and trigger a manual rotation.
-- `/status` - Detailed health report (Storage, Thermal, VPN).
-- `/queue` - Live download progress with an **Actualiser** button.
-
----
-*Built for efficiency, stability, and the ultimate viewing experience on Raspberry Pi 5.*
+*Built for stability, engineered for speed.*

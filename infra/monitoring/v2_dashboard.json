@@ -1,37 +1,24 @@
 {
-  "id": 57504615489536,
+  "uid": "pi5-architect-v11",
+  "title": "Myflix Master Control (v11.4)",
   "panels": [
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "dfeb7k2n2wo3kd"
-      },
+      "datasource": {"type": "prometheus", "uid": "Prometheus"},
       "fieldConfig": {
         "defaults": {
-          "color": {
-            "fixedColor": "blue",
-            "mode": "fixed"
-          },
-          "displayName": "${__field.labels.ip}"
+          "color": {"fixedColor": "blue", "mode": "fixed"}
         }
       },
-      "gridPos": {
-        "h": 4,
-        "w": 12,
-        "x": 0,
-        "y": 0
-      },
+      "gridPos": {"h": 4, "w": 8, "x": 0, "y": 0},
       "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ]
-        },
-        "textMode": "name"
+        "colorMode": "background",
+        "reduceOptions": {"calcs": ["lastNotNull"], "fields": "/^ip$/", "values": false},
+        "textMode": "value"
       },
       "targets": [
         {
-          "expr": "last_over_time(public_ip_info{type='host'}[24h])",
+          "expr": "last_over_time(public_ip_info{type='host'}[5m])",
+          "format": "table",
           "legendFormat": "{{ip}}",
           "refId": "A"
         }
@@ -40,36 +27,22 @@
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "dfeb7k2n2wo3kd"
-      },
+      "datasource": {"type": "prometheus", "uid": "Prometheus"},
       "fieldConfig": {
         "defaults": {
-          "color": {
-            "fixedColor": "purple",
-            "mode": "fixed"
-          },
-          "displayName": "${__field.labels.ip}"
+          "color": {"fixedColor": "purple", "mode": "fixed"}
         }
       },
-      "gridPos": {
-        "h": 4,
-        "w": 12,
-        "x": 12,
-        "y": 0
-      },
+      "gridPos": {"h": 4, "w": 8, "x": 8, "y": 0},
       "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ]
-        },
-        "textMode": "name"
+        "colorMode": "background",
+        "reduceOptions": {"calcs": ["lastNotNull"], "fields": "/^ip$/", "values": false},
+        "textMode": "value"
       },
       "targets": [
         {
-          "expr": "topk(1, vpn_public_ip_info{ip!='Error'})",
+          "expr": "last_over_time(myflix_vpn_public_ip[5m])",
+          "format": "table",
           "legendFormat": "{{ip}}",
           "refId": "A"
         }
@@ -78,41 +51,42 @@
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "dfeb7k2n2wo3kd"
-      },
+      "datasource": {"type": "prometheus", "uid": "Prometheus"},
       "fieldConfig": {
         "defaults": {
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "orange",
-                "value": 65
-              },
-              {
-                "color": "red",
-                "value": 75
-              }
-            ]
-          },
-          "unit": "celsius"
+          "mappings": [
+            {"options": {"0": {"color": "red", "index": 0, "text": "OFFLINE"}, "1": {"color": "green", "index": 1, "text": "ONLINE"}}, "type": "value"}
+          ],
+          "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]}
         }
       },
-      "gridPos": {
-        "h": 6,
-        "w": 8,
-        "x": 0,
-        "y": 4
+      "gridPos": {"h": 4, "w": 8, "x": 16, "y": 0},
+      "options": {
+        "colorMode": "background",
+        "reduceOptions": {"calcs": ["lastNotNull"], "values": false}
       },
       "targets": [
         {
-          "expr": "node_hwmon_temp_celsius{chip='thermal_thermal_zone0'}",
+          "expr": "myflix_infra_health_status",
+          "refId": "A"
+        }
+      ],
+      "title": "Infrastructure Health",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "Prometheus"},
+      "fieldConfig": {
+        "defaults": {
+          "unit": "celsius",
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "orange", "value": 65}, {"color": "red", "value": 75}]}
+        }
+      },
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+      "targets": [
+        {
+          "expr": "node_hwmon_temp_celsius{chip='thermal_thermal_zone0', sensor='temp0'}",
+          "legendFormat": "Température",
           "refId": "A"
         }
       ],
@@ -120,40 +94,15 @@
       "type": "timeseries"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "dfeb7k2n2wo3kd"
-      },
+      "datasource": {"type": "prometheus", "uid": "Prometheus"},
       "fieldConfig": {
         "defaults": {
-          "max": 100,
-          "min": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "orange",
-                "value": 80
-              },
-              {
-                "color": "red",
-                "value": 90
-              }
-            ]
-          },
-          "unit": "percent"
+          "max": 100, "min": 0, "unit": "percent",
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "orange", "value": 70}, {"color": "red", "value": 85}]}
         }
       },
-      "gridPos": {
-        "h": 6,
-        "w": 8,
-        "x": 8,
-        "y": 4
-      },
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}},
       "targets": [
         {
           "expr": "100 - ((node_memory_MemAvailable_bytes * 100) / node_memory_MemTotal_bytes)",
@@ -164,154 +113,89 @@
       "type": "gauge"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "dfeb7k2n2wo3kd"
-      },
+      "datasource": {"type": "prometheus", "uid": "Prometheus"},
       "fieldConfig": {
         "defaults": {
-          "max": 100,
-          "min": 0,
-          "unit": "percent"
+          "unit": "binBps",
+          "custom": {"drawStyle": "line", "fillOpacity": 15, "lineWidth": 2}
         }
       },
-      "gridPos": {
-        "h": 6,
-        "w": 8,
-        "x": 16,
-        "y": 4
-      },
-      "options": {
-        "displayMode": "basic",
-        "orientation": "horizontal"
-      },
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 12},
       "targets": [
         {
-          "expr": "topk(3, sum(rate(container_cpu_usage_seconds_total{name!=''}[1m])) by (name) * 100)",
-          "instant": true,
-          "legendFormat": "{{name}}",
-          "refId": "A"
-        }
-      ],
-      "title": "Top 3 CPU (Containers)",
-      "type": "bargauge"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "dfeb7k2n2wo3kd"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "binBps"
-        }
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 24,
-        "x": 0,
-        "y": 10
-      },
-      "targets": [
-        {
-          "expr": "rate(container_network_receive_bytes_total{name='gluetun'}[5m])",
-          "legendFormat": "Download",
+          "expr": "sum by (interface) (irate(container_network_receive_bytes_total{name='gluetun', interface=~'eth0|tun0'}[5m]))",
+          "legendFormat": "{{interface}} - Download",
           "refId": "A"
         },
         {
-          "expr": "rate(container_network_transmit_bytes_total{name='gluetun'}[5m])",
-          "legendFormat": "Upload",
+          "expr": "sum by (interface) (irate(container_network_transmit_bytes_total{name='gluetun', interface=~'eth0|tun0'}[5m]))",
+          "legendFormat": "{{interface}} - Upload",
           "refId": "B"
         }
       ],
-      "title": "Flux Réseau VPN (Gluetun)",
+      "title": "Flux Réseau VPN (Optimisé)",
       "type": "timeseries"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "dfeb7k2n2wo3kd"
-      },
+      "datasource": {"type": "prometheus", "uid": "Prometheus"},
       "fieldConfig": {
         "defaults": {
-          "unit": "decbytes"
+          "unit": "decbytes",
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 70}, {"color": "red", "value": 90}]}
         }
       },
-      "gridPos": {
-        "h": 6,
-        "w": 12,
-        "x": 0,
-        "y": 18
-      },
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 22},
       "options": {
         "colorMode": "background",
-        "graphMode": "area",
+        "reduceOptions": {"calcs": ["lastNotNull"], "fields": "/Used|Total/", "values": false},
         "textMode": "value_and_name"
       },
       "targets": [
         {
           "expr": "node_filesystem_size_bytes{mountpoint='/'} - node_filesystem_avail_bytes{mountpoint='/'}",
-          "legendFormat": "Utilisé",
-          "refId": "A"
+          "legendFormat": "Used",
+          "refId": "Used"
         },
         {
           "expr": "node_filesystem_size_bytes{mountpoint='/'}",
           "legendFormat": "Total",
-          "refId": "B"
+          "refId": "Total"
         }
       ],
-      "title": "Stockage NVME (/) : Utilisé / Total",
+      "title": "Stockage NVMe (Hot Tier)",
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "dfeb7k2n2wo3kd"
-      },
+      "datasource": {"type": "prometheus", "uid": "Prometheus"},
       "fieldConfig": {
         "defaults": {
-          "unit": "decbytes"
+          "unit": "decbytes",
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 70}, {"color": "red", "value": 90}]}
         }
       },
-      "gridPos": {
-        "h": 6,
-        "w": 12,
-        "x": 12,
-        "y": 18
-      },
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 22},
       "options": {
         "colorMode": "background",
-        "graphMode": "area",
+        "reduceOptions": {"calcs": ["lastNotNull"], "fields": "/Used|Total/", "values": false},
         "textMode": "value_and_name"
       },
       "targets": [
         {
           "expr": "node_filesystem_size_bytes{mountpoint='/mnt/externe'} - node_filesystem_avail_bytes{mountpoint='/mnt/externe'}",
-          "legendFormat": "Utilisé",
-          "refId": "A"
+          "legendFormat": "Used",
+          "refId": "Used"
         },
         {
           "expr": "node_filesystem_size_bytes{mountpoint='/mnt/externe'}",
           "legendFormat": "Total",
-          "refId": "B"
+          "refId": "Total"
         }
       ],
-      "title": "Stockage HDD (/mnt/externe) : Utilisé / Total",
+      "title": "Stockage HDD (Archive)",
       "type": "stat"
     }
   ],
-  "refresh": "5s",
+  "refresh": "30s",
   "schemaVersion": 38,
-  "tags": [
-    "pi5",
-    "v2"
-  ],
-  "time": {
-    "from": "now-6h",
-    "to": "now"
-  },
-  "timezone": "browser",
-  "title": "Architecture Système v2",
-  "uid": "pi5-master-v2",
-  "version": 1
+  "timezone": "browser"
 }

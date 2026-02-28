@@ -22,15 +22,6 @@ services:
       - npm-nw
     restart: unless-stopped
 
-  vpn-exporter:
-    image: python:3.11-slim
-    container_name: vpn-exporter
-    network_mode: "container:gluetun"
-    volumes:
-      - ./scripts/vpn_exporter.py:/app/vpn_exporter.py
-    command: python /app/vpn_exporter.py
-    restart: unless-stopped
-
   grafana:
     image: grafana/grafana:latest
     container_name: grafana
@@ -40,6 +31,8 @@ services:
       - 3100:3000
     volumes:
       - grafana-storage:/var/lib/grafana
+      - ./config/grafana/dashboards/dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml:ro
+      - ./v2_dashboard.json:/etc/grafana/provisioning/dashboards/v2_dashboard.json:ro
     restart: unless-stopped
 
   node-exporter:

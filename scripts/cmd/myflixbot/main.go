@@ -81,7 +81,12 @@ func main() {
 	
 	system.GoSafe(&wg, func() { shareSrv.StartServer(":3000") })
 
-	// Health Check HTTP server
+	// Prometheus Metrics & VPN Exporter
+	system.GoSafe(&wg, func() {
+		sys.StartVPNExporter(ctx, ":8001")
+	})
+
+	// Health Check HTTP server (Legacy / Port 5001)
 	system.GoSafe(&wg, func() {
 		mux := http.NewServeMux()
 		mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {

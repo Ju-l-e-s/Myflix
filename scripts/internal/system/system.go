@@ -13,6 +13,7 @@ import (
 	"strings"
 	"syscall"
 	"time"
+	"log/slog"
 
 	"myflixbot/internal/config"
 	"myflixbot/internal/arrclient"
@@ -101,9 +102,55 @@ func (s *SystemManager) ExecuteMaintenance() {
 	s.notifyAdminMsg("🔄 <b>Maintenance Nocturne</b>\nDébut de l'optimisation système...")
 	s.runConfigBackup()
 	s.cleanOldCache(7)
-	if time.Now().Weekday() == time.Sunday { s.cleanDockerSystem() }
+	if time.Now().Weekday() == time.Sunday { 
+		s.cleanDockerSystem() 
+		s.RunSecurityScan()
+	}
 	s.checkAndSelfUpdate()
 	s.notifyAdminMsg("✅ <b>Maintenance Terminée</b>\nSystème sauvegardé et optimisé.")
+}
+
+func (s *SystemManager) RunSecurityScan() {
+	images := []string{
+		"lscr.io/linuxserver/radarr:latest",
+		"lscr.io/linuxserver/sonarr:latest",
+		"lscr.io/linuxserver/prowlarr:latest",
+		"lscr.io/linuxserver/bazarr:latest",
+		"lscr.io/linuxserver/qbittorrent:latest",
+	}
+
+	report := "🛡️ <b>SCAN DE SÉCURITÉ (HEBDOMADAIRE)</b>\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n"
+	foundVulnerabilities := false
+
+	for _, img := range images {
+		// On utilise le binaire trivy installé dans le home de l'utilisateur
+		trivyPath := "/home/jules/bin/trivy"
+		cmd := exec.Command(trivyPath, "image", "--severity", "CRITICAL", "--quiet", "--no-progress", img)
+		out, err := cmd.CombinedOutput()
+		
+		if err != nil {
+			report += fmt.Sprintf("❌ Erreur scan : <code>%s</code>\n", img)
+			continue
+		}
+
+		output := string(out)
+		if strings.Contains(output, "CRITICAL: 0") || output == "" {
+			// Pas de vulnérabilité critique
+			continue
+		}
+
+		// Si on arrive ici, il y a des vulnérabilités ou le format est inattendu
+		foundVulnerabilities = true
+		report += fmt.Sprintf("⚠️ <b>%s</b>\nVulnérabilités critiques détectées !\n", img)
+	}
+
+	if !foundVulnerabilities {
+		report += "✅ Aucune vulnérabilité critique détectée sur vos images principales."
+	} else {
+		report += "\n👉 <i>Action recommandée : Lancez un scan manuel ou mettez à jour vos images via Portainer/Watchtower.</i>"
+	}
+
+	s.notifyAdminMsg(report)
 }
 
 func (s *SystemManager) notifyAdminMsg(msg string) {
@@ -210,6 +257,7 @@ func (s *SystemManager) StartVPNExporter(ctx context.Context, port string) {
 		fmt.Fprintf(w, "myflix_storage_total_bytes{tier=\"nvme\"} %f\n", t*1024*1024*1024)
 	})
 	srv := &http.Server{Addr: port, Handler: mux}
+	slog.Info("Prometheus Exporter démarré", "port", port)
 	go srv.ListenAndServe()
 	<-ctx.Done()
 	srv.Shutdown(context.Background())

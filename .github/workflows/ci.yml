@@ -18,7 +18,7 @@ jobs:
           go-version: "1.24.0"
           cache-dependency-path: scripts/go.sum
       - name: Test Go Components
+        working-directory: scripts
         run: |
-          cd scripts
-          # On teste tous les packages recursivement
+          go mod tidy
           go test -v ./...

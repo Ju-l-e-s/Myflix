@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log/slog"
 	"net"
 	"net/http"
 	"os"
@@ -16,6 +15,8 @@ import (
 	"time"
 
 	"myflixbot/internal/config"
+	"myflixbot/internal/arrclient"
+	"myflixbot/vpnmanager"
 	tele "gopkg.in/telebot.v3"
 )
 
@@ -23,19 +24,23 @@ type SystemManager struct {
 	cfg        *config.Config
 	httpClient *http.Client
 	bot        *tele.Bot
+	vpn        *vpnmanager.Manager
+	arr        *arrclient.ArrClient
 }
 
-func NewSystemManager(cfg *config.Config, client *http.Client, bot *tele.Bot) *SystemManager {
+func NewSystemManager(cfg *config.Config, client *http.Client, bot *tele.Bot, vpn *vpnmanager.Manager, arr *arrclient.ArrClient) *SystemManager {
 	return &SystemManager{
 		cfg:        cfg,
 		httpClient: client,
 		bot:        bot,
+		vpn:        vpn,
+		arr:        arr,
 	}
 }
 
-func (s *SystemManager) SetBot(bot *tele.Bot) {
-	s.bot = bot
-}
+func (s *SystemManager) SetBot(bot *tele.Bot) { s.bot = bot }
+
+// ... (GetDiskUsage, GetStorageStatus, createStatusMsg restent identiques)
 
 func (s *SystemManager) GetDiskUsage(path string) (usedGB, totalGB float64) {
 	var stat syscall.Statfs_t
@@ -68,22 +73,17 @@ func (s *SystemManager) GetStorageStatus() string {
 func (s *SystemManager) createStatusMsg(usedGB, totalGB float64, label, icon, tierLabel string) string {
 	pct := (usedGB / totalGB) * 100
 	freeGB := totalGB - usedGB
-	
 	barWidth := 15
 	filled := int((pct / 100) * float64(barWidth))
 	if filled > barWidth { filled = barWidth }
-	
-	barColor := "🟦" // NVMe
-	if strings.Contains(label, "HDD") { barColor = "🟧" } // HDD
-	
+	barColor := "🟦" 
+	if strings.Contains(label, "HDD") { barColor = "🟧" }
 	bar := strings.Repeat(barColor, filled) + strings.Repeat("░", barWidth-filled)
-
 	return fmt.Sprintf("%s <b>%s</b> (%s)\n<code>%s</code> <b>%.1f%%</b>\n📂 Libre : %.1f GB / %.1f GB\n",
 		icon, label, tierLabel, bar, pct, freeGB, totalGB)
 }
 
 func (s *SystemManager) StartMaintenanceCycle(ctx context.Context) {
-	slog.Info("Cycle de maintenance initialisé", "target", "04:30 AM")
 	for {
 		now := time.Now()
 		nextRun := time.Date(now.Year(), now.Month(), now.Day(), 4, 30, 0, 0, now.Location())
@@ -120,9 +120,7 @@ func (s *SystemManager) runConfigBackup() {
 func (s *SystemManager) cleanOldCache(days int) {
 	threshold := time.Now().AddDate(0, 0, -days)
 	filepath.Walk(s.cfg.PosterCacheDir, func(path string, info os.FileInfo, err error) error {
-		if err == nil && !info.IsDir() && info.ModTime().Before(threshold) {
-			os.Remove(path)
-		}
+		if err == nil && !info.IsDir() && info.ModTime().Before(threshold) { os.Remove(path) }
 		return nil
 	})
 }
@@ -137,7 +135,7 @@ func (s *SystemManager) checkAndSelfUpdate() {
 	exec.Command("git", "fetch").Run()
 	status, err := exec.Command("git", "status", "-uno").Output()
 	if err == nil && strings.Contains(string(status), "behind") {
-		s.notifyAdminMsg("🆙 <b>Mise à jour disponible</b>\nUn nouveau commit a été détecté. Watchtower va synchroniser.")
+		s.notifyAdminMsg("🆙 <b>Update disponible</b>\nWatchtower va synchroniser.")
 		exec.Command("git", "pull").Run()
 	}
 }
@@ -149,9 +147,7 @@ func (s *SystemManager) StartAutoTiering(ctx context.Context, targetPercent floa
 		select {
 		case <-ticker.C:
 			usage := s.getUsagePercent(s.cfg.StorageNvmePath)
-			if usage > targetPercent {
-				s.migrateOldFiles(targetPercent)
-			}
+			if usage > targetPercent { s.migrateOldFiles(targetPercent) }
 		case <-ctx.Done():
 			return
 		}
@@ -195,10 +191,23 @@ func (s *SystemManager) moveFile(src, dst string) error {
 func (s *SystemManager) StartVPNExporter(ctx context.Context, port string) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
+		// 1. IP Metrics
 		resp, _ := s.httpClient.Get("https://api.ipify.org")
-		defer resp.Body.Close()
-		ip, _ := io.ReadAll(resp.Body)
-		fmt.Fprintf(w, "vpn_public_ip_info{ip=\"%s\"} 1\n", string(ip))
+		if resp != nil {
+			defer resp.Body.Close()
+			ip, _ := io.ReadAll(resp.Body)
+			fmt.Fprintf(w, "myflix_vpn_public_ip{ip=\"%s\"} 1\n", string(ip))
+		}
+
+		// 2. Service Health Metrics
+		healthVal := 1
+		if err := s.arr.CheckHealth(r.Context()); err != nil { healthVal = 0 }
+		fmt.Fprintf(w, "myflix_infra_health_status %d\n", healthVal)
+
+		// 3. Storage Metrics
+		u, t := s.GetDiskUsage(s.cfg.StorageNvmePath)
+		fmt.Fprintf(w, "myflix_storage_usage_bytes{tier=\"nvme\"} %f\n", u*1024*1024*1024)
+		fmt.Fprintf(w, "myflix_storage_total_bytes{tier=\"nvme\"} %f\n", t*1024*1024*1024)
 	})
 	srv := &http.Server{Addr: port, Handler: mux}
 	go srv.ListenAndServe()

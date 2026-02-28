@@ -47,9 +47,12 @@ func main() {
 	// 4. Initialisation des composants (Dependency Injection)
 	arr := arrclient.NewArrClient(cfg, httpClient)
 	gemini := ai.NewGeminiClient(cfg, httpClient)
-	sys := system.NewSystemManager(cfg, httpClient, nil) 
 	
+	// VPN Manager
 	vpnMgr := vpnmanager.NewManager(nil, cfg.SuperAdmin, cfg.RealIP, cfg.QbitURL, cfg.DockerMode, "gluetun")
+
+	sys := system.NewSystemManager(cfg, httpClient, nil, vpnMgr, arr) 
+	
 	shareSrv := share.NewShareEngine(cfg)
 
 	// 5. Bot Telegram

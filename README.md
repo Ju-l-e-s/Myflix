@@ -30,19 +30,12 @@ Security is an automation, not an option:
 - **Verified Killswitch**: Active public IP monitoring. In the event of a leak, downloads are halted immediately (< 500ms).
 
 ### ♻️ Self-Healing Lifecycle
-Myflix manages failures without human intervention:
 - **Stalled Logic**: Automatically detects stuck downloads, removes them, and adds them to the blocklist to force a search for a healthier source.
 - **Auto-Maintenance**: Nightly cycles for cache cleaning, container updates via Watchtower, and encrypted backups (SOPS).
 
 ### 🗄️ Industrial Storage Tiering
-Intelligent storage hierarchy management:
 - **Hot Tier (NVMe)**: For active downloads and metadata cache.
 - **Archive Tier (HDD/NAS)**: Automatic migration of older files based on last access time to free up high-speed space.
-
-### 🔗 Secured Share Gateway
-Integrated sharing server for remote access:
-- **Security First**: Strict path validation (Anti-Path Traversal).
-- **Stability**: Per-IP rate-limiting to protect the Raspberry Pi 5 bandwidth.
 
 ---
 
@@ -52,8 +45,12 @@ Integrated sharing server for remote access:
 ```text
 .
 ├── infra/                   # Infrastructure as Code (Docker stack)
+│   ├── ai/                  # Gemini, Radarr, Sonarr, qBittorrent stack
+│   ├── media/               # Plex and Media storage config
+│   ├── monitoring/          # Prometheus, Grafana, Loki dashboards
+│   └── npm/                 # Nginx Proxy Manager
 ├── scripts/                 # Core Go Engine
-│   ├── cmd/myflixbot/       # Application Entry Point
+│   ├── cmd/myflixbot/       # Application Entry Point (main.go)
 │   ├── internal/            # Private Modular Packages
 │   │   ├── ai/              # Gemini 1.5 NLP Logic
 │   │   ├── arrclient/       # Surgical Locking API Client
@@ -62,45 +59,49 @@ Integrated sharing server for remote access:
 │   │   ├── share/           # Rate-limited Share Server
 │   │   └── system/          # Maintenance & Storage Tiering
 │   └── vpnmanager/          # Benchmarking & Killswitch Logic
-└── data/                    # Media & Database mounts
+└── data/                    # Local Media & Database mounts
 ```
-
-### 🛑 Resilience & Shutdown
-- **Panic Recovery**: All background routines are protected by the `GoSafe` middleware.
-- **Graceful Shutdown**: Signal capture (`SIGTERM`) ensuring critical I/O operations finish before exit.
-- **Observability**: Structured JSON logging for advanced monitoring.
 
 ---
 
-## 🚀 Step-by-Step Installation
+## 🚀 Installation & Configuration Tutorial
 
-### 1. Clone and Prepare
+### 1. Initial Setup
+Clone the repository and prepare the environment file:
 ```bash
 git clone https://github.com/Ju-l-e-s/Myflix.git
 cd Myflix
 cp .env.example .env
 ```
 
-### 2. Provision Your Credentials
-Open `.env` and configure the following mandatory sections:
+### 2. Configure Environment Variables (`.env`)
 
-#### 🤖 Telegram Bot Setup
-1. Chat with [@BotFather](https://t.me/botfather) on Telegram. Create a new bot and copy the **API Token**.
-2. Use [@userinfobot](https://t.me/userinfobot) to get your **Telegram ID** (required for `SUPER_ADMIN`).
+#### 🤖 Telegram Bot Configuration
+1. Open a chat with [@BotFather](https://t.me/botfather).
+2. Use `/newbot` to create your bot.
+3. Copy the **API Token** provided and paste it in `TELEGRAM_TOKEN`.
+4. Open a chat with [@userinfobot](https://t.me/userinfobot).
+5. Copy your **User ID** and paste it in `SUPER_ADMIN`.
 
-#### 🧠 AI Engine (Gemini)
-1. Generate a free **API Key** for Gemini 1.5 Flash on [Google AI Studio](https://aistudio.google.com/).
+#### 🧠 Gemini AI Configuration
+1. Go to [Google AI Studio](https://aistudio.google.com/).
+2. Create a new API Key for **Gemini 1.5 Flash**.
+3. Paste the key in `GEMINI_KEY`.
 
-#### 🛡️ Network & VPN
-1. **Real IP:** Visit `ifconfig.me` and copy your public IP.
-2. **NordVPN:** Provide your service credentials (token or user/pass).
+#### 🛡️ VPN & Network Security
+1. **Real IP Discovery:** Visit [ifconfig.me](https://ifconfig.me) from your home network and copy your public IP into `REAL_IP`.
+2. **NordVPN:** Enter your credentials in `NORDVPN_USER` and `NORDVPN_PASS`. (If using a Token, check the `infra/ai/docker-compose.yml` for Gluetun settings).
 
-#### 🎬 Media Services (The "Arrs")
-1. Start the stack once (Step 3).
-2. Access Radarr (`:7878`) and Sonarr (`:8989`).
-3. Go to **Settings > General** and copy the **API Key** for each into your `.env`.
+#### 🎬 Media Services (Radarr & Sonarr)
+1. Launch the stack for the first time (see Step 3).
+2. Access the web interfaces:
+   - **Radarr:** `http://your-ip:7878`
+   - **Sonarr:** `http://your-ip:8989`
+3. In each service, go to **Settings > General**.
+4. Find the **API Key**, copy it, and paste it into `MYFLIX_RADARR_KEY` and `MYFLIX_SONARR_KEY`.
 
-### 3. Deploy the Infrastructure
+### 3. Deployment
+Ignite the engine using Docker Compose:
 ```bash
 docker compose -f infra/ai/docker-compose.yml up -d --build
 ```
@@ -109,16 +110,16 @@ docker compose -f infra/ai/docker-compose.yml up -d --build
 
 ## 🛠️ Automated Maintenance Schedule
 - **03:30 AM**: OS Security updates via `unattended-upgrades`.
-- **04:00 AM**: VPN Rotation & Benchmarking.
+- **04:00 AM**: VPN Rotation & Speed benchmarking.
 - **04:30 AM**: System self-cleaning (Docker Prune, Cache).
 - **04:45 AM**: **Vault Backup**: Encrypted configuration sync via SOPS.
 
 ---
 
 ## 🎬 Telegram Commands Reference
-- `/start` - Launch the interactive premium dashboard.
+- `/start` - Launch the premium dashboard.
 - `/films` & `/series` - Browse library with optimized visual lists.
-- `/vpn` - Check current VPN protection and trigger manual rotation.
+- `/vpn` - Real-time VPN protection status and public IP.
 - `/status` - Infrastructure health report with visual storage bars (🟦 NVMe | 🟧 HDD).
 - `/queue` - Live download flux monitoring with technical tag cleaning.
 

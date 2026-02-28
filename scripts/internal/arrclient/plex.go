@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"myflixbot/internal/config"
+	"github.com/Ju-l-e-s/Myflix/internal/config"
 )
 
 type PlexClient struct {

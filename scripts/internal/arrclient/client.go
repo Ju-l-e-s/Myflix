@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"myflixbot/internal/config"
+	"github.com/Ju-l-e-s/Myflix/internal/config"
 )
 
 type ArrClient struct {

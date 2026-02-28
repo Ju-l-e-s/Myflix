@@ -22,7 +22,7 @@ jobs:
       - name: Go Test
         working-directory: scripts
         run: |
-          # Correction des imports et vérification
+          # Correction du nom du module pour GitHub Actions
           go mod tidy
           go mod download
           # Lancement des tests récursifs

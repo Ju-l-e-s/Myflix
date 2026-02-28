@@ -1,4 +1,4 @@
-module myflixbot
+module github.com/Ju-l-e-s/Myflix
 
 go 1.24.0
 

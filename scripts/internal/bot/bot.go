@@ -13,12 +13,12 @@ import (
 	"strings"
 	"time"
 
-	"myflixbot/internal/ai"
-	"myflixbot/internal/arrclient"
-	"myflixbot/internal/config"
-	"myflixbot/internal/share"
-	"myflixbot/internal/system"
-	"myflixbot/vpnmanager"
+	"github.com/Ju-l-e-s/Myflix/internal/ai"
+	"github.com/Ju-l-e-s/Myflix/internal/arrclient"
+	"github.com/Ju-l-e-s/Myflix/internal/config"
+	"github.com/Ju-l-e-s/Myflix/internal/share"
+	"github.com/Ju-l-e-s/Myflix/internal/system"
+	"github.com/Ju-l-e-s/Myflix/vpnmanager"
 
 	tele "gopkg.in/telebot.v3"
 )

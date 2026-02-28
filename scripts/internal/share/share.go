@@ -11,7 +11,7 @@ import (
 	"strings"
 	"sync"
 
-	"myflixbot/internal/config"
+	"github.com/Ju-l-e-s/Myflix/internal/config"
 	"golang.org/x/time/rate"
 )
 

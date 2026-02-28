@@ -27,15 +27,17 @@ type SystemManager struct {
 	bot        *tele.Bot
 	vpn        *vpnmanager.Manager
 	arr        *arrclient.ArrClient
+	plex       *arrclient.PlexClient
 }
 
-func NewSystemManager(cfg *config.Config, client *http.Client, bot *tele.Bot, vpn *vpnmanager.Manager, arr *arrclient.ArrClient) *SystemManager {
+func NewSystemManager(cfg *config.Config, client *http.Client, bot *tele.Bot, vpn *vpnmanager.Manager, arr *arrclient.ArrClient, plex *arrclient.PlexClient) *SystemManager {
 	return &SystemManager{
 		cfg:        cfg,
 		httpClient: client,
 		bot:        bot,
 		vpn:        vpn,
 		arr:        arr,
+		plex:       plex,
 	}
 }
 

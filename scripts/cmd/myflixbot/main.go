@@ -47,11 +47,12 @@ func main() {
 	// 4. Initialisation des composants (Dependency Injection)
 	arr := arrclient.NewArrClient(cfg, httpClient)
 	gemini := ai.NewGeminiClient(cfg, httpClient)
+	plex := arrclient.NewPlexClient(cfg, httpClient)
 	
 	// VPN Manager
 	vpnMgr := vpnmanager.NewManager(nil, cfg.SuperAdmin, cfg.RealIP, cfg.QbitURL, cfg.DockerMode, "gluetun")
 
-	sys := system.NewSystemManager(cfg, httpClient, nil, vpnMgr, arr) 
+	sys := system.NewSystemManager(cfg, httpClient, nil, vpnMgr, arr, plex) 
 	
 	shareSrv := share.NewShareEngine(cfg)
 

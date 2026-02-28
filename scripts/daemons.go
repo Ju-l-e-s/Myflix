@@ -190,7 +190,8 @@ func startVaultDaemon(sourceDir, vaultDir string) {
 		time.Sleep(time.Until(nextRun))
 
 		log.Printf("🔐 Vault Daemon : Lancement de la sauvegarde sécurisée...")
-		if err := SyncVaultSecure(sourceDir, vaultDir); err != nil {
+		executor := &OSExecutor{}
+		if err := SyncVaultSecure(executor, sourceDir, vaultDir); err != nil {
 			log.Printf("❌ Vault Daemon Erreur: %v", err)
 			// Ici, tu pourrais appeler une fonction d'alerte Telegram
 			// ex: sendTelegramAlert(fmt.Sprintf("🚨 Vault Error: %v", err))

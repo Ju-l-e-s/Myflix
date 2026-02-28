@@ -1,11 +1,12 @@
 # 🏛️ Myflix - The Autonomous Media Orchestrator
 
+![Raspberry Pi](https://img.shields.io/badge/-RaspberryPi-C51A4A?style=for-the-badge&logo=Raspberry-Pi)
 ![Go](https://img.shields.io/badge/go-%2300ADD8.svg?style=for-the-badge&logo=go&logoColor=white)
 ![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)
 ![Telegram](https://img.shields.io/badge/Telegram-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)
 ![Gemini](https://img.shields.io/badge/Gemini-%238E75B2.svg?style=for-the-badge&logo=googlebard&logoColor=white)
 ![Prometheus](https://img.shields.io/badge/Prometheus-E6522C?style=for-the-badge&logo=Prometheus&logoColor=white)
-![Raspberry Pi](https://img.shields.io/badge/-RaspberryPi-C51A4A?style=for-the-badge&logo=Raspberry-Pi)
+
 
 > **Your resilient, high-performance media empire. Built in Go. Engineered for Raspberry Pi 5.**
 
@@ -80,7 +81,7 @@ cp .env.example .env
 1. Open a chat with [@BotFather](https://t.me/botfather).
 2. Use `/newbot` to create your bot.
 3. Copy the **API Token** provided and paste it in `TELEGRAM_TOKEN`.
-4. Open a chat with [@userinfobot](https://t.me/userinfobot).
+4. Open a chat with [@myidbot](https://t.me/myidbot).
 5. Copy your **User ID** and paste it in `SUPER_ADMIN`.
 
 #### 🧠 Gemini AI Configuration

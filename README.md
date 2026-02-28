@@ -29,21 +29,6 @@ Security is an automation, not an option:
 - **Dynamic Benchmarking**: Automatically tests and selects the best VPN server (Switzerland) every night based on Latency/Speed scores.
 - **Verified Killswitch**: Active public IP monitoring. In the event of a leak, downloads are halted immediately (< 500ms).
 
-### ♻️ Self-Healing Lifecycle
-Myflix manages failures without human intervention:
-- **Stalled Logic**: Automatically detects stuck downloads, removes them, and adds them to the blocklist to force a search for a healthier source.
-- **Auto-Maintenance**: Nightly cycles for cache cleaning, container updates via Watchtower, and encrypted backups (SOPS).
-
-### 🗄️ Industrial Storage Tiering
-Intelligent storage hierarchy management:
-- **Hot Tier (NVMe)**: For active downloads and metadata cache.
-- **Archive Tier (HDD/NAS)**: Automatic migration of older files based on last access time to free up high-speed space.
-
-### 🔗 Secured Share Gateway
-Integrated sharing server for remote access:
-- **Security First**: Strict path validation (Anti-Path Traversal).
-- **Stability**: Per-IP rate-limiting to protect the Raspberry Pi 5 bandwidth.
-
 ---
 
 ## 🏗️ Technical Architecture
@@ -55,33 +40,73 @@ Integrated sharing server for remote access:
 ├── scripts/                 # Core Go Engine
 │   ├── cmd/myflixbot/       # Application Entry Point
 │   ├── internal/            # Private Modular Packages
-│   │   ├── ai/              # Gemini 1.5 NLP Logic
-│   │   ├── arrclient/       # Surgical Locking API Client
-│   │   ├── bot/             # Premium UI/UX Engine
-│   │   ├── config/          # Dependency Injection Config
-│   │   ├── share/           # Rate-limited Share Server
-│   │   └── system/          # Maintenance & Storage Tiering
 │   └── vpnmanager/          # Benchmarking & Killswitch Logic
 └── data/                    # Media & Database mounts
 ```
 
-### 🛑 Resilience & Shutdown
-- **Panic Recovery**: All background routines are protected by the `GoSafe` middleware.
-- **Graceful Shutdown**: Signal capture (`SIGTERM`) ensuring critical I/O operations finish before exit.
-- **Observability**: Structured JSON logging for advanced monitoring.
+---
+
+## 🚀 Step-by-Step Installation
+
+### 1. Clone and Prepare
+```bash
+git clone https://github.com/Ju-l-e-s/Myflix.git
+cd Myflix
+cp .env.example .env
+```
+
+### 2. Provision Your Credentials
+Open `.env` and configure the following mandatory sections:
+
+#### 🤖 Telegram Bot Setup
+1. Chat with [@BotFather](https://t.me/botfather) on Telegram.
+2. Create a new bot and copy the **API Token**.
+3. Use [@userinfobot](https://t.me/userinfobot) to get your **Telegram ID** (required for `SUPER_ADMIN`).
+4. Fill in:
+   - `TELEGRAM_TOKEN=your_token_here`
+   - `SUPER_ADMIN=your_id_here`
+
+#### 🧠 AI Engine (Gemini)
+1. Go to [Google AI Studio](https://aistudio.google.com/).
+2. Generate a free **API Key** for Gemini 1.5 Flash.
+3. Fill in:
+   - `GEMINI_KEY=your_gemini_key_here`
+
+#### 🛡️ Network & VPN
+1. **Real IP:** Visit `ifconfig.me` and copy your public IP. This is used for the killswitch to detect VPN leaks.
+2. **NordVPN:** Provide your service credentials (service token or user/pass).
+3. Fill in:
+   - `REAL_IP=your_isp_public_ip`
+   - `NORDVPN_USER=your_username`
+   - `NORDVPN_PASS=your_password`
+
+#### 🎬 Media Services (The "Arrs")
+The services are included in the stack, but the bot needs their internal API keys to communicate:
+1. Start the stack once (see Step 3).
+2. Access Radarr (`http://localhost:7878`) and Sonarr (`http://localhost:8989`).
+3. Go to **Settings > General** and copy the **API Key** for each.
+4. Update your `.env`:
+   - `MYFLIX_RADARR_KEY=your_radarr_key`
+   - `MYFLIX_SONARR_KEY=your_sonarr_key`
+
+### 3. Deploy the Infrastructure
+Myflix uses Docker Compose to orchestrate all containers.
+```bash
+docker compose -f infra/ai/docker-compose.yml up -d --build
+```
+
+### 4. Configuration Check
+Once deployed, check your bot on Telegram. Type `/status` to verify that:
+- [x] NVMe and HDD storage are detected.
+- [x] VPN is active and showing a Swiss IP.
+- [x] Radarr/Sonarr connectivity is green.
 
 ---
 
-## 🚀 Setup & Maintenance
-
-1. **Initial Setup:** `git clone`, `cp .env.example .env`, and configure your API keys.
-2. **Deploy:** `docker compose -f infra/ai/docker-compose.yml up -d --build`.
-
-### 🛠️ Schedule
-- **03:30 AM**: OS Security updates.
-- **04:00 AM**: VPN Rotation & Benchmarking.
-- **04:30 AM**: System self-cleaning (Docker Prune, Cache).
-- **04:45 AM**: **Vault Backup**: Encrypted configuration sync via SOPS.
+## 🛠️ Maintenance & Shutdown
+- **Graceful Shutdown:** Capture `SIGTERM` signals via Docker to ensure backups finish before the container stops.
+- **Vault Backup:** Nightly encrypted synchronization of your `.env` and database files via **SOPS**.
+- **Auto-Update:** **Watchtower** is integrated to keep your images updated with zero downtime.
 
 ---
-*Built for stability, engineered for speed.*
+*Built for stability, engineered for speed on Raspberry Pi 5.*

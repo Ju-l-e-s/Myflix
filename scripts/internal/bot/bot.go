@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"html"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -316,8 +317,69 @@ func (h *BotHandler) tmdbSmartResolve(query string) []map[string]interface{} {
 		res := h.ai.StreamGptJson(context.Background(), query)
 		json.Unmarshal([]byte(res), &aiData)
 	}
-	// Note: Logic for TMDB search would go here, reusing old logic from main.go
-	return nil
+
+	searchTitle := fmt.Sprintf("%v", aiData["title"])
+	if searchTitle == "" {
+		searchTitle = query
+	}
+
+	searchURL := "https://api.themoviedb.org/3/search/multi?query=" + url.QueryEscape(searchTitle)
+	if y, ok := aiData["year"].(float64); ok && y > 0 {
+		searchURL += fmt.Sprintf("&year=%v", y)
+	} else if y, ok := aiData["year"].(int); ok && y > 0 {
+		searchURL += fmt.Sprintf("&year=%d", y)
+	}
+
+	req, _ := http.NewRequest("GET", searchURL, nil)
+	req.Header.Add("Authorization", "Bearer "+h.cfg.TmdbBearerToken)
+	req.Header.Add("Accept", "application/json")
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil
+	}
+	defer resp.Body.Close()
+
+	var result struct {
+		Results []struct {
+			Id           int    `json:"id"`
+			MediaType    string `json:"media_type"`
+			Title        string `json:"title"`
+			Name         string `json:"name"`
+			ReleaseDate  string `json:"release_date"`
+			FirstAirDate string `json:"first_air_date"`
+		} `json:"results"`
+	}
+	
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil
+	}
+
+	var ext []map[string]interface{}
+	for _, r := range result.Results {
+		if r.MediaType != "movie" && r.MediaType != "tv" {
+			continue
+		}
+		
+		title := r.Title
+		if title == "" { title = r.Name }
+		
+		date := r.ReleaseDate
+		if date == "" { date = r.FirstAirDate }
+		
+		year := ""
+		if len(date) >= 4 { year = date[:4] }
+
+		ext = append(ext, map[string]interface{}{
+			"tmdb_id":  r.Id,
+			"title":    title,
+			"year":     year,
+			"type":     r.MediaType,
+			"is_local": false,
+		})
+	}
+	return ext
 }
 
 func (h *BotHandler) cleanTitle(t string) string {

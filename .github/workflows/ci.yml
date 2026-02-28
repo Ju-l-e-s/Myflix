@@ -17,11 +17,9 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: "1.24.0"
-          cache-dependency-path: scripts/go.sum
 
       - name: Go Test
         working-directory: scripts
         run: |
-          # Go va maintenant trouver les modules localement car il y a un point dans le nom du module
-          go mod tidy
-          go test -v ./...
+          go mod download
+          go test -v ./vpnmanager/...

@@ -59,8 +59,19 @@ func NewBotHandler(cfg *config.Config, arr *arrclient.ArrClient, aiClient *ai.Ge
 }
 
 func (h *BotHandler) GetBot() *tele.Bot { return h.bot }
-func (h *BotHandler) Start() { h.setupHandlers(); h.bot.Start() }
+func (h *BotHandler) Start() { 
+	h.setupHandlers()
+	// Préchauffage du cache en arrière-plan
+	go h.warmUpCache()
+	h.bot.Start() 
+}
 func (h *BotHandler) Stop() { h.bot.Stop() }
+
+func (h *BotHandler) warmUpCache() {
+	ctx := context.Background()
+	h.arr.RefreshLibrary(ctx, "films")
+	h.arr.RefreshLibrary(ctx, "series")
+}
 
 func (h *BotHandler) setupHandlers() {
 	h.bot.Handle("/start", h.handleStart)
@@ -69,6 +80,13 @@ func (h *BotHandler) setupHandlers() {
 	h.bot.Handle("/status", h.handleStatus)
 	h.bot.Handle("/vpn", func(c tele.Context) error { return h.showVpnStatus(c, false) })
 	h.bot.Handle("/queue", func(c tele.Context) error { return h.refreshQueue(c, false) })
+	h.bot.Handle("/maintenance_test", func(c tele.Context) error {
+		if c.Sender().ID != h.cfg.SuperAdmin { return nil }
+		c.Send("🚀 <b>Test manuel de la maintenance nocturne initié...</b>", tele.ModeHTML)
+		go h.sys.ExecuteMaintenance()
+		go h.vpn.RotateVPN()
+		return nil
+	})
 
 	h.bot.Handle(tele.OnText, h.handleText)
 
@@ -217,11 +235,15 @@ func (h *BotHandler) handleSelection(c tele.Context) error {
 }
 
 func (h *BotHandler) handleDelete(c tele.Context) error {
-	if err := h.arr.DeleteItem(c.Args()[0], c.Args()[1]); err != nil { 
+	cat := c.Args()[0]
+	if err := h.arr.DeleteItem(cat, c.Args()[1]); err != nil { 
 		return c.Send("❌ <b>Échec de la suppression.</b>\nLe service est temporairement indisponible.", tele.ModeHTML) 
 	}
+	// Force refresh cache immediately
+	go h.arr.RefreshLibrary(context.Background(), cat)
+	
 	c.Send("🗑 <b>Fichier retiré de la bibliothèque.</b>", tele.ModeHTML)
-	return h.showLibrary(c, c.Args()[0], 0, true)
+	return h.showLibrary(c, cat, 0, true)
 }
 
 func (h *BotHandler) handleShare(c tele.Context) error {

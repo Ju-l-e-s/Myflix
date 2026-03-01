@@ -101,6 +101,11 @@ func (s *SystemManager) StartMaintenanceCycle(ctx context.Context) {
 }
 
 func (s *SystemManager) ExecuteMaintenance() {
+	if !s.RunPreFlightCheck() {
+		s.notifyAdminMsg("🛑 <b>Maintenance Annulée</b>\nL'infrastructure n'est pas dans un état valide. Vérifiez les points de montage.")
+		return
+	}
+
 	s.notifyAdminMsg("🔄 <b>Maintenance Nocturne</b>\nDébut de l'optimisation système...")
 	s.runConfigBackup()
 	s.cleanOldCache(7)
@@ -111,6 +116,12 @@ func (s *SystemManager) ExecuteMaintenance() {
 	}
 	s.checkAndSelfUpdate()
 	s.notifyAdminMsg("✅ <b>Maintenance Terminée</b>\nSystème sauvegardé et optimisé.")
+}
+
+func (s *SystemManager) RunPreFlightCheck() bool {
+	cmd := exec.Command("/bin/bash", "/app/infra/validate_infra.sh")
+	err := cmd.Run()
+	return err == nil
 }
 
 func (s *SystemManager) RunSecurityScan() {
@@ -125,12 +136,11 @@ func (s *SystemManager) RunSecurityScan() {
 	report := "🛡️ <b>SCAN DE SÉCURITÉ (HEBDOMADAIRE)</b>\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n"
 	foundVulnerabilities := false
 
-	for _, img := range images {
-		// On utilise le binaire trivy installé dans le home de l'utilisateur
-		trivyPath := "/home/jules/bin/trivy"
-		cmd := exec.Command(trivyPath, "image", "--severity", "CRITICAL", "--quiet", "--no-progress", img)
-		out, err := cmd.CombinedOutput()
-		
+	                for _, img := range images {
+	                        // On utilise le binaire trivy installé dans /app/bin
+	                        trivyPath := "/app/bin/trivy"
+	                        cmd := exec.Command(trivyPath, "image", "--severity", "CRITICAL", "--quiet", "--no-progress", img)
+	                        out, err := cmd.CombinedOutput()		
 		if err != nil {
 			report += fmt.Sprintf("❌ Erreur scan : <code>%s</code>\n", img)
 			continue

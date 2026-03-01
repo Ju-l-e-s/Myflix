@@ -39,7 +39,7 @@ func NewArrClient(cfg *config.Config, client *http.Client) *ArrClient {
 func (c *ArrClient) GetCachedLibrary(cat string) ([]map[string]interface{}, bool) {
 	c.cache.mu.RLock()
 	defer c.cache.mu.RUnlock()
-	if time.Since(c.cache.UpdatedAt) > 10*time.Minute {
+	if time.Since(c.cache.UpdatedAt) > 30*time.Minute {
 		if cat == "films" { return c.cache.Movies, true }
 		return c.cache.Series, true
 	}

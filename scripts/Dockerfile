@@ -14,7 +14,8 @@ FROM debian:bookworm-slim
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    sqlite3 ca-certificates bash tar gzip gnupg rclone git iputils-ping \
+    sqlite3 ca-certificates bash tar gzip gnupg rclone git iputils-ping curl \
+    && curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /build/myflixbot /usr/local/bin/myflixbot

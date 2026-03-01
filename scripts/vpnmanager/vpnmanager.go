@@ -42,8 +42,11 @@ type Manager struct {
 }
 
 func NewManager(bot *tele.Bot, adminID int64, realIP string, qbitURL string, isDocker bool, containerName string) *Manager {
-	proxyURL, _ := url.Parse("http://gluetun:8888")
-	transport := &http.Transport{Proxy: http.ProxyURL(proxyURL)}
+	transport := &http.Transport{}
+	if isDocker {
+		proxyURL, _ := url.Parse("http://gluetun:8888")
+		transport.Proxy = http.ProxyURL(proxyURL)
+	}
 
 	return &Manager{
 		realIP:        realIP,
@@ -53,13 +56,12 @@ func NewManager(bot *tele.Bot, adminID int64, realIP string, qbitURL string, isD
 		isDocker:      isDocker,
 		containerName: containerName,
 		httpClient:    &http.Client{
-			Timeout: 10 * time.Second,
+			Timeout:   10 * time.Second,
 			Transport: transport,
 		},
-		ipCheckerURL:  "https://ifconfig.me/ip",
+		ipCheckerURL: "https://ifconfig.me/ip",
 	}
 }
-
 // SetBot updates the Telegram bot instance
 func (m *Manager) SetBot(bot *tele.Bot) {
 	m.mu.Lock()

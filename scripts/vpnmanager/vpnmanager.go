@@ -2,6 +2,7 @@ package vpnmanager
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -42,7 +43,11 @@ type Manager struct {
 }
 
 func NewManager(bot *tele.Bot, adminID int64, realIP string, qbitURL string, isDocker bool, containerName string) *Manager {
-	transport := &http.Transport{}
+	transport := &http.Transport{
+		TLSClientConfig: &tls.Config{
+			MinVersion: tls.VersionTLS12,
+		},
+	}
 	if isDocker {
 		proxyURL, _ := url.Parse("http://gluetun:8888")
 		transport.Proxy = http.ProxyURL(proxyURL)
@@ -56,10 +61,10 @@ func NewManager(bot *tele.Bot, adminID int64, realIP string, qbitURL string, isD
 		isDocker:      isDocker,
 		containerName: containerName,
 		httpClient:    &http.Client{
-			Timeout:   10 * time.Second,
+			Timeout:   15 * time.Second,
 			Transport: transport,
 		},
-		ipCheckerURL: "https://ifconfig.me/ip",
+		ipCheckerURL: "https://api.ipify.org",
 	}
 }
 // SetBot updates the Telegram bot instance
@@ -179,36 +184,39 @@ Nouvelle : %s`, oldIP, newIP))
 
 // BenchmarkServer performs latency and speed tests on a single server
 func (m *Manager) BenchmarkServer(ctx context.Context, s *Server) error {
-	// 1. Latency Test (TCP Connect as a proxy for Ping to avoid root reqs)
-	start := time.Now()
-	d := net.Dialer{Timeout: 2 * time.Second}
-	conn, err := d.DialContext(ctx, "tcp", s.Hostname+":443")
-	if err != nil {
-		return err
-	}
-	s.Latency = time.Since(start)
-	if err := conn.Close(); err != nil {
-		slog.Error("Erreur fermeture connexion benchmark latency", "error", err)
-	}
-
+	// En Docker, on ne peut pas pinguer directement les serveurs si tout passe par le proxy
+	// On simule une latence en faisant une requête HEAD sur un site de confiance via le serveur (si possible)
+	// OU plus simplement, on mesure le temps de réponse HTTP vers un site connu.
+	
 	testURL := "https://mirror.init7.net/archlinux/iso/latest/archlinux-x86_64.iso"
 	
-	req, err := http.NewRequestWithContext(ctx, "GET", testURL, nil)
+	// 1. Latency test (Time to First Byte / Headers)
+	start := time.Now()
+	req, err := http.NewRequestWithContext(ctx, "HEAD", testURL, nil)
 	if err != nil {
 		return err
 	}
-	req.Header.Set("Range", "bytes=0-10485760")
+	
+	respHead, err := m.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("head request failed: %w", err)
+	}
+	s.Latency = time.Since(start)
+	respHead.Body.Close()
+
+	// 2. Speed test (Download 5MB)
+	req, err = http.NewRequestWithContext(ctx, "GET", testURL, nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Range", "bytes=0-5242880") // Reduit à 5MB pour un benchmark plus rapide
 	
 	start = time.Now()
 	resp, err := m.httpClient.Do(req)
 	if err != nil {
-		return err
+		return fmt.Errorf("get request failed: %w", err)
 	}
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			slog.Error("Erreur fermeture body benchmark speed", "error", err)
-		}
-	}()
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusPartialContent && resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("unexpected status: %d", resp.StatusCode)
@@ -216,10 +224,11 @@ func (m *Manager) BenchmarkServer(ctx context.Context, s *Server) error {
 
 	n, err := io.Copy(io.Discard, resp.Body)
 	if err != nil {
-		return err
+		return fmt.Errorf("body read failed: %w", err)
 	}
 
 	duration := time.Since(start).Seconds()
+	if duration == 0 { duration = 1 }
 	s.Speed = (float64(n) / (1024 * 1024)) / duration // MB/s
 	
 	latMs := float64(s.Latency.Milliseconds())

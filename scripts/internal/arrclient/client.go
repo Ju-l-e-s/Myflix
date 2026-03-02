@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"sort"
 	"strings"
 	"sync"
@@ -105,6 +106,27 @@ func (c *ArrClient) Lookup(ctx context.Context, mType, id string) ([]map[string]
 	return results, nil
 }
 
+func (c *ArrClient) LookupByTerm(ctx context.Context, mType, term string) ([]map[string]interface{}, error) {
+	baseURL := c.cfg.RadarrURL
+	key := c.cfg.RadarrKey
+	endpoint := "/api/v3/movie/lookup?term="
+	if mType != "movie" {
+		baseURL = c.cfg.SonarrURL
+		key = c.cfg.SonarrKey
+		endpoint = "/api/v3/series/lookup?term="
+	}
+
+	req, _ := http.NewRequestWithContext(ctx, "GET", baseURL+endpoint+url.QueryEscape(term), nil)
+	req.Header.Set("X-Api-Key", key)
+	resp, err := c.httpClient.Do(req)
+	if err != nil { return nil, err }
+	defer resp.Body.Close()
+
+	var results []map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&results); err != nil { return nil, err }
+	return results, nil
+}
+
 func (c *ArrClient) AddItem(ctx context.Context, mType string, item map[string]interface{}) error {
 	addURL := c.cfg.RadarrURL + "/api/v3/movie"
 	key := c.cfg.RadarrKey
@@ -159,6 +181,9 @@ func (c *ArrClient) SearchLocalCache(query string) []map[string]interface{} {
 			if strings.Contains(strings.ToLower(title), target) {
 				isReady := false
 				if mType == "films" {
+					// Exclusion des courts-métrages locaux
+					runtime, _ := item["runtime"].(float64)
+					if runtime > 0 && runtime < 40 { continue }
 					isReady, _ = item["hasFile"].(bool)
 				} else {
 					if stats, ok := item["statistics"].(map[string]interface{}); ok {

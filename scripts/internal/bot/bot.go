@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"html"
 	"net/http"
-	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -163,7 +162,12 @@ func (h *BotHandler) showLibrary(c tele.Context, cat string, page int, edit bool
 	menu := &tele.ReplyMarkup{}
 	var btns []tele.Btn
 	for i, it := range filtered[start:end] {
-		msg += fmt.Sprintf("%s <code>%s</code>\n", h.getIndexEmoji(i+1), h.formatTitle(it["title"].(string), it["year"], 22, 25))
+		// Utilisation du formateur adaptatif
+		title, _ := it["title"].(string)
+		year := 0
+		if y, ok := it["year"].(float64); ok { year = int(y) }
+		
+		msg += h.formatMediaLine(i+1, title, year) + "\n"
 		btns = append(btns, menu.Data(strconv.Itoa(i+1), "m_sel", cat, fmt.Sprintf("%v", it["id"])))
 	}
 
@@ -207,9 +211,17 @@ func (h *BotHandler) handleText(c tele.Context) error {
 		if i >= 6 { break }
 		icon := "🎬"; if res["type"] == "tv" || res["type"] == "series" { icon = "📺" }
 		status := "📥"
-		if res["is_local"] == true { status = "✅ (Disponible)" }
+		if res["is_local"] == true { status = "✅" }
 		
-		text += fmt.Sprintf("%d %s <b>%s</b> (%s)\n      Status: %s\n\n", i+1, icon, res["title"], res["year"], status)
+		year := 0
+		if y, ok := res["year"].(string); ok {
+			fmt.Sscanf(y, "%d", &year)
+		} else if y, ok := res["year"].(float64); ok {
+			year = int(y)
+		}
+
+		title := res["title"].(string)
+		text += fmt.Sprintf("%s %s %s\n", status, icon, h.formatMediaLine(i+1, title, year))
 		
 		if res["is_local"] == true {
 			rows = append(rows, menu.Row(menu.Data(fmt.Sprintf("%d", i+1), "m_sel", res["type"].(string), "0")))
@@ -287,31 +299,63 @@ func (h *BotHandler) handleAdd(c tele.Context) error {
 	return c.Edit(msg, tele.ModeHTML)
 }
 
+func (h *BotHandler) renderProgressBar(progress float64) string {
+	const width = 10
+	filled := int(progress / 100 * float64(width))
+	if filled > width {
+		filled = width
+	}
+	bar := ""
+	for i := 0; i < filled; i++ {
+		bar += "█"
+	}
+	for i := filled; i < width; i++ {
+		bar += "░"
+	}
+	return fmt.Sprintf("<code>[%s] %.1f%%</code>", bar, progress)
+}
+
 func (h *BotHandler) refreshQueue(c tele.Context, edit bool) error {
 	req, _ := http.NewRequest("GET", h.cfg.QbitURL+"/api/v2/torrents/info", nil)
 	resp, err := http.DefaultClient.Do(req)
-	if err != nil { return c.Send("❌ <b>Service qBittorrent inaccessible.</b>", tele.ModeHTML) }
+	if err != nil {
+		return c.Send("❌ <b>Service qBittorrent inaccessible.</b>", tele.ModeHTML)
+	}
 	defer resp.Body.Close()
-	
+
 	var torrents []map[string]interface{}
 	json.NewDecoder(resp.Body).Decode(&torrents)
-	
+
 	text := "📥 <b>FLUX DE TÉLÉCHARGEMENT ACTIFS</b>\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n\n"
 	count := 0
 	for _, t := range torrents {
 		st := t["state"].(string)
-		if strings.Contains(strings.ToLower(st), "dl") {
+		// On affiche les téléchargements actifs ou en cours de vérification
+		if strings.Contains(strings.ToLower(st), "dl") || strings.Contains(strings.ToLower(st), "check") {
 			prog := t["progress"].(float64) * 100
-			text += fmt.Sprintf("• <b>%s</b>\n  <code>Progression : %.1f%%</code>\n\n", h.cleanTitle(t["name"].(string)), prog)
+			cat, _ := t["category"].(string)
+
+			icon := "📦"
+			if cat == "radarr" {
+				icon = "🎬"
+			} else if cat == "sonarr" {
+				icon = "📺"
+			}
+
+			text += fmt.Sprintf("%s <b>%s</b>\n  %s\n\n", icon, h.cleanTitle(t["name"].(string)), h.renderProgressBar(prog))
 			count++
 		}
 	}
-	if count == 0 { text += "<i>Aucun flux actif pour le moment.</i>" }
-	
+	if count == 0 {
+		text += "<i>Aucun flux actif pour le moment.</i>"
+	}
+
 	menu := &tele.ReplyMarkup{}
 	menu.Inline(menu.Row(menu.Data("🔄 Actualiser", "q_refresh"), menu.Data("🏠 Menu Principal", "status_refresh")))
-	
-	if edit { return c.Edit(text, menu, tele.ModeHTML) }
+
+	if edit {
+		return c.Edit(text, menu, tele.ModeHTML)
+	}
 	return c.Send(text, menu, tele.ModeHTML)
 }
 
@@ -341,67 +385,56 @@ func (h *BotHandler) tmdbSmartResolve(query string) []map[string]interface{} {
 	}
 
 	searchTitle := fmt.Sprintf("%v", aiData["title"])
-	if searchTitle == "" {
-		searchTitle = query
-	}
+	if searchTitle == "" { searchTitle = query }
+	searchType := fmt.Sprintf("%v", aiData["type"])
 
-	searchURL := "https://api.themoviedb.org/3/search/multi?query=" + url.QueryEscape(searchTitle)
-	if y, ok := aiData["year"].(float64); ok && y > 0 {
-		searchURL += fmt.Sprintf("&year=%v", y)
-	} else if y, ok := aiData["year"].(int); ok && y > 0 {
-		searchURL += fmt.Sprintf("&year=%d", y)
-	}
-
-	req, _ := http.NewRequest("GET", searchURL, nil)
-	req.Header.Add("Authorization", "Bearer "+h.cfg.TmdbBearerToken)
-	req.Header.Add("Accept", "application/json")
-
-	client := &http.Client{Timeout: 10 * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil
-	}
-	defer resp.Body.Close()
-
-	var result struct {
-		Results []struct {
-			Id           int    `json:"id"`
-			MediaType    string `json:"media_type"`
-			Title        string `json:"title"`
-			Name         string `json:"name"`
-			ReleaseDate  string `json:"release_date"`
-			FirstAirDate string `json:"first_air_date"`
-		} `json:"results"`
-	}
+	var results []map[string]interface{}
 	
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil
-	}
-
-	var ext []map[string]interface{}
-	for _, r := range result.Results {
-		if r.MediaType != "movie" && r.MediaType != "tv" {
-			continue
+	// 1. Recherche Films (via Radarr pour avoir le runtime)
+	if searchType == "" || searchType == "movie" {
+		movies, err := h.arr.LookupByTerm(context.Background(), "movie", searchTitle)
+		if err == nil {
+			for _, m := range movies {
+				// Exclusion des courts-métrages (runtime < 40 mins)
+				runtime, _ := m["runtime"].(float64)
+				if runtime > 0 && runtime < 40 { continue }
+				
+				year := 0
+				if y, ok := m["year"].(float64); ok { year = int(y) }
+				
+				results = append(results, map[string]interface{}{
+					"tmdb_id":  int(m["tmdbId"].(float64)),
+					"title":    m["title"].(string),
+					"year":     fmt.Sprintf("%d", year),
+					"type":     "movie",
+					"is_local": false,
+				})
+				if len(results) >= 5 { break }
+			}
 		}
-		
-		title := r.Title
-		if title == "" { title = r.Name }
-		
-		date := r.ReleaseDate
-		if date == "" { date = r.FirstAirDate }
-		
-		year := ""
-		if len(date) >= 4 { year = date[:4] }
-
-		ext = append(ext, map[string]interface{}{
-			"tmdb_id":  r.Id,
-			"title":    title,
-			"year":     year,
-			"type":     r.MediaType,
-			"is_local": false,
-		})
 	}
-	return ext
+
+	// 2. Recherche Séries (via Sonarr)
+	if (searchType == "" || searchType == "tv") && len(results) < 5 {
+		series, err := h.arr.LookupByTerm(context.Background(), "series", searchTitle)
+		if err == nil {
+			for _, s := range series {
+				year := 0
+				if y, ok := s["year"].(float64); ok { year = int(y) }
+
+				results = append(results, map[string]interface{}{
+					"tmdb_id":  int(s["tvdbId"].(float64)), // Sonarr utilise tvdbId par défaut pour l'ID principal
+					"title":    s["title"].(string),
+					"year":     fmt.Sprintf("%d", year),
+					"type":     "tv",
+					"is_local": false,
+				})
+				if len(results) >= 5 { break }
+			}
+		}
+	}
+
+	return results
 }
 
 func (h *BotHandler) cleanTitle(t string) string {
@@ -409,18 +442,32 @@ func (h *BotHandler) cleanTitle(t string) string {
 	return strings.TrimSpace(h.reSpaces.ReplaceAllString(strings.ReplaceAll(c, ".", " "), " "))
 }
 
-func (h *BotHandler) getIndexEmoji(i int) string {
-	e := []string{"", "1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"}
-	if i > 0 && i < len(e) { return e[i] }
-	return strconv.Itoa(i)
-}
+func (h *BotHandler) formatMediaLine(index int, title string, year int) string {
+	// Limite physique moyenne d'un écran mobile avant retour à la ligne
+	const maxLineLength = 28 // Légèrement réduit pour sécurité
 
-func (h *BotHandler) formatTitle(t string, y interface{}, max, target int) string {
-	f := fmt.Sprintf("%s (%v)", t, y); r := []rune(f)
-	if len(r) > max { r = append(r[:max-3], []rune("...")...) }
-	res := string(r)
-	for len([]rune(res)) < target { res += " " }
-	return res
+	title = strings.TrimSpace(title)
+	titleRunes := []rune(title)
+	titleLen := len(titleRunes)
+
+	// L'année prend environ 7 caractères visuels " (2024)"
+	const yearVisualLen = 7
+
+	// CAS 1 : Tout rentre (Titre court + Année)
+	if titleLen+yearVisualLen <= maxLineLength {
+		return fmt.Sprintf("<b>%d.</b> %s <i>(%d)</i>", index, title, year)
+	}
+
+	// CAS 2 : Le titre seul est trop long. On tronque intelligemment et on sacrifie l'année.
+	if titleLen > maxLineLength {
+		// On garde la place pour les "..." (3 caractères)
+		safeLen := maxLineLength - 3
+		truncatedTitle := string(titleRunes[:safeLen]) + "..."
+		return fmt.Sprintf("<b>%d.</b> %s", index, truncatedTitle)
+	}
+
+	// CAS 3 : Le titre seul rentre parfaitement, mais ajouter l'année forcerait un retour à la ligne.
+	return fmt.Sprintf("<b>%d.</b> %s", index, title)
 }
 
 func (h *BotHandler) findFirstVideo(root string) string {

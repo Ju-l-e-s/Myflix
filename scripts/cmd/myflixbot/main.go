@@ -75,6 +75,10 @@ func main() {
 		sys.StartAutoTiering(ctx, 80.0)
 	})
 
+	system.GoSafe(&wg, func() {
+		sys.StartQbitCleanup(ctx)
+	})
+
 	// VPN manager routines (en utilisant GoSafe pour la résilience)
 	system.GoSafe(&wg, func() { vpnMgr.UpdateIP() })
 	system.GoSafe(&wg, func() { vpnMgr.RunHealthCheck() })

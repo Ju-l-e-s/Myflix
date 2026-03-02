@@ -2,6 +2,7 @@ package system
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net"
@@ -108,6 +109,7 @@ func (s *SystemManager) ExecuteMaintenance() {
 
 	s.notifyAdminMsg("🔄 <b>Maintenance Nocturne</b>\nDébut de l'optimisation système...")
 	s.runConfigBackup()
+	s.executeQbitCleanup()
 	s.cleanOldCache(7)
 	if time.Now().Weekday() == time.Sunday { 
 		s.cleanDockerSystem() 
@@ -246,6 +248,63 @@ func (s *SystemManager) moveFile(src, dst string) error {
 	out, _ := os.Create(dst); defer out.Close()
 	io.Copy(out, in)
 	return os.Remove(src)
+}
+
+func (s *SystemManager) StartQbitCleanup(ctx context.Context) {
+	ticker := time.NewTicker(2 * time.Hour)
+	defer ticker.Stop()
+	slog.Info("Nettoyeur qBittorrent démarré", "interval", "2h")
+
+	for {
+		select {
+		case <-ticker.C:
+			s.executeQbitCleanup()
+		case <-ctx.Done():
+			return
+		}
+	}
+}
+
+func (s *SystemManager) executeQbitCleanup() {
+	resp, err := s.httpClient.Get(s.cfg.QbitURL + "/api/v2/torrents/info")
+	if err != nil { return }
+	defer resp.Body.Close()
+
+	var torrents []map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&torrents); err != nil { return }
+
+	now := time.Now().Unix()
+	for _, t := range torrents {
+		hash, _ := t["hash"].(string)
+		name, _ := t["name"].(string)
+		state, _ := t["state"].(string)
+		progress, _ := t["progress"].(float64)
+		lastActivity := int64(t["last_activity"].(float64))
+
+		// LOGIQUE 1 : Purge des téléchargements BLOQUÉS (Stalled DL)
+		// Si le torrent est bloqué depuis plus de 48h
+		if state == "stalledDL" && (now-lastActivity) > 172800 {
+			s.deleteTorrent(hash, true)
+			msg := fmt.Sprintf("🗑️ <b>Purge Automatique</b>\n\nTorrent bloqué supprimé : <code>%s</code>\n<i>(Inactif > 48h)</i>", name)
+			s.notifyAdminMsg(msg)
+			continue
+		}
+
+		// LOGIQUE 2 : Nettoyage des torrents TERMINÉS (Seeding/StalledUP)
+		// On retire de la liste mais on GARDE les fichiers sur le disque
+		if state == "stalledUP" || state == "pausedUP" || (progress >= 1.0 && (state == "uploading" || state == "finished")) {
+			s.deleteTorrent(hash, false)
+			slog.Info("Cleanup qBit : Torrent terminé retiré", "name", name)
+		}
+	}
+}
+
+func (s *SystemManager) deleteTorrent(hash string, deleteFiles bool) {
+	data := strings.NewReader(fmt.Sprintf("hashes=%s&deleteFiles=%t", hash, deleteFiles))
+	req, _ := http.NewRequest("POST", s.cfg.QbitURL+"/api/v2/torrents/delete", data)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	resp, err := s.httpClient.Do(req)
+	if err == nil { resp.Body.Close() }
 }
 
 func (s *SystemManager) StartVPNExporter(ctx context.Context, port string) {

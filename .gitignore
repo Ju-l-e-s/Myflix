@@ -57,3 +57,21 @@ infra/ai/ai-env/
 *.db
 *.db-shm
 *.db-wal
+
+# Security & Credentials
+infra/ai/.env*
+infra/ai/secrets/
+scripts/.env*
+
+# Backups & Data
+infra/backups_automated/
+infra/backups_emergency/
+*.json
+*.db*
+*.zip
+*.gpg
+
+# Build & Runtime
+bin/
+go/
+.cache/

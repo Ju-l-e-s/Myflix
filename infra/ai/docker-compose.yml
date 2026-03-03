@@ -38,6 +38,14 @@ services:
       - 127.0.0.1:5001:5001
       - 127.0.0.1:3001:3000 # Changé pour éviter le conflit avec Grafana (3000)
       - 127.0.0.1:8001:8001
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+        reservations:
+          cpus: '0.10'
+          memory: 128M
     restart: always
     networks: [arr_network, npm-nw]
 

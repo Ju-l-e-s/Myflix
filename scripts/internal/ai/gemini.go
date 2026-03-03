@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"myflixbot.local/internal/config"
 )
@@ -50,8 +51,12 @@ type Candidate struct {
 }
 
 func (g *GeminiClient) StreamGptJson(ctx context.Context, query string) string {
+	// Basic sanitization to prevent prompt injection
+	safeQuery := strings.ReplaceAll(query, "'", "\\'")
+	safeQuery = strings.ReplaceAll(safeQuery, "\n", " ")
+
 	apiURL := fmt.Sprintf("https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=%s", g.cfg.GeminiKey)
-	prompt := fmt.Sprintf("JSON Schema only for: '%s'. Keys: type(movie|series), year(int), country(ISO), title(str)", query)
+	prompt := fmt.Sprintf("JSON Schema only for: '%s'. Keys: type(movie|series), year(int), country(ISO), title(str)", safeQuery)
 
 	payload := GeminiRequest{
 		Contents: []Content{

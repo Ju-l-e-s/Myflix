@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"html"
+	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -65,38 +66,51 @@ func (h *BotHandler) warmUpCache() {
 	h.arr.RefreshLibrary(ctx, "series")
 }
 
+func (h *BotHandler) authMiddleware(next tele.HandlerFunc) tele.HandlerFunc {
+	return func(c tele.Context) error {
+		if c.Sender().ID != h.cfg.SuperAdmin {
+			slog.Warn("Tentative d'accès non autorisée", "user_id", c.Sender().ID, "username", c.Sender().Username)
+			return nil // On ignore silencieusement les autres utilisateurs
+		}
+		return next(c)
+	}
+}
+
 func (h *BotHandler) setupHandlers() {
-	h.bot.Handle("/start", h.handleStart)
-	h.bot.Handle("/films", func(c tele.Context) error { return h.showLibrary(c, "films", 0, false) })
-	h.bot.Handle("/series", func(c tele.Context) error { return h.showLibrary(c, "series", 0, false) })
-	h.bot.Handle("/status", h.handleStatus)
-	h.bot.Handle("/vpn", func(c tele.Context) error { return h.showVpnStatus(c, false) })
-	h.bot.Handle("/queue", func(c tele.Context) error { return h.refreshQueue(c, false) })
-	h.bot.Handle("/maintenance_test", func(c tele.Context) error {
-		if c.Sender().ID != h.cfg.SuperAdmin { return nil }
+	// Middleware d'autorisation global pour toutes les commandes
+	admin := h.bot.Group()
+	admin.Use(h.authMiddleware)
+
+	admin.Handle("/start", h.handleStart)
+	admin.Handle("/films", func(c tele.Context) error { return h.showLibrary(c, "films", 0, false) })
+	admin.Handle("/series", func(c tele.Context) error { return h.showLibrary(c, "series", 0, false) })
+	admin.Handle("/status", h.handleStatus)
+	admin.Handle("/vpn", func(c tele.Context) error { return h.showVpnStatus(c, false) })
+	admin.Handle("/queue", func(c tele.Context) error { return h.refreshQueue(c, false) })
+	admin.Handle("/maintenance_test", func(c tele.Context) error {
 		c.Send("🚀 <b>Test manuel de la maintenance nocturne initié...</b>", tele.ModeHTML)
 		go h.sys.ExecuteMaintenance()
 		go h.vpn.RotateVPN()
 		return nil
 	})
 
-	h.bot.Handle(tele.OnText, h.handleText)
+	admin.Handle(tele.OnText, h.handleText)
 
-	// Callback Handlers
-	h.bot.Handle(&tele.Btn{Unique: "lib"}, func(c tele.Context) error { return h.showLibrary(c, c.Args()[0], 0, true) })
-	h.bot.Handle(&tele.Btn{Unique: "lib_page"}, func(c tele.Context) error {
+	// Callback Handlers (Boutons)
+	h.bot.Handle(&tele.Btn{Unique: "lib"}, h.authMiddleware(func(c tele.Context) error { return h.showLibrary(c, c.Args()[0], 0, true) }))
+	h.bot.Handle(&tele.Btn{Unique: "lib_page"}, h.authMiddleware(func(c tele.Context) error {
 		p, _ := strconv.Atoi(c.Args()[1])
 		return h.showLibrary(c, c.Args()[0], p, true)
-	})
-	h.bot.Handle(&tele.Btn{Unique: "q_refresh"}, func(c tele.Context) error { return h.refreshQueue(c, true) })
-	h.bot.Handle(&tele.Btn{Unique: "status_refresh"}, h.handleStart)
-	h.bot.Handle(&tele.Btn{Unique: "sys_status"}, h.handleStatus)
-	h.bot.Handle(&tele.Btn{Unique: "vpn_refresh"}, func(c tele.Context) error { return h.showVpnStatus(c, true) })
-	h.bot.Handle(&tele.Btn{Unique: "vpn_rotate"}, h.handleVpnRotate)
-	h.bot.Handle(&tele.Btn{Unique: "m_sel"}, h.handleSelection)
-	h.bot.Handle(&tele.Btn{Unique: "m_del"}, h.handleDelete)
-	h.bot.Handle(&tele.Btn{Unique: "m_share"}, h.handleShare)
-	h.bot.Handle(&tele.Btn{Unique: "dl_add"}, h.handleAdd)
+	}))
+	h.bot.Handle(&tele.Btn{Unique: "q_refresh"}, h.authMiddleware(func(c tele.Context) error { return h.refreshQueue(c, true) }))
+	h.bot.Handle(&tele.Btn{Unique: "status_refresh"}, h.authMiddleware(h.handleStart))
+	h.bot.Handle(&tele.Btn{Unique: "sys_status"}, h.authMiddleware(h.handleStatus))
+	h.bot.Handle(&tele.Btn{Unique: "vpn_refresh"}, h.authMiddleware(func(c tele.Context) error { return h.showVpnStatus(c, true) }))
+	h.bot.Handle(&tele.Btn{Unique: "vpn_rotate"}, h.authMiddleware(h.handleVpnRotate))
+	h.bot.Handle(&tele.Btn{Unique: "m_sel"}, h.authMiddleware(h.handleSelection))
+	h.bot.Handle(&tele.Btn{Unique: "m_del"}, h.authMiddleware(h.handleDelete))
+	h.bot.Handle(&tele.Btn{Unique: "m_share"}, h.authMiddleware(h.handleShare))
+	h.bot.Handle(&tele.Btn{Unique: "dl_add"}, h.authMiddleware(h.handleAdd))
 }
 
 func (h *BotHandler) handleStart(c tele.Context) error {
@@ -175,7 +189,6 @@ func (h *BotHandler) showLibrary(c tele.Context, cat string, page int, edit bool
 }
 
 func (h *BotHandler) handleText(c tele.Context) error {
-	if c.Sender().ID != h.cfg.SuperAdmin { return nil }
 	query := c.Text()
 	if strings.HasPrefix(query, "/") || len(query) < 3 { return nil }
 

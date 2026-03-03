@@ -13,13 +13,20 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
 FROM debian:bookworm-slim
 WORKDIR /app
 
+# Create non-root user
+RUN groupadd -g 1000 appgroup && \
+    useradd -u 1000 -g appgroup -s /bin/sh appuser
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
     sqlite3 ca-certificates bash tar gzip gnupg rclone git iputils-ping curl \
     && curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /build/myflixbot /usr/local/bin/myflixbot
-RUN chmod +x /usr/local/bin/myflixbot
+RUN chmod +x /usr/local/bin/myflixbot && \
+    chown -R appuser:appgroup /app
+
+USER appuser
 
 EXPOSE 5001 3000 8001
 ENTRYPOINT ["/usr/local/bin/myflixbot"]

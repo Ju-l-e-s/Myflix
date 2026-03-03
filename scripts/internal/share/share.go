@@ -87,7 +87,7 @@ func (s *ShareEngine) StartServer(port string) {
 		}
 
 		// 3. Security: Path Validation (No Traversal)
-		absPath, err := filepath.Abs(path)
+		absPath, err := filepath.Abs(filepath.Clean(path))
 		if err != nil {
 			http.Error(w, "Erreur chemin", 500)
 			return
@@ -97,7 +97,10 @@ func (s *ShareEngine) StartServer(port string) {
 		allowed := false
 		allowedDirs := []string{s.cfg.MoviesMount, s.cfg.TvMount}
 		for _, dir := range allowedDirs {
-			absDir, _ := filepath.Abs(dir)
+			absDir, err := filepath.Abs(filepath.Clean(dir))
+			if err != nil {
+				continue
+			}
 			if strings.HasPrefix(absPath, absDir) {
 				allowed = true
 				break

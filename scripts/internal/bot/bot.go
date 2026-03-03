@@ -11,7 +11,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"time"
 
 	"myflixbot.local/internal/ai"
 	"myflixbot.local/internal/arrclient"
@@ -36,13 +35,7 @@ type BotHandler struct {
 	reTMDB   *regexp.Regexp
 }
 
-func NewBotHandler(cfg *config.Config, arr *arrclient.ArrClient, aiClient *ai.GeminiClient, sys *system.SystemManager, vpn *vpnmanager.Manager, shareSrv *share.ShareEngine) (*BotHandler, error) {
-	b, err := tele.NewBot(tele.Settings{
-		Token:  cfg.Token,
-		Poller: &tele.LongPoller{Timeout: 10 * time.Second},
-	})
-	if err != nil { return nil, err }
-
+func NewBotHandler(b *tele.Bot, cfg *config.Config, arr *arrclient.ArrClient, aiClient *ai.GeminiClient, sys *system.SystemManager, vpn *vpnmanager.Manager, shareSrv *share.ShareEngine) (*BotHandler, error) {
 	return &BotHandler{
 		cfg:      cfg,
 		bot:      b,

@@ -27,7 +27,7 @@ func TestKillswitchIntegration(t *testing.T) {
 	defer ipServer.Close()
 
 	// 3. Initialize Manager with mocks
-	mgr := NewManager(nil, 12345, realIP, qbitServer.URL, false, "")
+	mgr := NewManager(nil, realIP, qbitServer.URL, false, "")
 	mgr.SetIPCheckerURL(ipServer.URL)
 
 	// 4. Trigger IP Update (should detect leak)

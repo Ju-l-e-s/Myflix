@@ -19,30 +19,31 @@ import (
 	"myflixbot.local/internal/config"
 	"myflixbot.local/internal/arrclient"
 	"myflixbot.local/vpnmanager"
-	tele "gopkg.in/telebot.v3"
 )
+
+type AdminNotifier interface {
+	NotifyAdmin(msg string)
+}
 
 type SystemManager struct {
 	cfg        *config.Config
 	httpClient *http.Client
-	bot        *tele.Bot
+	notifier   AdminNotifier
 	vpn        *vpnmanager.Manager
 	arr        *arrclient.ArrClient
 	plex       *arrclient.PlexClient
 }
 
-func NewSystemManager(cfg *config.Config, client *http.Client, bot *tele.Bot, vpn *vpnmanager.Manager, arr *arrclient.ArrClient, plex *arrclient.PlexClient) *SystemManager {
+func NewSystemManager(cfg *config.Config, client *http.Client, notifier AdminNotifier, vpn *vpnmanager.Manager, arr *arrclient.ArrClient, plex *arrclient.PlexClient) *SystemManager {
 	return &SystemManager{
 		cfg:        cfg,
 		httpClient: client,
-		bot:        bot,
+		notifier:   notifier,
 		vpn:        vpn,
 		arr:        arr,
 		plex:       plex,
 	}
 }
-
-func (s *SystemManager) SetBot(bot *tele.Bot) { s.bot = bot }
 
 // ... (GetDiskUsage, GetStorageStatus, createStatusMsg restent identiques)
 
@@ -169,8 +170,8 @@ func (s *SystemManager) RunSecurityScan() {
 }
 
 func (s *SystemManager) notifyAdminMsg(msg string) {
-	if s.bot != nil {
-		s.bot.Send(tele.ChatID(s.cfg.SuperAdmin), msg, tele.ModeHTML)
+	if s.notifier != nil {
+		s.notifier.NotifyAdmin(msg)
 	}
 }
 

@@ -15,9 +15,11 @@ import (
 	"strings"
 	"sync"
 	"time"
-
-	tele "gopkg.in/telebot.v3"
 )
+
+type AdminNotifier interface {
+	NotifyAdmin(msg string)
+}
 
 // Server represents a NordVPN server with its performance metrics
 type Server struct {
@@ -33,8 +35,7 @@ type Manager struct {
 	mu            sync.RWMutex
 	currentIP     string
 	realIP        string
-	telegramBot   *tele.Bot
-	adminID       int64
+	notifier      AdminNotifier
 	qbitURL       string
 	isDocker      bool
 	containerName string
@@ -42,7 +43,7 @@ type Manager struct {
 	ipCheckerURL  string
 }
 
-func NewManager(bot *tele.Bot, adminID int64, realIP string, qbitURL string, isDocker bool, containerName string) *Manager {
+func NewManager(notifier AdminNotifier, realIP string, qbitURL string, isDocker bool, containerName string) *Manager {
 	transport := &http.Transport{
 		TLSClientConfig: &tls.Config{
 			MinVersion: tls.VersionTLS12,
@@ -55,8 +56,7 @@ func NewManager(bot *tele.Bot, adminID int64, realIP string, qbitURL string, isD
 
 	return &Manager{
 		realIP:        realIP,
-		telegramBot:   bot,
-		adminID:       adminID,
+		notifier:      notifier,
 		qbitURL:       qbitURL,
 		isDocker:      isDocker,
 		containerName: containerName,
@@ -66,12 +66,6 @@ func NewManager(bot *tele.Bot, adminID int64, realIP string, qbitURL string, isD
 		},
 		ipCheckerURL: "https://api.ipify.org",
 	}
-}
-// SetBot updates the Telegram bot instance
-func (m *Manager) SetBot(bot *tele.Bot) {
-	m.mu.Lock()
-	m.telegramBot = bot
-	m.mu.Unlock()
 }
 
 // SetIPCheckerURL allows overriding the IP service for testing
@@ -178,14 +172,11 @@ func (m *Manager) ResumeTorrents() {
 // NotifyAdmin sends a Telegram message
 func (m *Manager) NotifyAdmin(msg string) {
 	m.mu.RLock()
-	bot := m.telegramBot
-	adminID := m.adminID
+	notifier := m.notifier
 	m.mu.RUnlock()
 	
-	if bot != nil && adminID != 0 {
-		if _, err := bot.Send(tele.ChatID(adminID), msg, tele.ModeHTML); err != nil {
-			slog.Error("Erreur notification Admin (VPN Manager)", "error", err)
-		}
+	if notifier != nil {
+		notifier.NotifyAdmin(msg)
 	}
 }
 
@@ -278,20 +269,24 @@ func (m *Manager) FetchSwissServers() ([]Server, error) {
 		}
 	}()
 
-	var data []map[string]interface{}
+	type nordVpnRec struct {
+		Name     string `json:"name"`
+		Hostname string `json:"hostname"`
+		Station  string `json:"station"`
+	}
+
+	var data []nordVpnRec
 	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
 		return nil, err
 	}
 
 	var servers []Server
 	for _, s := range data {
-		name, _ := s["name"].(string)
-		hostname, _ := s["hostname"].(string)
-		ip, _ := s["station"].(string)
+		ip := s.Station
 		if ip == "" {
-			ip = hostname
+			ip = s.Hostname
 		}
-		servers = append(servers, Server{Name: name, Hostname: hostname, IP: ip})
+		servers = append(servers, Server{Name: s.Name, Hostname: s.Hostname, IP: ip})
 	}
 
 	if len(servers) == 0 {

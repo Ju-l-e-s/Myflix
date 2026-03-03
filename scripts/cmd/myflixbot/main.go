@@ -18,7 +18,21 @@ import (
 	"myflixbot.local/internal/share"
 	"myflixbot.local/internal/system"
 	"myflixbot.local/vpnmanager"
+	tele "gopkg.in/telebot.v3"
 )
+
+type BotNotifier struct {
+	bot     *tele.Bot
+	adminID int64
+}
+
+func (n *BotNotifier) NotifyAdmin(msg string) {
+	if n.bot != nil && n.adminID != 0 {
+		if _, err := n.bot.Send(tele.ChatID(n.adminID), msg, tele.ModeHTML); err != nil {
+			slog.Error("Failed to notify admin", "error", err)
+		}
+	}
+}
 
 func main() {
 	// 1. Logs & Graceful Context
@@ -49,22 +63,31 @@ func main() {
 	gemini := ai.NewGeminiClient(cfg, httpClient)
 	plex := arrclient.NewPlexClient(cfg, httpClient)
 	
-	// VPN Manager
-	vpnMgr := vpnmanager.NewManager(nil, cfg.SuperAdmin, cfg.RealIP, cfg.QbitURL, cfg.DockerMode, "gluetun")
-
-	sys := system.NewSystemManager(cfg, httpClient, nil, vpnMgr, arr, plex) 
-	
-	shareSrv := share.NewShareEngine(cfg)
-
-	// 5. Bot Telegram
-	botHandler, err := bot.NewBotHandler(cfg, arr, gemini, sys, vpnMgr, shareSrv)
+	// Create Telegram Bot first for notifier
+	b, err := tele.NewBot(tele.Settings{
+		Token:  cfg.Token,
+		Poller: &tele.LongPoller{Timeout: 10 * time.Second},
+	})
 	if err != nil {
 		slog.Error("Erreur Bot", "error", err)
 		os.Exit(1)
 	}
+
+	notifier := &BotNotifier{bot: b, adminID: cfg.SuperAdmin}
+
+	// VPN Manager
+	vpnMgr := vpnmanager.NewManager(notifier, cfg.RealIP, cfg.QbitURL, cfg.DockerMode, "gluetun")
+
+	sys := system.NewSystemManager(cfg, httpClient, notifier, vpnMgr, arr, plex) 
 	
-	sys.SetBot(botHandler.GetBot())
-	vpnMgr.SetBot(botHandler.GetBot())
+	shareSrv := share.NewShareEngine(cfg)
+
+	// 5. Bot Telegram
+	botHandler, err := bot.NewBotHandler(b, cfg, arr, gemini, sys, vpnMgr, shareSrv)
+	if err != nil {
+		slog.Error("Erreur configuration BotHandler", "error", err)
+		os.Exit(1)
+	}
 
 	// 6. Démarrage des Routines avec Panic Recovery (GoSafe)
 	system.GoSafe(&wg, func() {
@@ -139,3 +162,4 @@ func main() {
 	}
 	os.Exit(0)
 }
+

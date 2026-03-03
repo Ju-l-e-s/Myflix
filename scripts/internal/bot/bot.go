@@ -239,8 +239,7 @@ func (h *BotHandler) handleSelection(c tele.Context) error {
 	items, _ := h.arr.GetCachedLibrary(cat)
 	for _, it := range items {
 		if fmt.Sprintf("%v", it["id"]) == id {
-			if cat == "films" { return h.sendDetailedMovie(c, it) }
-			return h.sendDetailedSeries(c, it)
+			return h.sendDetailedMedia(c, cat, it)
 		}
 	}
 	return c.Send("❌ <b>Contenu introuvable.</b>\nLa bibliothèque a peut-être été mise à jour entre-temps.", tele.ModeHTML)
@@ -248,7 +247,8 @@ func (h *BotHandler) handleSelection(c tele.Context) error {
 
 func (h *BotHandler) handleDelete(c tele.Context) error {
 	cat := c.Args()[0]
-	if err := h.arr.DeleteItem(cat, c.Args()[1]); err != nil { 
+		if err := h.arr.DeleteItem(context.Background(), cat, c.Args()[1]); err != nil {
+	 
 		return c.Send("❌ <b>Échec de la suppression.</b>\nLe service est temporairement indisponible.", tele.ModeHTML) 
 	}
 	// Force refresh cache immediately
@@ -482,26 +482,25 @@ func (h *BotHandler) findFirstVideo(root string) string {
 	return found
 }
 
-func (h *BotHandler) sendDetailedMovie(c tele.Context, it map[string]interface{}) error {
-	msg := fmt.Sprintf("🎬 <b>%s</b> (%v)\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n💾 Emplacement : Stockage Rapide (NVMe)\n⚖️ Taille : %.1f GB\n\nQue souhaitez-vous faire ?", 
-		it["title"], it["year"], it["sizeOnDisk"].(float64) / (1024*1024*1024))
+func (h *BotHandler) sendDetailedMedia(c tele.Context, cat string, it map[string]interface{}) error {
+	icon := "🎬"
+	if cat == "series" || cat == "tv" {
+		icon = "📺"
+	}
+	
+	sizeStr := ""
+	if size, ok := it["sizeOnDisk"].(float64); ok && size > 0 {
+		sizeStr = fmt.Sprintf("\n⚖️ Taille : %.1f GB", size / (1024*1024*1024))
+	}
+
+	msg := fmt.Sprintf("%s <b>%s</b> (%v)\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n💾 Emplacement : Stockage Rapide (NVMe)%s\n\nQue souhaitez-vous faire ?", 
+		icon, it["title"], it["year"], sizeStr)
 	
 	menu := &tele.ReplyMarkup{}
-	btnShare := menu.Data("🔗 Partager", "m_share", "films", fmt.Sprintf("%v", it["id"]))
-	btnDelete := menu.Data("🗑 Supprimer", "m_del", "films", fmt.Sprintf("%v", it["id"]))
+	btnShare := menu.Data("🔗 Partager", "m_share", cat, fmt.Sprintf("%v", it["id"]))
+	btnDelete := menu.Data("🗑 Supprimer", "m_del", cat, fmt.Sprintf("%v", it["id"]))
 	menu.Inline(menu.Row(btnShare, btnDelete), menu.Row(menu.Data("🏠 Menu Principal", "status_refresh")))
 	
 	return c.Send(msg, menu, tele.ModeHTML)
 }
 
-func (h *BotHandler) sendDetailedSeries(c tele.Context, it map[string]interface{}) error {
-	msg := fmt.Sprintf("📺 <b>%s</b> (%v)\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n💾 Emplacement : Stockage Rapide (NVMe)\n\nQue souhaitez-vous faire ?", 
-		it["title"], it["year"])
-	
-	menu := &tele.ReplyMarkup{}
-	btnShare := menu.Data("🔗 Partager", "m_share", "series", fmt.Sprintf("%v", it["id"]))
-	btnDelete := menu.Data("🗑 Supprimer", "m_del", "series", fmt.Sprintf("%v", it["id"]))
-	menu.Inline(menu.Row(btnShare, btnDelete), menu.Row(menu.Data("🏠 Menu Principal", "status_refresh")))
-	
-	return c.Send(msg, menu, tele.ModeHTML)
-}

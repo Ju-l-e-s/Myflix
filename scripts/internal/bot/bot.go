@@ -168,7 +168,7 @@ func (h *BotHandler) showLibrary(c tele.Context, cat string, page int, edit bool
 		year := 0
 		if y, ok := it["year"].(float64); ok { year = int(y) }
 		
-		msg += fmt.Sprintf("%s %s\n", status, h.formatMediaLine(start+i+1, title, year))
+		msg += h.formatMediaLine(start+i+1, title, year, status) + "\n"
 		btns = append(btns, menu.Data(strconv.Itoa(start+i+1), "m_sel", cat, fmt.Sprintf("%v", it["id"])))
 	}
 
@@ -183,6 +183,9 @@ func (h *BotHandler) showLibrary(c tele.Context, cat string, page int, edit bool
 	if end < len(items) { nav = append(nav, menu.Data("➡️", "lib_page", cat, strconv.Itoa(page+1))) }
 	rows = append(rows, menu.Row(nav...))
 	menu.Inline(rows...)
+
+	msg += "\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n"
+	msg += "<i>✅ Prêt  ⏳ En attente</i>"
 
 	if edit { return c.Edit(msg, menu, tele.ModeHTML) }
 	return c.Send(msg, menu, tele.ModeHTML)
@@ -227,7 +230,7 @@ func (h *BotHandler) handleText(c tele.Context) error {
 		}
 
 		title := res["title"].(string)
-		text += fmt.Sprintf("%s %s %s\n", status, icon, h.formatMediaLine(i+1, title, year))
+		text += fmt.Sprintf("%s %s\n", icon, h.formatMediaLine(i+1, title, year, status))
 		
 		if res["is_local"] == true {
 			rows = append(rows, menu.Row(menu.Data(fmt.Sprintf("%d", i+1), "m_sel", res["type"].(string), "0")))
@@ -448,32 +451,39 @@ func (h *BotHandler) cleanTitle(t string) string {
 	return strings.TrimSpace(h.reSpaces.ReplaceAllString(strings.ReplaceAll(c, ".", " "), " "))
 }
 
-func (h *BotHandler) formatMediaLine(index int, title string, year int) string {
-	// Limite physique moyenne d'un écran mobile avant retour à la ligne
-	const maxLineLength = 28 // Légèrement réduit pour sécurité
+func (h *BotHandler) formatMediaLine(index int, title string, year int, status string) string {
+	// Largeur fixe pour le bloc de texte (titre + année)
+	// Environ 24-26 caractères est idéal pour les mobiles
+	const textWidth = 25
 
-	title = strings.TrimSpace(title)
-	titleRunes := []rune(title)
-	titleLen := len(titleRunes)
-
-	// L'année prend environ 7 caractères visuels " (2024)"
-	const yearVisualLen = 7
-
-	// CAS 1 : Tout rentre (Titre court + Année)
-	if titleLen+yearVisualLen <= maxLineLength {
-		return fmt.Sprintf("<b>%d.</b> %s <i>(%d)</i>", index, title, year)
+	fullTitle := title
+	if year > 0 {
+		fullTitle = fmt.Sprintf("%s (%d)", title, year)
 	}
 
-	// CAS 2 : Le titre seul est trop long. On tronque intelligemment et on sacrifie l'année.
-	if titleLen > maxLineLength {
-		// On garde la place pour les "..." (3 caractères)
-		safeLen := maxLineLength - 3
-		truncatedTitle := string(titleRunes[:safeLen]) + "..."
-		return fmt.Sprintf("<b>%d.</b> %s", index, truncatedTitle)
+	// Préparation du préfixe (ex: "1. ")
+	prefix := fmt.Sprintf("%d. ", index)
+	
+	// On tronque si le titre + préfixe est trop long pour la largeur fixe
+	displayTitle := fullTitle
+	if len([]rune(prefix+displayTitle)) > textWidth {
+		displayTitle = string([]rune(displayTitle)[:textWidth-len([]rune(prefix))-3]) + "..."
 	}
 
-	// CAS 3 : Le titre seul rentre parfaitement, mais ajouter l'année forcerait un retour à la ligne.
-	return fmt.Sprintf("<b>%d.</b> %s", index, title)
+	// Création de la ligne avec padding fixe
+	// %-25s va créer un bloc de 25 caractères aligné à gauche
+	line := fmt.Sprintf("%s%s", prefix, displayTitle)
+	
+	// On ajoute les espaces manuellement pour le padding monospacé
+	padding := ""
+	currentLen := len([]rune(line))
+	for i := 0; i < textWidth - currentLen; i++ {
+		padding += " "
+	}
+
+	// On enveloppe le texte dans <code> pour la largeur fixe, 
+	// l'emoji reste en dehors pour être collé après le bloc
+	return fmt.Sprintf("<code>%s%s</code> %s", line, padding, status)
 }
 
 func (h *BotHandler) findFirstVideo(root string) string {

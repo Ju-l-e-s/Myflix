@@ -55,6 +55,22 @@ Myflix integrates a rigorous backup policy to guarantee a "Zero-Effort" restorat
 
 ---
 
+## 🌍 Networking & Remote Access
+
+### ☁️ Cloudflare Tunnel (Argo)
+Myflix uses **Cloudflare Tunnel** (`cloudflared`) to expose the sharing service safely without opening ports on your router:
+- **Zero Port Forwarding**: The tunnel creates an outbound-only connection to Cloudflare's edge.
+- **SSL by Default**: Cloudflare handles SSL termination, providing a secure `https://` connection automatically.
+- **DDoS Protection**: Your home IP remains hidden from the public internet.
+
+### 🏷️ Domain Name Requirement
+A registered domain name (e.g., `juleslaconfourque.fr`) is mandatory for this architecture:
+1. **DNS Management**: Cloudflare requires control over your domain's DNS to route traffic into the tunnel.
+2. **Persistence**: Unlike your home IP (which may change), your subdomains (e.g., `share.yourdomain.com`) stay constant.
+3. **Bot Integration**: The Telegram bot uses your domain to generate sharing links that are accessible from anywhere in the world.
+
+---
+
 ## 🏗️ Technical Architecture
 
 ### 📂 Project Structure

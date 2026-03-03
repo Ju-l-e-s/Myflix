@@ -66,6 +66,8 @@ services:
     volumes:
       - ${NVME_DATA_PATH:-/home/jules/infra/ai/data}/bazarr/config:/config
       - ${POOL_STORAGE_PATH:-/mnt/pool}:/data
+      - ${POOL_STORAGE_PATH:-/mnt/pool}/movies:/movies
+      - ${POOL_STORAGE_PATH:-/mnt/pool}/tv:/tv
     ports:
       - 127.0.0.1:6767:6767
     restart: unless-stopped

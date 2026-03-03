@@ -40,15 +40,15 @@ Security is an automation, not an option:
 
 ---
 
-## 🔐 Sauvegardes & Disaster Recovery
+## 🔐 Backup & Disaster Recovery
 
-Myflix intègre une politique de sauvegarde rigoureuse pour garantir une restauration "Zéro Effort" en cas de défaillance matérielle :
+Myflix integrates a rigorous backup policy to guarantee a "Zero-Effort" restoration in the event of hardware failure:
 
-- **Backup Automatisé (Chiffré)** : Chaque nuit à 3h00, le script `backup_app_configs.sh` emballe vos fichiers critiques (`.env`, `.yaml`, `.xml`, `.json`) et vos bases de données SQLite (`.db`). 
-- **Sécurité** : L'archive est chiffrée via **GPG (AES256)** pour protéger vos secrets, même sur les serveurs distants.
-- **Stockage Hybride** : Les backups sont conservées localement (7 jours de rétention) et synchronisées automatiquement vers un dépôt GitHub privé.
-- **Restauration Système** : Le backup inclut également vos fichiers système critiques (`/etc/fstab` pour MergerFS, `crontab`).
-- **Script de Restauration Rapide** : Utilisez `restore_app_configs.sh` pour reconstruire l'intégralité du projet en une seule commande. (Voir `RECOVERY.md` pour la procédure complète).
+- **Automated Encrypted Backup**: Every night at 3:00 AM, the `backup_app_configs.sh` script bundles your critical files (`.env`, `.yaml`, `.xml`, `.json`) and SQLite databases (`.db`).
+- **Security**: The archive is encrypted via **GPG (AES256)** to protect your secrets, even on remote servers.
+- **Hybrid Storage**: Backups are kept locally (7-day retention) and automatically synced to a private GitHub repository.
+- **System Restoration**: The backup also includes critical system files (`/etc/fstab` for MergerFS, `crontab`).
+- **One-Command Recovery**: Use the `restore_app_configs.sh` script to rebuild the entire project in minutes. (See `RECOVERY.md` for the full procedure).
 
 ---
 
@@ -72,7 +72,7 @@ Myflix intègre une politique de sauvegarde rigoureuse pour garantir une restaur
 │   │   ├── share/           # Rate-limited Share Server
 │   │   └── system/          # Maintenance & Storage Tiering
 │   └── vpnmanager/          # Benchmarking & Killswitch Logic
-├── RECOVERY.md              # Guide complet de reconstruction (DRP)
+├── RECOVERY.md              # Full Disaster Recovery Guide (DRP)
 └── data/                    # Local Media & Database mounts
 ```
 

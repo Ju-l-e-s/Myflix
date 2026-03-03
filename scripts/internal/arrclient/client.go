@@ -190,12 +190,16 @@ func (c *ArrClient) SearchLocalCache(query string) []map[string]interface{} {
 						if epCount, _ := stats["episodeFileCount"].(float64); epCount > 0 { isReady = true }
 					}
 				}
-				if isReady {
-					results = append(results, map[string]interface{}{
-						"tmdb_id": 0, "title": title, "year": fmt.Sprintf("%v", item["year"]), "type": mType, "is_local": true,
-					})
-					if len(results) >= 5 { return }
-				}
+				
+				results = append(results, map[string]interface{}{
+					"tmdb_id":  0,
+					"title":    title,
+					"year":     fmt.Sprintf("%v", item["year"]),
+					"type":     mType,
+					"is_local": true,
+					"is_ready": isReady,
+				})
+				if len(results) >= 5 { return }
 			}
 		}
 	}

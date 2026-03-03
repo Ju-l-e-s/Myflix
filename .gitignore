@@ -1,77 +1,60 @@
-# --- PROJET ---
-# On garde les structures mais on ignore les données lourdes à l'intérieur
-# infra/ et scripts/ ne doivent PAS être dans cette section d'ignorés
+# Ignore tout par défaut
+/*
 
-# --- SÉCURITÉ (À NE JAMAIS COMMIT) ---
+# Autoriser les dossiers structurels
+!/infra/
+!/scripts/
+!/.github/
+
+# Autoriser les fichiers racines importants
+!.gitignore
+!.env.example
+!README.md
+!RECOVERY.md
+
+# --- Règles spécifiques pour /infra ---
+# Ignorer TOUT dans infra sauf les docker-compose et Dockerfiles
+/infra/**
+!/infra/**/
+!/infra/**/docker-compose.yml
+!/infra/**/Dockerfile
+!/infra/**/*.sh
+!/infra/monitoring/config/prometheus/prometheus.yml
+!/infra/monitoring/config/homepage/*.yaml
+
+# --- Règles spécifiques pour /scripts ---
+/scripts/**
+!/scripts/**/
+!/scripts/**/*.go
+!/scripts/go.mod
+!/scripts/go.sum
+!/scripts/Dockerfile
+!/scripts/**/*.sh
+!/scripts/config_share.json
+!/scripts/storage_policy.json
+
+# --- Exclusions Globales (Sécurité) ---
 .env
-.ssh/
-.gemini/
-.cloudflared/
-.git-credentials
-.bash_history
-scripts/users.json
-
-# --- SYSTÈME & ENVIRONNEMENT LOCAL ---
-.cache/
-.config/
-.docker/
-.local/
-.npm/
-.nvm/
-.openclaw/
-.pytest_cache/
-.ruff_cache/
-__pycache__/
-venv/
-.sudo_as_admin_successful
-.wget-hsts
-.bash_profile
-.bashrc
-.gitconfig
-
-# --- FICHIERS TEMPORAIRES & BINAIRES ---
-*.log
-*.pem
-*.deb
-*.sh
-scripts/main
-scripts/myflixbot
-
-# --- DONNÉES MASSIVES & MÉDIAS ---
-media_share/
-**/data/
-**/database/
-**/grafana-storage/
-**/portainer-data/
-/mnt/externe/
-infra/npm/
-infra/ai/ai-env/
-**/config/
-*.xml
-*.yaml
-*.yml
-!docker-compose.yml
-!pyproject.toml
-!storage_policy.json
-!config_share.json
 *.db
-*.db-shm
-*.db-wal
-
-# Security & Credentials
-infra/ai/.env*
-infra/ai/secrets/
-scripts/.env*
-
-# Backups & Data
-infra/backups_automated/
-infra/backups_emergency/
-*.json
-*.db*
-*.zip
+*.db-*
+*.log
 *.gpg
-
-# Build & Runtime
+*.tar.gz
+*.zip
+*.pid
 bin/
-go/
-.cache/
+**/node_modules/
+**/venv/
+**/ai-env/
+**/config/
+**/data/
+**/Definitions/
+**/asp/
+**/*.pid
+**/*.txt
+**/*.pem
+
+# Binaires compilés
+scripts/myflixbot*
+scripts/main
+scripts/mkvcleaner

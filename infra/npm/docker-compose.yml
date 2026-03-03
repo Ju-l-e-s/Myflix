@@ -1,0 +1,24 @@
+version: '3.8'
+services:
+  app:
+    image: 'jc21/nginx-proxy-manager:latest'
+    container_name: nginx-proxy-manager
+    restart: unless-stopped
+    ports:
+      # Port HTTP public
+      - '80:80'
+      # Port d'administration (UI)
+      - '127.0.0.1:81:81'
+      # Port HTTPS public (attention: occupé par openvpn actuellement)
+      - '443:443'
+    volumes:
+      - ./data:/data
+      - ./letsencrypt:/etc/letsencrypt
+      - /home/jules/media_share:/media_share
+    networks:
+      - npm-nw
+
+networks:
+  npm-nw:
+    name: npm-nw
+    external: false

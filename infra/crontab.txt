@@ -1,5 +1,0 @@
-# Crontab de l'utilisateur jules (Généré le 3 mars 2026)
-# À réinstaller avec 'crontab -e' ou en copiant ce fichier
-
-# 1. Sauvegarde quotidienne des configurations (Apps + Systèmes) à 3h du matin
-0 3 * * * /bin/bash /home/jules/infra/ai/maintenance/backup_app_configs.sh >> /home/jules/infra/backups_automated/cron_backup.log 2>&1

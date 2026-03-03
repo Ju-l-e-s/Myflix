@@ -136,39 +136,33 @@ func (h *BotHandler) showLibrary(c tele.Context, cat string, page int, edit bool
 	if expired || items == nil { go h.arr.RefreshLibrary(context.Background(), cat) }
 	if items == nil { return c.Send("⏳ <i>Synchronisation de la bibliothèque...</i>", tele.ModeHTML) }
 
-	var filtered []map[string]interface{}
-	for _, it := range items {
+	// On ne filtre plus, on affiche tout mais avec un statut
+	pageSize := 15
+	start, end := page*pageSize, (page+1)*pageSize
+	if start >= len(items) { start, page = 0, 0 }
+	if end > len(items) { end = len(items) }
+
+	titleLabel := "MES FILMS"
+	if cat == "series" { titleLabel = "MES SÉRIES" }
+
+	msg := fmt.Sprintf("📂 <b>%s</b> (%d)\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n\n", titleLabel, len(items))
+	menu := &tele.ReplyMarkup{}
+	var btns []tele.Btn
+	for i, it := range items[start:end] {
 		ready := false
 		if cat == "films" { ready, _ = it["hasFile"].(bool) } else {
 			if st, ok := it["statistics"].(map[string]interface{}); ok {
 				if ec, _ := st["episodeFileCount"].(float64); ec > 0 { ready = true }
 			}
 		}
-		if ready { filtered = append(filtered, it) }
-	}
 
-	if len(filtered) == 0 { 
-		return c.Send("📂 <b>La bibliothèque est vide.</b>\nUtilisez la recherche pour ajouter du contenu.", tele.ModeHTML)
-	}
-
-	start, end := page*10, (page+1)*10
-	if start >= len(filtered) { start, page = 0, 0 }
-	if end > len(filtered) { end = len(filtered) }
-
-	titleLabel := "MES FILMS"
-	if cat == "series" { titleLabel = "MES SÉRIES" }
-
-	msg := fmt.Sprintf("📂 <b>%s</b> (%d)\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n\n", titleLabel, len(filtered))
-	menu := &tele.ReplyMarkup{}
-	var btns []tele.Btn
-	for i, it := range filtered[start:end] {
-		// Utilisation du formateur adaptatif
+		status := "⏳"; if ready { status = "✅" }
 		title, _ := it["title"].(string)
 		year := 0
 		if y, ok := it["year"].(float64); ok { year = int(y) }
 		
-		msg += h.formatMediaLine(i+1, title, year) + "\n"
-		btns = append(btns, menu.Data(strconv.Itoa(i+1), "m_sel", cat, fmt.Sprintf("%v", it["id"])))
+		msg += fmt.Sprintf("%s %s\n", status, h.formatMediaLine(start+i+1, title, year))
+		btns = append(btns, menu.Data(strconv.Itoa(start+i+1), "m_sel", cat, fmt.Sprintf("%v", it["id"])))
 	}
 
 	var rows []tele.Row
@@ -177,8 +171,9 @@ func (h *BotHandler) showLibrary(c tele.Context, cat string, page int, edit bool
 		rows = append(rows, menu.Row(btns[i:l]...))
 	}
 	
-	nav := []tele.Btn{menu.Data("🏠 Menu Principal", "status_refresh")}
-	if end < len(filtered) { nav = append(nav, menu.Data("Suivant ➡️", "lib_page", cat, strconv.Itoa(page+1))) }
+	nav := []tele.Btn{menu.Data("🏠 Menu", "status_refresh")}
+	if page > 0 { nav = append(nav, menu.Data("⬅️", "lib_page", cat, strconv.Itoa(page-1))) }
+	if end < len(items) { nav = append(nav, menu.Data("➡️", "lib_page", cat, strconv.Itoa(page+1))) }
 	rows = append(rows, menu.Row(nav...))
 	menu.Inline(rows...)
 
@@ -211,7 +206,12 @@ func (h *BotHandler) handleText(c tele.Context) error {
 		if i >= 6 { break }
 		icon := "🎬"; if res["type"] == "tv" || res["type"] == "series" { icon = "📺" }
 		status := "📥"
-		if res["is_local"] == true { status = "✅" }
+		if res["is_local"] == true {
+			status = "⏳"
+			if ready, ok := res["is_ready"].(bool); ok && ready {
+				status = "✅"
+			}
+		}
 		
 		year := 0
 		if y, ok := res["year"].(string); ok {

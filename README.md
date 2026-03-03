@@ -32,11 +32,23 @@ Security is an automation, not an option:
 
 ### ♻️ Self-Healing Lifecycle
 - **Stalled Logic**: Automatically detects stuck downloads, removes them, and adds them to the blocklist to force a search for a healthier source.
-- **Auto-Maintenance**: Nightly cycles for cache cleaning, container updates via Watchtower, and encrypted backups (SOPS).
+- **Auto-Maintenance**: Nightly cycles for cache cleaning, container updates via Watchtower, and encrypted backups.
 
 ### 🗄️ Industrial Storage Tiering
 - **Hot Tier (NVMe)**: For active downloads and metadata cache.
 - **Archive Tier (HDD/NAS)**: Automatic migration of older files based on last access time to free up high-speed space.
+
+---
+
+## 🔐 Sauvegardes & Disaster Recovery
+
+Myflix intègre une politique de sauvegarde rigoureuse pour garantir une restauration "Zéro Effort" en cas de défaillance matérielle :
+
+- **Backup Automatisé (Chiffré)** : Chaque nuit à 3h00, le script `backup_app_configs.sh` emballe vos fichiers critiques (`.env`, `.yaml`, `.xml`, `.json`) et vos bases de données SQLite (`.db`). 
+- **Sécurité** : L'archive est chiffrée via **GPG (AES256)** pour protéger vos secrets, même sur les serveurs distants.
+- **Stockage Hybride** : Les backups sont conservées localement (7 jours de rétention) et synchronisées automatiquement vers un dépôt GitHub privé.
+- **Restauration Système** : Le backup inclut également vos fichiers système critiques (`/etc/fstab` pour MergerFS, `crontab`).
+- **Script de Restauration Rapide** : Utilisez `restore_app_configs.sh` pour reconstruire l'intégralité du projet en une seule commande. (Voir `RECOVERY.md` pour la procédure complète).
 
 ---
 
@@ -60,6 +72,7 @@ Security is an automation, not an option:
 │   │   ├── share/           # Rate-limited Share Server
 │   │   └── system/          # Maintenance & Storage Tiering
 │   └── vpnmanager/          # Benchmarking & Killswitch Logic
+├── RECOVERY.md              # Guide complet de reconstruction (DRP)
 └── data/                    # Local Media & Database mounts
 ```
 
@@ -110,16 +123,16 @@ docker compose -f infra/ai/docker-compose.yml up -d --build
 ---
 
 ## 🛠️ Automated Maintenance Schedule
+- **03:00 AM**: Full Encrypted Backup (Configs + DBs + System).
 - **03:30 AM**: OS Security updates via `unattended-upgrades`.
 - **04:00 AM**: VPN Rotation & Speed benchmarking.
 - **04:30 AM**: System self-cleaning (Docker Prune, Cache).
-- **04:45 AM**: **Vault Backup**: Encrypted configuration sync via SOPS.
 
 ---
 
 ## 🎬 Telegram Commands Reference
 - `/start` - Launch the premium dashboard.
-- `/films` & `/series` - Browse library with optimized visual lists.
+- `/films` & `/series` - Browse FULL library (✅ Ready / ⏳ Downloading) with improved 15-item pagination.
 - `/vpn` - Real-time VPN protection status and public IP.
 - `/status` - Infrastructure health report with visual storage bars (🟦 NVMe | 🟧 HDD).
 - `/queue` - Live download flux monitoring with technical tag cleaning.

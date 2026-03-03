@@ -8,7 +8,9 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
+	"sync"
 )
 
 type FFProbeOutput struct {
@@ -28,25 +30,48 @@ type Stream struct {
 var (
 	dryRun  = flag.Bool("dry-run", false, "Do not perform actions, just print")
 	verbose = flag.Bool("v", false, "Verbose output")
+	jobs    = flag.Int("j", 2, "Number of concurrent jobs")
 )
 
 func main() {
 	flag.Parse()
 	if flag.NArg() == 0 {
-		fmt.Println("Usage: mkvcleaner <path>")
+		fmt.Println("Usage: mkvcleaner [options] <path>")
 		os.Exit(1)
 	}
 
 	path := flag.Arg(0)
-	err := filepath.Walk(path, func(p string, info os.FileInfo, err error) error {
+	
+	// Use a worker pool
+	filesChan := make(chan string, 100)
+	var wg sync.WaitGroup
+
+	// Start workers
+	if *jobs <= 0 {
+		*jobs = runtime.NumCPU()
+	}
+	for i := 0; i < *jobs; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for file := range filesChan {
+				processMKV(file)
+			}
+		}()
+	}
+
+	err := filepath.WalkDir(path, func(p string, d os.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
-		if !info.IsDir() && filepath.Ext(p) == ".mkv" {
-			processMKV(p)
+		if !d.IsDir() && strings.ToLower(filepath.Ext(p)) == ".mkv" {
+			filesChan <- p
 		}
 		return nil
 	})
+
+	close(filesChan)
+	wg.Wait()
 
 	if err != nil {
 		log.Fatalf("Error walking path: %v", err)
@@ -59,13 +84,13 @@ func processMKV(file string) {
 	cmd := exec.Command("ffprobe", "-v", "error", "-show_entries", "stream=index,codec_type,codec_name:stream_tags=language,title", "-of", "json", file)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		fmt.Printf("  Error analyzing file: %v\n", err)
+		fmt.Printf("  Error analyzing file %s: %v\n", file, err)
 		return
 	}
 
 	var ff FFProbeOutput
 	if err := json.Unmarshal(output, &ff); err != nil {
-		fmt.Printf("  Error parsing JSON: %v\n", err)
+		fmt.Printf("  Error parsing JSON for %s: %v\n", file, err)
 		return
 	}
 
@@ -81,10 +106,10 @@ func processMKV(file string) {
 		case "video":
 			videoTracks = append(videoTracks, fmt.Sprintf("%d", s.Index))
 		case "audio":
-			isHD := s.CodecName == "truehd" || s.CodecName == "dts-hd ma" || strings.Contains(s.CodecName, "hd")
+			isHD := s.CodecName == "truehd" || s.CodecName == "dts-hd ma" || strings.Contains(strings.ToLower(s.CodecName), "hd")
 			if isHD {
 				hdAudioFound = true
-				fmt.Printf("  Found HD audio: %s (track %d)\n", s.CodecName, s.Index)
+				fmt.Printf("  Found HD audio: %s (track %d) in %s\n", s.CodecName, s.Index, filepath.Base(file))
 				audioTracksToConvert = append(audioTracksToConvert, fmt.Sprintf("%d", s.Index))
 			} else {
 				audioTracksToKeep = append(audioTracksToKeep, fmt.Sprintf("%d", s.Index))
@@ -94,7 +119,7 @@ func processMKV(file string) {
 				subtitleTracksToExtract = append(subtitleTracksToExtract, s)
 			} else if s.CodecName == "hdmv_pgs_subtitle" || s.CodecName == "dvd_subtitle" || s.CodecName == "vobsub" || s.CodecName == "mov_text" {
 				pgsVobsubFound = true
-				fmt.Printf("  Found image/incompatible subtitle: %s (track %d)\n", s.CodecName, s.Index)
+				fmt.Printf("  Found incompatible subtitle: %s (track %d) in %s\n", s.CodecName, s.Index, filepath.Base(file))
 			}
 		}
 	}
@@ -107,11 +132,11 @@ func processMKV(file string) {
 		}
 		srtFile := fmt.Sprintf("%s.%s.srt", strings.TrimSuffix(file, filepath.Ext(file)), lang)
 		if _, err := os.Stat(srtFile); os.IsNotExist(err) {
-			fmt.Printf("  Extracting SRT subtitle track %d (%s) to %s...\n", s.Index, lang, filepath.Base(srtFile))
+			fmt.Printf("  Extracting SRT subtitle track %d (%s) from %s...\n", s.Index, lang, filepath.Base(file))
 			if !*dryRun {
 				extractCmd := exec.Command("ffmpeg", "-y", "-i", file, "-map", fmt.Sprintf("0:%d", s.Index), srtFile)
 				if out, err := extractCmd.CombinedOutput(); err != nil {
-					fmt.Printf("    Error extracting subtitle: %v\n%s\n", err, string(out))
+					fmt.Printf("    Error extracting subtitle from %s: %v\n%s\n", file, err, string(out))
 				}
 			}
 		}
@@ -121,7 +146,7 @@ func processMKV(file string) {
 	needsAction := hdAudioFound || pgsVobsubFound
 
 	if needsAction {
-		fmt.Println("  Cleaning MKV (optimizing for Direct Play)...")
+		fmt.Printf("  Cleaning %s (optimizing for Direct Play)...\n", filepath.Base(file))
 		tempFile := file + ".clean.mkv"
 		
 		var args []string
@@ -137,11 +162,9 @@ func processMKV(file string) {
 			for _, aID := range audioTracksToKeep {
 				args = append(args, "-map", fmt.Sprintf("0:%s", aID))
 			}
-			fmt.Printf("    Keeping %d compatible audio tracks, dropping HD tracks.\n", len(audioTracksToKeep))
 		} else if len(audioTracksToConvert) > 0 {
 			// Convert the first HD track to AC3 5.1
 			args = append(args, "-map", fmt.Sprintf("0:%s", audioTracksToConvert[0]))
-			fmt.Printf("    No compatible audio found. Converting first HD track (%s) to AC3 5.1.\n", audioTracksToConvert[0])
 		}
 
 		// Set Codecs
@@ -158,18 +181,20 @@ func processMKV(file string) {
 		if !*dryRun {
 			cleanCmd := exec.Command("ffmpeg", args...)
 			if out, err := cleanCmd.CombinedOutput(); err != nil {
-				fmt.Printf("    Error cleaning MKV: %v\n%s\n", err, string(out))
+				fmt.Printf("    Error cleaning %s: %v\n%s\n", file, err, string(out))
 			} else {
 				if err := os.Rename(tempFile, file); err != nil {
-					fmt.Printf("    Error replacing file: %v\n", err)
+					fmt.Printf("    Error replacing %s: %v\n", file, err)
 				} else {
-					fmt.Println("    SUCCESS: File optimized.")
+					fmt.Printf("    SUCCESS: %s optimized.\n", filepath.Base(file))
 				}
 			}
 		} else {
-			fmt.Printf("    Dry-run: would run ffmpeg %s\n", strings.Join(args, " "))
+			fmt.Printf("    Dry-run: would run ffmpeg for %s\n", filepath.Base(file))
 		}
 	} else {
-		fmt.Println("  File is already optimized.")
+		if *verbose {
+			fmt.Printf("  %s is already optimized.\n", filepath.Base(file))
+		}
 	}
 }

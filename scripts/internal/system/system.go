@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 	"log/slog"
@@ -45,12 +46,13 @@ func NewSystemManager(cfg *config.Config, client *http.Client, notifier AdminNot
 	}
 }
 
-// ... (GetDiskUsage, GetStorageStatus, createStatusMsg restent identiques)
-
 func (s *SystemManager) GetDiskUsage(path string) (usedGB, totalGB float64) {
 	var stat syscall.Statfs_t
 	err := syscall.Statfs(path, &stat)
-	if err != nil { return 0, 0 }
+	if err != nil {
+		slog.Error("Failed to get disk usage", "path", path, "error", err)
+		return 0, 0
+	}
 	total := float64(stat.Blocks) * float64(stat.Bsize)
 	free := float64(stat.Bavail) * float64(stat.Bsize)
 	used := total - free
@@ -76,6 +78,9 @@ func (s *SystemManager) GetStorageStatus() string {
 }
 
 func (s *SystemManager) createStatusMsg(usedGB, totalGB float64, label, icon, tierLabel string) string {
+	if totalGB == 0 {
+		return fmt.Sprintf("%s <b>%s</b> (%s)\n<code>[ERROR]</code>\n📂 Erreur lecture disque\n", icon, label, tierLabel)
+	}
 	pct := (usedGB / totalGB) * 100
 	freeGB := totalGB - usedGB
 	barWidth := 15
@@ -137,28 +142,36 @@ func (s *SystemManager) RunSecurityScan() {
 	}
 
 	report := "🛡️ <b>SCAN DE SÉCURITÉ (HEBDOMADAIRE)</b>\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n"
+	var mu sync.Mutex
+	var wg sync.WaitGroup
 	foundVulnerabilities := false
 
-	                for _, img := range images {
-	                        // On utilise le binaire trivy installé dans /app/bin
-	                        trivyPath := "/app/bin/trivy"
-	                        cmd := exec.Command(trivyPath, "image", "--severity", "CRITICAL", "--quiet", "--no-progress", img)
-	                        out, err := cmd.CombinedOutput()		
-		if err != nil {
-			report += fmt.Sprintf("❌ Erreur scan : <code>%s</code>\n", img)
-			continue
-		}
+	for _, img := range images {
+		wg.Add(1)
+		go func(imageName string) {
+			defer wg.Done()
+			trivyPath := "/app/bin/trivy"
+			cmd := exec.Command(trivyPath, "image", "--severity", "CRITICAL", "--quiet", "--no-progress", imageName)
+			out, err := cmd.CombinedOutput()
+			
+			mu.Lock()
+			defer mu.Unlock()
+			
+			if err != nil {
+				report += fmt.Sprintf("❌ Erreur scan : <code>%s</code>\n", imageName)
+				return
+			}
 
-		output := string(out)
-		if strings.Contains(output, "CRITICAL: 0") || output == "" {
-			// Pas de vulnérabilité critique
-			continue
-		}
+			output := string(out)
+			if strings.Contains(output, "CRITICAL: 0") || output == "" {
+				return
+			}
 
-		// Si on arrive ici, il y a des vulnérabilités ou le format est inattendu
-		foundVulnerabilities = true
-		report += fmt.Sprintf("⚠️ <b>%s</b>\nVulnérabilités critiques détectées !\n", img)
+			foundVulnerabilities = true
+			report += fmt.Sprintf("⚠️ <b>%s</b>\nVulnérabilités critiques détectées !\n", imageName)
+		}(img)
 	}
+	wg.Wait()
 
 	if !foundVulnerabilities {
 		report += "✅ Aucune vulnérabilité critique détectée sur vos images principales."
@@ -176,16 +189,29 @@ func (s *SystemManager) notifyAdminMsg(msg string) {
 }
 
 func (s *SystemManager) runConfigBackup() {
-	cmd := exec.Command("/bin/bash", "/app/maintenance/backup_configs.sh")
-	cmd.Run()
+	// Use the new backup script
+	cmd := exec.Command("/bin/bash", "/app/infra/ai/maintenance/backup_app_configs.sh")
+	if err := cmd.Run(); err != nil {
+		slog.Error("Backup failed during maintenance", "error", err)
+		s.notifyAdminMsg("⚠️ <b>Alerte Backup</b> : Échec de la sauvegarde nocturne.")
+	}
 }
 
 func (s *SystemManager) cleanOldCache(days int) {
 	threshold := time.Now().AddDate(0, 0, -days)
-	filepath.Walk(s.cfg.PosterCacheDir, func(path string, info os.FileInfo, err error) error {
-		if err == nil && !info.IsDir() && info.ModTime().Before(threshold) { os.Remove(path) }
+	err := filepath.WalkDir(s.cfg.PosterCacheDir, func(path string, d os.DirEntry, err error) error {
+		if err != nil { return err }
+		if !d.IsDir() {
+			info, err := d.Info()
+			if err == nil && info.ModTime().Before(threshold) {
+				os.Remove(path)
+			}
+		}
 		return nil
 	})
+	if err != nil {
+		slog.Error("Error cleaning cache", "error", err)
+	}
 }
 
 func (s *SystemManager) cleanDockerSystem() {
@@ -226,8 +252,10 @@ func (s *SystemManager) getUsagePercent(path string) float64 {
 func (s *SystemManager) migrateOldFiles(target float64) {
 	type fileStat struct { path string; atime int64 }
 	var files []fileStat
-	filepath.Walk(s.cfg.StorageNvmePath, func(path string, info os.FileInfo, err error) error {
-		if err == nil && !info.IsDir() && info.Mode()&os.ModeSymlink == 0 {
+	filepath.WalkDir(s.cfg.StorageNvmePath, func(path string, d os.DirEntry, err error) error {
+		if err == nil && !d.IsDir() && (d.Type()&os.ModeSymlink == 0) {
+			info, err := d.Info()
+			if err != nil { return nil }
 			if stat, ok := info.Sys().(*syscall.Stat_t); ok {
 				files = append(files, fileStat{path: path, atime: stat.Atim.Sec})
 			}
@@ -240,14 +268,36 @@ func (s *SystemManager) migrateOldFiles(target float64) {
 		rel, _ := filepath.Rel(s.cfg.StorageNvmePath, f.path)
 		dest := filepath.Join(s.cfg.StorageHddPath, rel)
 		os.MkdirAll(filepath.Dir(dest), 0755)
-		s.moveFile(f.path, dest)
+		if err := s.moveFile(f.path, dest); err != nil {
+			slog.Error("Tiering: Move failed", "from", f.path, "to", dest, "error", err)
+		}
 	}
 }
 
 func (s *SystemManager) moveFile(src, dst string) error {
-	in, _ := os.Open(src); defer in.Close()
-	out, _ := os.Create(dst); defer out.Close()
-	io.Copy(out, in)
+	// Fast path: Try rename (works if on same filesystem)
+	if err := os.Rename(src, dst); err == nil {
+		return nil
+	}
+
+	// Slow path: Copy and Delete
+	in, err := os.Open(src)
+	if err != nil { return err }
+	defer in.Close()
+
+	out, err := os.Create(dst)
+	if err != nil { return err }
+	defer out.Close()
+
+	if _, err := io.Copy(out, in); err != nil {
+		return err
+	}
+	
+	// Ensure file is written to disk before deleting source
+	out.Sync()
+	out.Close()
+	in.Close()
+
 	return os.Remove(src)
 }
 
@@ -316,7 +366,8 @@ func (s *SystemManager) executeQbitCleanup() {
 
 func (s *SystemManager) deleteTorrent(hash string, deleteFiles bool) {
 	data := strings.NewReader(fmt.Sprintf("hashes=%s&deleteFiles=%t", hash, deleteFiles))
-	req, _ := http.NewRequest("POST", s.cfg.QbitURL+"/api/v2/torrents/delete", data)
+	req, err := http.NewRequest("POST", s.cfg.QbitURL+"/api/v2/torrents/delete", data)
+	if err != nil { return }
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	resp, err := s.httpClient.Do(req)
 	if err == nil { resp.Body.Close() }

@@ -70,6 +70,21 @@ services:
       - '--disable_metrics=diskIO,udp,percpu'
       - '--storage_duration=1m0s'
 
+  uptime-kuma:
+    image: louislam/uptime-kuma:latest
+    container_name: uptime-kuma
+    volumes:
+      - ./config/uptime-kuma:/app/data
+    ports:
+      - 3002:3001
+    environment:
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - TZ=${TZ:-Europe/Paris}
+    restart: unless-stopped
+    networks:
+      - npm-nw
+
 networks:
   npm-nw:
     external: true

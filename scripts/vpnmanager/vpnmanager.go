@@ -91,18 +91,54 @@ func (m *Manager) GetCurrentIP() string {
 // UpdateIP fetches the current public IP and checks for leaks
 func (m *Manager) UpdateIP() (string, error) {
 	m.mu.RLock()
-	url := m.ipCheckerURL
+	primaryURL := m.ipCheckerURL
 	m.mu.RUnlock()
 
-	resp, err := m.httpClient.Get(url)
+	providers := []string{
+		primaryURL,
+		"https://ifconfig.me/ip",
+		"https://checkip.amazonaws.com",
+		"http://api.ipify.org",
+		"http://ifconfig.me/ip",
+		"http://checkip.amazonaws.com",
+	}
+
+	var lastErr error
+	for _, url := range providers {
+		if url == "" {
+			continue
+		}
+		ip, err := m.fetchIP(url)
+		if err == nil {
+			m.mu.Lock()
+			m.currentIP = ip
+			m.mu.Unlock()
+
+			// Killswitch check
+			if ip == m.realIP && m.realIP != "" {
+				m.NotifyAdmin(`🚨 <b>ALERTE FUITE IP</b>
+VPN déconnecté ! IP réelle détectée. Arrêt des torrents...`)
+				m.PauseTorrents()
+			}
+			return ip, nil
+		}
+		lastErr = err
+		slog.Warn("Échec récupération IP via provider", "url", url, "error", err)
+	}
+
+	return "", fmt.Errorf("tous les providers ont échoué. Dernier : %w", lastErr)
+}
+
+func (m *Manager) fetchIP(targetURL string) (string, error) {
+	resp, err := m.httpClient.Get(targetURL)
 	if err != nil {
 		return "", err
 	}
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			slog.Error("Erreur fermeture body UpdateIP", "error", err)
-		}
-	}()
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("status %d", resp.StatusCode)
+	}
 
 	ipBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -110,16 +146,8 @@ func (m *Manager) UpdateIP() (string, error) {
 	}
 
 	newIP := strings.TrimSpace(string(ipBytes))
-	
-	m.mu.Lock()
-	m.currentIP = newIP
-	m.mu.Unlock()
-
-	// Killswitch check
-	if newIP == m.realIP && m.realIP != "" {
-		m.NotifyAdmin(`🚨 <b>ALERTE FUITE IP</b>
-VPN déconnecté ! IP réelle détectée. Arrêt des torrents...`)
-		m.PauseTorrents()
+	if net.ParseIP(newIP) == nil {
+		return "", fmt.Errorf("IP invalide : %q", newIP)
 	}
 
 	return newIP, nil
@@ -332,8 +360,12 @@ Vitesse : %.1f MB/s`,
 	}
 
 	time.Sleep(10 * time.Second)
-	newIP, _ := m.UpdateIP()
-	m.NotifyAdmin("✅ <b>VPN Rotation</b> : Reconnexion réussie. IP : " + newIP)
+	newIP, err := m.UpdateIP()
+	if err != nil {
+		m.NotifyAdmin("⚠️ <b>VPN Rotation</b> : Reconnexion effectuée mais impossible de vérifier l'IP : " + err.Error())
+	} else {
+		m.NotifyAdmin("✅ <b>VPN Rotation</b> : Reconnexion réussie. IP : " + newIP)
+	}
 	
 	m.ResumeTorrents()
 }

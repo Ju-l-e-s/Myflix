@@ -265,39 +265,53 @@ func (s *SystemManager) StartQbitCleanup(ctx context.Context) {
 	}
 }
 
+type QbitTorrent struct {
+	Hash         string  `json:"hash"`
+	Name         string  `json:"name"`
+	State        string  `json:"state"`
+	Progress     float64 `json:"progress"`
+	LastActivity int64   `json:"last_activity"`
+}
+
 func (s *SystemManager) executeQbitCleanup() {
 	resp, err := s.httpClient.Get(s.cfg.QbitURL + "/api/v2/torrents/info")
-	if err != nil { return }
+	if err != nil {
+		slog.Error("Failed to connect to qBittorrent API", "error", err)
+		return
+	}
 	defer resp.Body.Close()
 
-	var torrents []map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&torrents); err != nil { return }
+	if resp.StatusCode != http.StatusOK {
+		slog.Error("qBittorrent API returned non-200 status", "status", resp.StatusCode)
+		return
+	}
+
+	var torrents []QbitTorrent
+	if err := json.NewDecoder(resp.Body).Decode(&torrents); err != nil {
+		slog.Error("Failed to decode qBittorrent response", "error", err)
+		return
+	}
 
 	now := time.Now().Unix()
 	for _, t := range torrents {
-		hash, _ := t["hash"].(string)
-		name, _ := t["name"].(string)
-		state, _ := t["state"].(string)
-		progress, _ := t["progress"].(float64)
-		lastActivity := int64(t["last_activity"].(float64))
-
 		// LOGIQUE 1 : Purge des téléchargements BLOQUÉS (Stalled DL)
 		// Si le torrent est bloqué depuis plus de 48h
-		if state == "stalledDL" && (now-lastActivity) > 172800 {
-			s.deleteTorrent(hash, true)
-			msg := fmt.Sprintf("🗑️ <b>Purge Automatique</b>\n\nTorrent bloqué supprimé : <code>%s</code>\n<i>(Inactif > 48h)</i>", name)
+		if t.State == "stalledDL" && (now-t.LastActivity) > 172800 {
+			s.deleteTorrent(t.Hash, true)
+			msg := fmt.Sprintf("🗑️ <b>Purge Automatique</b>\n\nTorrent bloqué supprimé : <code>%s</code>\n<i>(Inactif > 48h)</i>", t.Name)
 			s.notifyAdminMsg(msg)
 			continue
 		}
 
 		// LOGIQUE 2 : Nettoyage des torrents TERMINÉS (Seeding/StalledUP)
 		// On retire de la liste mais on GARDE les fichiers sur le disque
-		if state == "stalledUP" || state == "pausedUP" || (progress >= 1.0 && (state == "uploading" || state == "finished")) {
-			s.deleteTorrent(hash, false)
-			slog.Info("Cleanup qBit : Torrent terminé retiré", "name", name)
+		if t.State == "stalledUP" || t.State == "pausedUP" || (t.Progress >= 1.0 && (t.State == "uploading" || t.State == "finished")) {
+			s.deleteTorrent(t.Hash, false)
+			slog.Info("Cleanup qBit : Torrent terminé retiré", "name", t.Name)
 		}
 	}
 }
+
 
 func (s *SystemManager) deleteTorrent(hash string, deleteFiles bool) {
 	data := strings.NewReader(fmt.Sprintf("hashes=%s&deleteFiles=%t", hash, deleteFiles))

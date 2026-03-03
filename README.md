@@ -141,17 +141,35 @@ This script handles decryption, file placement, and disk mounting recovery, brin
 
 ### 1. Environment Preparation
 ```bash
-# Recommendation: Use /opt/myflix or ~/myflix
+# Clone the repository
 git clone https://github.com/Ju-l-e-s/Myflix.git myflix
 cd myflix
 cp .env.example .env
 ```
 
-### 2. Required API Keys
-Obtain the following before starting:
-*   **Telegram**: Talk to [@BotFather](https://t.me/botfather).
-*   **Gemini**: Get a free key at [Google AI Studio](https://aistudio.google.com/).
-*   **Cloudflare**: A domain name managed by Cloudflare.
+### 2. Obtaining Required API Keys & IDs
+
+To make Myflix fully functional, you need to collect several credentials:
+
+#### 🤖 Telegram Integration
+*   **TELEGRAM_TOKEN**: Message [@BotFather](https://t.me/botfather) on Telegram, use `/newbot`, and follow the steps to get your API Token.
+*   **SUPER_ADMIN_ID**: Message [@myidbot](https://t.me/myidbot) and type `/getid` to retrieve your unique numerical User ID. This ensures only you can control the bot.
+
+#### 🧠 AI & Media Metadata
+*   **GEMINI_KEY**: Sign in to [Google AI Studio](https://aistudio.google.com/) and create a free API Key for **Gemini 1.5 Flash**.
+*   **TMDB_API_KEY**: Create an account on [TheMovieDB.org](https://www.themoviedb.org/), go to **Settings > API**, and generate a "v4 Auth Token" or "v3 API Key".
+
+#### 🎬 Media Services (Radarr/Sonarr)
+*   Once Myflix is started for the first time, access the web UIs (e.g., `http://localhost:7878`).
+*   Go to **Settings > General > API Key** to retrieve the keys for Radarr, Sonarr, and Prowlarr.
+
+#### 🛡️ VPN & Security
+*   **NORDVPN_USER/PASS**: Do **not** use your standard email/password. Log into your NordVPN dashboard, go to **NordVPN > Manual Setup**, and generate **Service Credentials** (Username/Password).
+*   **REAL_IP**: Visit [ifconfig.me](https://ifconfig.me) from your home network and copy the result. This is used by the Killswitch to detect leaks.
+*   **BACKUP_ENCRYPTION_KEY**: Invent a strong passphrase. This will be used to encrypt your GPG backups.
+
+#### 📡 GitHub Sync (Backups)
+*   **GITHUB_PAT**: Go to your GitHub **Settings > Developer Settings > Personal Access Tokens (classic)**. Generate a token with `repo` scope so the script can push backups to your private vault.
 
 ### 3. Deploying Stacks
 The stacks should be started in order:

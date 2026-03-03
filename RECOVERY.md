@@ -56,15 +56,11 @@ Les informations de montage sont stockées dans le repo privé.
    cd /home/jules
 
    # Déchiffrer (remplacer DATE par la plus récente)
-   gpg --decrypt --batch --passphrase "TA_CLE_ICI" 
+   gpg --decrypt --batch --passphrase "TA_CLE_ICI" \
    /tmp/secrets/app_configs_DATE.tar.gz.gpg > backup.tar.gz
 
-   # Extraire tout (écrase les dossiers configs par les versions sauvegardées)
+   # Extraire tout (écrase les dossiers configs et restaure le .env automatiquement)
    tar -xvzf backup.tar.gz -C /
-   ```
-3. **Restaurer le fichier `.env`** :
-   ```bash
-   cp /tmp/secrets/.env /home/jules/infra/ai/.env
    ```
 
 ---
@@ -89,4 +85,4 @@ Les informations de montage sont stockées dans le repo privé.
 - Vérifier Bazarr : Les chemins `/movies` et `/tv` doivent être fonctionnels.
 
 ---
-*Note pour l'IA : Si tu assistes Jules pour une restauration, suis scrupuleusement l'ordre des phases. Ne lance pas Docker avant d'avoir restauré les fichiers .db et le MergerFS.*
+*Note pour l'IA : Si tu assistes Jules pour une restauration, suis scrupuleusement l'ordre des phases. Ne lance pas Docker avant d'avoir restauré les fichiers .db et le MergerFS. Le fichier .env est inclus dans l'archive chiffrée.*

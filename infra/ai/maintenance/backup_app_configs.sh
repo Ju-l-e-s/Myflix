@@ -77,7 +77,6 @@ if [ ! -z "$GITHUB_PAT" ]; then
     # On remplace l'ancienne backup par la nouvelle pour éviter de saturer Git
     rm -f app_configs_*.tar.gz.gpg
     cp "$ENCRYPTED_ARCHIVE" .
-    cp "$ENV_FILE" ./.env
 
     git add .
     git commit -m "Full App & System Backup $TIMESTAMP" || echo "Aucun changement"

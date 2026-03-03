@@ -1,0 +1,15 @@
+# Docker context optimization for Pi 5
+myflix_bot
+myflixbot
+*.log
+*.prof
+.git
+.pytest_cache
+__pycache__
+*.jpg
+*.png
+.env
+infra/
+data/
+media_share/
+scripts/vpnmanager/bin/ # Si binaire local existant

@@ -12,13 +12,18 @@
 !README.md
 !RECOVERY.md
 
+# --- Règles spécifiques pour /.github ---
+!/.github/workflows/
+!/.github/workflows/*.yml
+
 # --- Règles spécifiques pour /infra ---
-# Ignorer TOUT dans infra sauf les docker-compose et Dockerfiles
 /infra/**
 !/infra/**/
 !/infra/**/docker-compose.yml
+!/infra/**/docker-monitoring.yml
 !/infra/**/Dockerfile
 !/infra/**/*.sh
+!/infra/crontab.txt
 !/infra/monitoring/config/prometheus/prometheus.yml
 !/infra/monitoring/config/homepage/*.yaml
 
@@ -29,11 +34,12 @@
 !/scripts/go.mod
 !/scripts/go.sum
 !/scripts/Dockerfile
+!/scripts/.dockerignore
 !/scripts/**/*.sh
 !/scripts/config_share.json
 !/scripts/storage_policy.json
 
-# --- Exclusions Globales (Sécurité) ---
+# --- Exclusions Globales (Sécurité & Nettoyage) ---
 .env
 *.db
 *.db-*
@@ -43,16 +49,25 @@
 *.zip
 *.pid
 bin/
+go/
 **/node_modules/
 **/venv/
 **/ai-env/
-**/config/
-**/data/
-**/Definitions/
-**/asp/
 **/*.pid
-**/*.txt
 **/*.pem
+**/secrets/
+**/backups_automated/
+**/backups_emergency/
+
+# On ignore spécifiquement les dossiers de données et config dans infra
+/infra/**/config/
+/infra/**/data/
+/infra/**/Definitions/
+/infra/**/asp/
+
+# Exceptions pour les fichiers de config autorisés explicitement ci-dessus
+!/infra/monitoring/config/prometheus/prometheus.yml
+!/infra/monitoring/config/homepage/*.yaml
 
 # Binaires compilés
 scripts/myflixbot*

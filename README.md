@@ -1,77 +1,46 @@
-# 🏛️ Myflix - The Autonomous Media Orchestrator
+# 🏛️ Myflix: The Autonomous Media Orchestrator
 
 ![Raspberry Pi](https://img.shields.io/badge/-RaspberryPi-C51A4A?style=for-the-badge&logo=Raspberry-Pi)
 ![Go](https://img.shields.io/badge/go-%2300ADD8.svg?style=for-the-badge&logo=go&logoColor=white)
 ![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)
 ![Telegram](https://img.shields.io/badge/Telegram-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)
 ![Gemini](https://img.shields.io/badge/Gemini-%238E75B2.svg?style=for-the-badge&logo=googlebard&logoColor=white)
-![Prometheus](https://img.shields.io/badge/Prometheus-E6522C?style=for-the-badge&logo=Prometheus&logoColor=white)
 
-> **Your resilient, high-performance media empire. Built in Go. Engineered for Raspberry Pi 5.**
+> **A resilient, high-performance media ecosystem engineered for Raspberry Pi 5. Powered by Go and Gemini AI.**
 
-**Myflix v11.4** is an industrial-grade orchestration suite. It unifies Radarr, Sonarr, qBittorrent, and NordVPN behind a single interface, driven by robust business logic and a conversational entry point powered by **Gemini 1.5 Flash**.
+Myflix is not just a collection of Docker containers; it is a **fully orchestrated media autonomous system**. It bridges the gap between complex media management (Radarr, Sonarr, qBittorrent) and the user through a custom-built Go engine and a natural language interface powered by **Google Gemini 1.5 Flash**.
 
 ---
 
-## ✨ Core Capabilities
+## 🧐 How It Works: The "Brain" Logic
 
-### 🧠 AI-Driven Conversational Interface
-Forget rigid commands. Myflix uses Gemini 1.5 to interpret natural language. 
-- **Context Awareness**: "Find that 80s sci-fi movie with a giant worm" results in Myflix identifying *Dune* and checking your library.
-- **Natural Intent**: "Download the latest episode of The Last of Us in 4K" is translated into precise API calls to Sonarr with quality profile overrides.
+At the center of Myflix sits the **Go Maintenance Bot**. Unlike simple scripts, this orchestrator manages the entire lifecycle of your media:
 
-### 🏎️ High-Performance Go Engine
-The "Maintenance Bot" is a custom-built Go application running as a background orchestrator:
-- **Asynchronous Cache**: Real-time library syncing with Radarr/Sonarr using surgical Mutex locking.
-- **Lightning Search**: Local library indexing using `filepath.WalkDir` for near-zero latency even with tens of thousands of files.
-- **Resource Efficient**: Minimal RAM footprint (< 50MB) optimized for ARM64 architecture.
+1.  **Natural Language Processing**: When you send a message via Telegram, the Go engine forwards the prompt to Gemini with a specialized system context. Gemini identifies the **Intent** (Search, Status, Delete, Share) and returns a structured JSON command.
+2.  **API Abstraction**: The Go engine executes these commands by communicating with Radarr (Movies), Sonarr (TV), or Prowlarr (Indexers).
+3.  **Real-Time State Management**: A background thread maintains an **Asynchronous Cache** of your entire library. This allows the bot to answer "Do I have Inception?" instantly without querying slow databases or spinning up HDDs.
+4.  **Reactive Maintenance**: The bot monitors download health. If a torrent is stalled for too long, it is automatically removed and a better source is found.
+
+---
+
+## ✨ Advanced Features
+
+### 🧠 Gemini 1.5 NLP Integration
+*   **Semantic Search**: Ask for "That movie with the spinning top at the end" and Myflix will find *Inception*.
+*   **Smart Downloading**: "Add the latest Marvel movie in high quality" - The bot automatically identifies the title and sends the request to Radarr with a 4K/1080p profile override.
 
 ### 🛡️ Defensive Networking & Killswitch
-Privacy is not an addon, it's the foundation:
-- **Dynamic Benchmarking**: Every night, Myflix tests dozens of VPN servers. It automatically switches Gluetun to the server with the best Speed/Latency ratio.
-- **Public IP Monitor**: Continuous polling of public IP. If a leak is detected (VPN drop), the download engine is frozen in < 500ms.
+*   **Automated VPN Benchmarking**: Every night, the system benchmarks 50+ VPN servers. It calculates a "Health Score" based on `Speed / Latency` and automatically reconfigures the VPN container (Gluetun) to use the best performer.
+*   **Atomic Killswitch**: A dedicated Go routine polls the public IP every few seconds. If the VPN tunnel drops, the qBittorrent process is paused in under 500ms to prevent any IP leak.
 
-### ♻️ Self-Healing Lifecycle
-- **Health Checks**: Automatically identifies stalled downloads (low seeds or dead trackers), removes them, and triggers a new search.
-- **Auto-Update**: Integrated with Watchtower for zero-downtime container updates.
+### 🗄️ Tiered Storage Strategy (MergerFS)
+*   **NVMe (Hot)**: OS, Docker configs, and active downloads for maximum I/O performance.
+*   **HDD (Cold)**: Massive storage for completed media.
+*   **Pooling**: Using `MergerFS`, both tiers are presented as a single logical path (`/mnt/pool`). This allows Plex to see a unified library while your system benefits from SSD speeds where it matters most.
 
-### 🗄️ Hybrid Storage Tiering (Tiered Storage)
-- **Hot Tier (NVMe)**: Metadata, databases, and active downloads.
-- **Cold Tier (HDD)**: Massive storage for completed media.
-- **MergerFS Integration**: Combines multiple drives into a single logical pool (`/mnt/pool`) for seamless Plex/Jellyfin integration.
-
----
-
-## 🌍 Networking & Remote Access
-
-### ☁️ Cloudflare Tunnel (Argo)
-Myflix utilizes **Cloudflare Tunnel** (`cloudflared`) to expose services securely without any port forwarding:
-- **Outbound Only**: The Pi creates a secure tunnel to Cloudflare. Your home router remains completely closed to the internet.
-- **WAF & Protection**: Benefits from Cloudflare's firewall and DDoS protection.
-- **Automatic SSL**: Full HTTPS termination with managed certificates.
-
-### 🏷️ Domain Name Requirement
-A registered domain (e.g., `yourdomain.com`) is necessary to:
-1. Provide a persistent address for the **Instant Share Engine**.
-2. Manage DNS records through Cloudflare for tunnel routing.
-3. Allow the Telegram bot to generate valid, clickable download links for your friends/family.
-
----
-
-## 🔐 Backup & Disaster Recovery
-
-Myflix is designed for **"Zero-Effort" restoration**. If your Pi fails, you can be back online in minutes.
-
-### Automated Nightly Backups (3:00 AM)
-- **What is saved**: `.env` (secrets), `*.yaml` & `*.xml` (configs), `*.db` (media libraries), and system files (`/etc/fstab`).
-- **Encryption**: Everything is bundled into a GPG-encrypted archive (**AES256**) using your unique `BACKUP_ENCRYPTION_KEY`.
-- **Hybrid Storage**: Archives are stored locally (7-day rotation) and pushed to a **private GitHub repository**.
-
-### Restoration Process
-1. Clone this public repo and your private secrets repo.
-2. Run `sudo ./infra/ai/maintenance/restore_app_configs.sh`.
-3. Enter your passphrase.
-4. **Done.** All settings, libraries, and mount points are restored.
+### 🔗 Secure Instant Share
+*   **Zero-Exposure**: Share any movie with a friend without giving them access to your server.
+*   **Dynamic Links**: Generates a temporary, rate-limited download link served through a secure Cloudflare Tunnel.
 
 ---
 
@@ -79,67 +48,102 @@ Myflix is designed for **"Zero-Effort" restoration**. If your Pi fails, you can 
 
 ```text
 .
-├── infra/                   # Infrastructure as Code (Docker stack)
-│   ├── ai/                  # Logic Stack: Gemini, Radarr, Sonarr, Prowlarr
-│   ├── media/               # Media Stack: Plex, Bazarr (Subtitles), Syncthing
-│   ├── monitoring/          # Observability: Prometheus, Grafana, Uptime Kuma
-│   └── npm/                 # Nginx Proxy Manager (Local routing)
-├── scripts/                 # Core Go Orchestrator
-│   ├── internal/bot/        # Telegram UI/UX & Menu logic
-│   ├── internal/ai/         # Gemini 1.5 NLP Engine
-│   ├── internal/arrclient/  # Radarr/Sonarr/Prowlarr API Wrapper
-│   └── vpnmanager/          # VPN Benchmarking & Killswitch
-├── RECOVERY.md              # Detailed Disaster Recovery Plan
-└── README.md                # You are here
+├── infra/
+│   ├── ai/             # Logic Stack (Radarr, Sonarr, Prowlarr, qBittorrent, VPN)
+│   ├── media/          # Content Stack (Plex, Bazarr, Syncthing)
+│   ├── monitoring/     # Observability Stack (Prometheus, Grafana, Uptime Kuma)
+│   └── npm/            # Routing Stack (Nginx Proxy Manager)
+├── scripts/            # Core Orchestrator (Golang)
+│   ├── internal/bot/   # Telegram UI & Interaction Logic
+│   ├── internal/ai/    # Gemini NLP & Prompt Engineering
+│   └── vpnmanager/     # The Killswitch & Benchmarking engine
+├── RECOVERY.md         # The Disaster Recovery Plan (DRP)
+└── README.md           # This documentation
 ```
+
+---
+
+## 🌍 Networking: Cloudflare Tunnel
+
+Myflix is designed to be **invisible to the internet**. 
+- **No Port Forwarding**: Your router's firewall remains 100% closed.
+- **Argo Tunnel**: A secure outbound tunnel connects your local "Share Engine" to Cloudflare's edge.
+- **Custom Domain**: Requires a domain (e.g., `your-domain.com`) managed by Cloudflare to route the sharing traffic via HTTPS.
 
 ---
 
 ## 🚀 Installation Guide
 
 ### 1. Prerequisites
-- **Hardware**: Raspberry Pi 5 (8GB recommended) with NVMe boot.
-- **Storage**: At least one external HDD formatted in Ext4.
-- **Domain**: A domain managed via Cloudflare.
+- **OS**: 64-bit Linux (Debian/Ubuntu/Raspberry Pi OS).
+- **Docker**: Latest version with Compose plugin.
+- **Hardware**: 4GB RAM minimum (8GB recommended for Gemini/Plex concurrent usage).
 
-### 2. Initial Setup
+### 2. Basic Setup
 ```bash
-# Clone the repository
-git clone https://github.com/Ju-l-e-s/Myflix.git /home/jules/
-cd /home/jules/
+# Clone the repository to your preferred location
+git clone https://github.com/Ju-l-e-s/Myflix.git
+cd Myflix
 
-# Create your environment file
+# Create the environment file from example
 cp .env.example .env
 ```
 
-### 3. Essential Configurations
-Edit `.env` with your specific keys:
-- **TELEGRAM_TOKEN**: From [@BotFather](https://t.me/botfather).
-- **GEMINI_KEY**: From [Google AI Studio](https://aistudio.google.com/).
-- **NORDVPN_USER/PASS**: Your VPN credentials.
-- **REAL_IP**: Your home public IP (for the Killswitch).
+### 3. Configuration
+Edit the `.env` file with your credentials:
+- `TELEGRAM_TOKEN`: Obtain from [@BotFather](https://t.me/botfather).
+- `GEMINI_KEY`: Obtain from [Google AI Studio](https://aistudio.google.com/).
+- `BACKUP_ENCRYPTION_KEY`: A strong passphrase for your GPG backups.
+- `REAL_IP`: Your home network's public IP (used for the Killswitch).
 
-### 4. Storage Setup (MergerFS)
-Myflix expects a pool at `/mnt/pool`. Documentation for the fstab entry is included in the `RECOVERY.md`.
+### 4. Storage Preparation
+Ensure your external drives are mounted. Myflix expects a directory structure at your mount point (e.g., `/mnt/data`):
+- `/movies`
+- `/tv`
+- `/torrents`
 
-### 5. Deployment
+### 5. Launch
 ```bash
-# Ignite all services
+# Start the logic and download engine
 cd infra/ai && docker compose up -d --build
+
+# Start media and streaming services
 cd ../media && docker compose up -d
 ```
 
 ---
 
-## 🎬 Bot Commands & Usage
+## 🔐 Backup & Disaster Recovery
 
-### Interaction Examples
-- **Check Status**: `/status` - Visual report of disk usage and service health.
-- **Browse Library**: `/films` or `/series` - Full paginated list (15 items/page).
-- **Icons Legend**:
-  - ✅ : File is ready to stream/download.
-  - ⏳ : Media is tracked but file is missing or downloading.
-- **Share**: Use the **"🔗 Share"** button on any "Ready" item to generate a 24h temporary download link via your Cloudflare domain.
+Myflix is built for **immortality**. 
+
+### The 3:00 AM Routine
+Every night, the system performs an **Automated Encrypted Backup**:
+1.  **Bundles**: All `.env` files, `.yaml` configs, and `.db` media databases.
+2.  **Encrypts**: Uses **AES-256 GPG** encryption with your private key.
+3.  **Synchronizes**: Pushes the encrypted blob to your **private GitHub repository**.
+
+### How to Restore (The "Pi-is-Dead" Scenario)
+If your hardware fails:
+1.  Install a fresh OS and clone this repo.
+2.  Clone your private secrets repo.
+3.  Run `sudo ./infra/ai/maintenance/restore_app_configs.sh`.
+4.  Enter your passphrase. **Your entire empire is back online exactly as it was.**
 
 ---
-*Built for stability, engineered for speed. Myflix is your private, autonomous media cloud.*
+
+## 🎬 Telegram Bot Usage
+
+| Command | Description |
+| :--- | :--- |
+| `/start` | Open the main interactive dashboard. |
+| `/status` | View CPU/RAM health and disk storage visualization. |
+| `/films` | Browse your movie library (15 items/page). |
+| `/series` | Browse your TV shows. |
+| `/queue` | Monitor active downloads with cleaned metadata tags. |
+| `/vpn` | Verify VPN protection and see current exit node. |
+
+**Pro Tip**: You don't need commands. Just type: *"I want to watch the latest John Wick in 4K"* or *"Is there any space left on my HDD?"* and the bot will handle the rest.
+
+---
+*Myflix: Stability of a Server, Intelligence of an AI.*

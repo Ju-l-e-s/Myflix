@@ -60,7 +60,7 @@ Les informations de montage sont stockées dans le repo privé.
    /tmp/secrets/app_configs_DATE.tar.gz.gpg > backup.tar.gz
 
    # Extraire tout (écrase les dossiers configs et restaure le .env automatiquement)
-   tar -xvzf backup.tar.gz -C /
+   sudo /home/jules/infra/ai/maintenance/restore_app_configs.sh
    ```
 
 ---

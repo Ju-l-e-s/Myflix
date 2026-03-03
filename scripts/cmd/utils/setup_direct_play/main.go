@@ -10,7 +10,11 @@ import (
 )
 
 func main() {
-	apiKey := "1f875e27320201d7671e1d9a9f2d7983"
+	apiKey := os.Getenv("BAZARR_API_KEY")
+	if apiKey == "" {
+		fmt.Println("Erreur: BAZARR_API_KEY non définie")
+		os.Exit(1)
+	}
 	baseURL := "http://127.0.0.1:6767/api"
 
 	// 1. Get settings

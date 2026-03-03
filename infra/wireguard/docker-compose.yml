@@ -4,9 +4,9 @@ services:
     container_name: wg-easy
     environment:
       # L'IP publique de votre domicile
-      - WG_HOST=91.160.12.99
+      - WG_HOST=${REAL_IP}
       # Le hash du mot de passe (généré avec bcrypt, avec les $ échappés pour Docker)
-      - PASSWORD_HASH=$$2a$$10$$VlMlYBKSxOWaQbv4dX37vuSuXYMbO0B2TnPblntjMgLfrM/pohrwu
+      - PASSWORD_HASH=${WG_PASSWORD_HASH}
       # Pour que tout le trafic passe par le VPN (Netflix, etc.)
       - WG_DEFAULT_ADDRESS=10.8.0.x
       - WG_DEFAULT_DNS=1.1.1.1

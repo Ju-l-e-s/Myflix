@@ -34,9 +34,16 @@ func NewPlexClient(cfg *config.Config, client *http.Client) *PlexClient {
 func (p *PlexClient) GetColdMedia(months int) ([]PlexMetadata, error) {
 	// 1. Récupérer toutes les sections (Movies/TV)
 	// Note: Pour simplifier, on itère sur les bibliothèques standard
-	url := fmt.Sprintf("%s/library/sections/all/all?X-Plex-Token=%s", p.cfg.PlexURL, p.cfg.PlexToken)
+	url := fmt.Sprintf("%s/library/sections/all/all", p.cfg.PlexURL)
 	
-	resp, err := p.client.Get(url)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("X-Plex-Token", p.cfg.PlexToken)
+	req.Header.Set("Accept", "application/xml")
+
+	resp, err := p.client.Do(req)
 	if err != nil {
 		return nil, err
 	}

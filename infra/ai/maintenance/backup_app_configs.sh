@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
 # --- 1. Détection de l'environnement ---
 ROOT_DIR="/home/jules"

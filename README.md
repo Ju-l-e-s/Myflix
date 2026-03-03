@@ -38,6 +38,9 @@ Security is an automation, not an option:
 - **Hot Tier (NVMe)**: For active downloads and metadata cache.
 - **Archive Tier (HDD/NAS)**: Automatic migration of older files based on last access time to free up high-speed space.
 
+### 🔗 Instant Share Engine
+Generate secure, direct download links directly from Telegram. Myflix includes a built-in sharing server (Go-powered) that handles link generation for external users without exposing your entire library.
+
 ---
 
 ## 🔐 Backup & Disaster Recovery
@@ -132,7 +135,7 @@ docker compose -f infra/ai/docker-compose.yml up -d --build
 
 ## 🎬 Telegram Commands Reference
 - `/start` - Launch the premium dashboard.
-- `/films` & `/series` - Browse FULL library (✅ Ready / ⏳ Downloading) with improved 15-item pagination.
+- `/films` & `/series` - Browse FULL library (✅ Ready / ⏳ Downloading). Includes **Instant Share** buttons for ready content.
 - `/vpn` - Real-time VPN protection status and public IP.
 - `/status` - Infrastructure health report with visual storage bars (🟦 NVMe | 🟧 HDD).
 - `/queue` - Live download flux monitoring with technical tag cleaning.

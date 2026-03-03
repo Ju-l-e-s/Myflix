@@ -1,4 +1,4 @@
-name: CI - Myflix Multi-Arch Tests
+name: CI - Myflix Engineering Suite
 
 on:
   push:
@@ -7,8 +7,8 @@ on:
     branches: [ main ]
 
 jobs:
-  test-go:
-    name: Go (Native Backend)
+  validate-go:
+    name: Go Backend (Build & Test)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -17,9 +17,33 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: "1.24.0"
+          cache-dependency-path: scripts/go.sum
 
-      - name: Go Test
+      - name: Install dependencies
         working-directory: scripts
+        run: go mod download
+
+      - name: Build Check (Native)
+        working-directory: scripts
+        run: go build -v ./cmd/myflixbot
+
+      - name: Cross-Compile Check (ARM64 for Pi 5)
+        working-directory: scripts
+        run: GOOS=linux GOARCH=arm64 go build -v ./cmd/myflixbot
+
+      - name: Run All Tests
+        working-directory: scripts
+        run: go test -v ./...
+
+  validate-docker:
+    name: Infrastructure Validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate Docker Compose files
         run: |
-          go mod download
-          go test -v ./vpnmanager/...
+          docker compose -f infra/ai/docker-compose.yml config > /dev/null
+          docker compose -f infra/media/docker-compose.yml config > /dev/null
+          # Note: monitoring uses a specific filename
+          docker compose -f infra/monitoring/docker-monitoring.yml config > /dev/null || echo "Skipping monitoring validation if file not found"

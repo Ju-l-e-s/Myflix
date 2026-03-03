@@ -23,6 +23,7 @@
 !/infra/**/docker-monitoring.yml
 !/infra/**/Dockerfile
 !/infra/**/*.sh
+!/infra/ai/maintenance/restore_app_configs.sh
 !/infra/crontab.txt
 !/infra/monitoring/config/prometheus/prometheus.yml
 !/infra/monitoring/config/homepage/*.yaml

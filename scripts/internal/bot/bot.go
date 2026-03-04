@@ -184,8 +184,8 @@ func (h *BotHandler) showLibrary(c tele.Context, cat string, page int, edit bool
 	rows = append(rows, menu.Row(nav...))
 	menu.Inline(rows...)
 
-	msg += "\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n"
-	msg += "<i>✅ Prêt  ⏳ En attente</i>"
+	msg += "⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n"
+	msg += "<code>✅ Prêt  ⏳ En attente</code>"
 
 	if edit { return c.Edit(msg, menu, tele.ModeHTML) }
 	return c.Send(msg, menu, tele.ModeHTML)
@@ -452,38 +452,31 @@ func (h *BotHandler) cleanTitle(t string) string {
 }
 
 func (h *BotHandler) formatMediaLine(index int, title string, year int, status string) string {
-	// Largeur fixe pour le bloc de texte (titre + année)
-	// Environ 24-26 caractères est idéal pour les mobiles
-	const textWidth = 25
+	const targetWidth = 32 // Largeur totale de la ligne (ajustable)
 
 	fullTitle := title
 	if year > 0 {
 		fullTitle = fmt.Sprintf("%s (%d)", title, year)
 	}
 
-	// Préparation du préfixe (ex: "1. ")
-	prefix := fmt.Sprintf("%d. ", index)
+	lineStart := fmt.Sprintf("%d. %s", index, fullTitle)
+	runes := []rune(lineStart)
 	
-	// On tronque si le titre + préfixe est trop long pour la largeur fixe
-	displayTitle := fullTitle
-	if len([]rune(prefix+displayTitle)) > textWidth {
-		displayTitle = string([]rune(displayTitle)[:textWidth-len([]rune(prefix))-3]) + "..."
+	// Troncature si trop long (on garde de la place pour le statut à la fin)
+	if len(runes) > targetWidth-3 {
+		lineStart = string(runes[:targetWidth-6]) + "..."
+		runes = []rune(lineStart)
 	}
 
-	// Création de la ligne avec padding fixe
-	// %-25s va créer un bloc de 25 caractères aligné à gauche
-	line := fmt.Sprintf("%s%s", prefix, displayTitle)
-	
-	// On ajoute les espaces manuellement pour le padding monospacé
+	// Calcul du padding avec des espaces classiques (car on est en monospaced)
+	paddingCount := targetWidth - len(runes)
 	padding := ""
-	currentLen := len([]rune(line))
-	for i := 0; i < textWidth - currentLen; i++ {
+	for i := 0; i < paddingCount; i++ {
 		padding += " "
 	}
 
-	// On enveloppe le texte dans <code> pour la largeur fixe, 
-	// l'emoji reste en dehors pour être collé après le bloc
-	return fmt.Sprintf("<code>%s%s</code> %s", line, padding, status)
+	// On enveloppe tout sauf le tag HTML gras dans <code> pour la chasse fixe
+	return fmt.Sprintf("<code>%s%s %s</code>", lineStart, padding, status)
 }
 
 func (h *BotHandler) findFirstVideo(root string) string {

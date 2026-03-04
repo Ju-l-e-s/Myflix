@@ -2,7 +2,19 @@
 set -euo pipefail
 
 # --- 1. Détection de l'environnement ---
-ROOT_DIR="/home/jules"
+# On détecte si on est dans le conteneur (/app) ou sur l'hôte (/home/jules)
+if [ -d "/app/infra" ]; then
+    ROOT_DIR="/app"
+    IS_CONTAINER=true
+    export HOME="/tmp"
+elif [ -d "/home/jules/infra" ]; then
+    ROOT_DIR="/home/jules"
+    IS_CONTAINER=false
+else
+    echo "❌ Erreur : Impossible de localiser le répertoire racine de l'infrastructure."
+    exit 1
+fi
+
 ENV_FILE="$ROOT_DIR/infra/ai/.env"
 
 # Chargement des variables
@@ -29,9 +41,14 @@ echo "🚀 Démarrage de la sauvegarde des configurations d'applications (YAML, 
 echo "⚙️ Collecte des infos système..."
 SYS_TEMP="$ROOT_DIR/infra/backups_automated/system_info"
 mkdir -p "$SYS_TEMP"
-cp /etc/fstab "$SYS_TEMP/fstab_backup.txt"
-cp /etc/fuse.conf "$SYS_TEMP/fuse.conf_backup.txt" 2>/dev/null || true
-crontab -l > "$SYS_TEMP/crontab_backup.txt" 2>/dev/null || true
+
+if [ "$IS_CONTAINER" = false ]; then
+    cp /etc/fstab "$SYS_TEMP/fstab_backup.txt"
+    cp /etc/fuse.conf "$SYS_TEMP/fuse.conf_backup.txt" 2>/dev/null || true
+    crontab -l > "$SYS_TEMP/crontab_backup.txt" 2>/dev/null || true
+else
+    echo "⚠️  Exécution en conteneur : Skip fstab/crontab hôte (déjà fait par la cron hôte)."
+fi
 
 # --- 3. Création de l'archive sélective ---
 echo "📦 Archivage des fichiers..."

@@ -49,7 +49,7 @@ func NewBotHandler(b *tele.Bot, cfg *config.Config, arr *arrclient.ArrClient, ai
 		sys:      sys,
 		vpn:      vpn,
 		share:    shareSrv,
-		reClean:  regexp.MustCompile(`(?i)(?:1080p|720p|4k|uhd|x26[45]|h26[45]|web[- ]?(dl|rip)|bluray|aac|dd[p]?5\.1|atmos|repack|playweb|max|[\d\s]+A M|[\d\s]+P M|-NTb|-playWEB)`),
+		reClean:  regexp.MustCompile(`(?i)(?:1080p|720p|4k|uhd|x26[45]|h26[45]|web[- ]?(dl|rip)|bluray|aac|dd[p]?5\.1|atmos|repack|playweb|max|[\d\s]+A M|[\d\s]+P M|-NTb|-playWEB|\((19|20)\d{2}\)|\b(19|20)\d{2}\b|\.mkv|\.mp4|\.avi)`),
 		reSpaces: regexp.MustCompile(`\s+`),
 		reTMDB:   regexp.MustCompile(`^(?i)(série|serie|film)?\s*(.+?)\s*(\b(19|20)\d{2}\b)?$`),
 		pathMap:  make(map[string]string),
@@ -132,7 +132,6 @@ func (h *BotHandler) setupHandlers() {
 		menu := &tele.ReplyMarkup{}
 		menu.Inline(
 			menu.Row(menu.Data("🚀 NVMe", "show_files", "nvme", "0"), menu.Data("📚 HDD", "show_files", "hdd", "0")),
-			menu.Row(menu.Data("🏠 Menu Principal", "status_refresh")),
 		)
 		return c.Edit("📂 <b>CHOIX DU STOCKAGE</b>\n\nQuel tier souhaitez-vous explorer ?", menu, tele.ModeHTML)
 	}))
@@ -176,29 +175,64 @@ func (h *BotHandler) setupHandlers() {
 func (h *BotHandler) handleShowFiles(c tele.Context) error {
 	tier := c.Args()[0]
 	page, _ := strconv.Atoi(c.Args()[1])
-	files, err := h.sys.ListStorageFiles(tier)
+	allFiles, err := h.sys.ListStorageFiles(tier)
 	if err != nil { return c.Edit("❌ Erreur accès disque.", tele.ModeHTML) }
 	
-	pageSize := 8
+	// DÉDUBLONNAGE PAR TITRE NETTOYÉ
+	var files []system.FileInfo
+	seen := make(map[string]bool)
+	for _, f := range allFiles {
+		clean := h.cleanTitle(f.Name)
+		// On crée une clé unique basée sur le nom nettoyé et la taille (au cas où deux films différents auraient le même nom)
+		key := fmt.Sprintf("%s-%.1f", strings.ToLower(clean), f.Size)
+		if seen[key] { continue }
+		seen[key] = true
+		files = append(files, f)
+	}
+
+	pageSize := 10
 	start := page * pageSize
 	if start >= len(files) { start, page = 0, 0 }
 	end := start + pageSize
 	if end > len(files) { end = len(files) }
 
-	msg := fmt.Sprintf("📂 <b>FICHIERS (%s)</b> [%d]\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n\n", strings.ToUpper(tier), len(files))
+	msg := fmt.Sprintf("📂 <b>GESTION : %s</b>\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n\n", strings.ToUpper(tier))
 	menu := &tele.ReplyMarkup{}
-	var rows []tele.Row
-
+	
 	h.pathMu.Lock()
+	var selectBtns []tele.Btn
 	for i, f := range files[start:end] {
-		// On crée une clé courte pour le chemin
 		pathKey := fmt.Sprintf("%x", sha256.Sum256([]byte(f.Path)))[:8]
 		h.pathMap[pathKey] = f.Path
 		
-		msg += fmt.Sprintf("%d. <code>%s</code> (%.1f GB)\n", i+1, f.Name, f.Size)
-		rows = append(rows, menu.Row(menu.Data(fmt.Sprintf("%d. 🗑 Supprimer", i+1), "file_confirm", tier, pathKey)))
+		// Détection de l'icône (🎬 ou 📺 uniquement)
+		icon := "🎬"
+		isTV := f.Category == "tv" || f.Category == "series"
+		if !isTV && f.Category == "downloads" {
+			// Heuristique pour les téléchargements : si contient S01, E01, Season, etc.
+			nameLower := strings.ToLower(f.Name)
+			if strings.Contains(nameLower, "s0") || strings.Contains(nameLower, "s1") || 
+			   strings.Contains(nameLower, "season") || strings.Contains(nameLower, "e0") {
+				isTV = true
+			}
+		}
+
+		if isTV {
+			icon = "📺"
+		}
+
+		cleanName := h.cleanTitle(f.Name)
+		msg += fmt.Sprintf("%s %s <code>%s</code> (%.1f GB)\n", h.numberToEmoji(i+1), icon, cleanName, f.Size)
+		selectBtns = append(selectBtns, menu.Data(strconv.Itoa(i+1), "file_confirm", tier, pathKey))
 	}
 	h.pathMu.Unlock()
+
+	var rows []tele.Row
+	// Grille de boutons 1-5, 6-10
+	for i := 0; i < len(selectBtns); i += 5 {
+		limit := i + 5; if limit > len(selectBtns) { limit = len(selectBtns) }
+		rows = append(rows, menu.Row(selectBtns[i:limit]...))
+	}
 
 	nav := []tele.Btn{}
 	if page > 0 { nav = append(nav, menu.Data("⬅️", "show_files", tier, strconv.Itoa(page-1))) }
@@ -211,13 +245,36 @@ func (h *BotHandler) handleShowFiles(c tele.Context) error {
 }
 
 func (h *BotHandler) handleStart(c tele.Context) error {
-	msg := "🏛 <b>MYFLIX : CENTRE DE CONTRÔLE</b>\n\nBienvenue dans votre interface de gestion multimédia.\n\n👉 <i>Tapez le nom d'un média pour le rechercher ou utilisez les boutons ci-dessous.</i>"
+	// Récupération des infos pour le Dashboard
+	storageMsg := h.sys.GetStorageStatus()
 	
-	// On envoie le clavier fixe (Reply Keyboard)
+	ip := h.vpn.GetCurrentIP()
+	vpnStatus := "✅ Protégé"
+	if ip == "" { vpnStatus = "❌ Non protégé" }
+
+	// On compte les téléchargements actifs
+	dlCount := 0
+	resp, err := http.Get(h.cfg.QbitURL + "/api/v2/torrents/info?filter=downloading")
+	if err == nil {
+		defer resp.Body.Close()
+		var torrents []interface{}
+		if json.NewDecoder(resp.Body).Decode(&torrents) == nil {
+			dlCount = len(torrents)
+		}
+	}
+
+	msg := fmt.Sprintf("🏛 <b>MYFLIX : DASHBOARD</b>\n\n" +
+		"🛡️ <b>VPN :</b> <code>%s</code> (%s)\n" +
+		"📥 <b>Téléchargements :</b> %d actif(s)\n\n" +
+		"%s\n" +
+		"👉 <i>Utilisez le clavier ci-dessous pour naviguer.</i>", 
+		ip, vpnStatus, dlCount, storageMsg)
+	
 	menu := h.buildReplyKeyboard()
-	
-	// Optionnel: on peut aussi envoyer un menu inline en même temps si on veut
-	// mais pour la clarté, le clavier fixe suffit souvent au début.
+
+	if c.Callback() != nil {
+		return c.Edit(msg, menu, tele.ModeHTML)
+	}
 	return c.Send(msg, menu, tele.ModeHTML)
 }
 
@@ -227,11 +284,10 @@ func (h *BotHandler) handleStatus(c tele.Context) error {
 	menu := &tele.ReplyMarkup{}
 	btnBrowse := menu.Data("📂 Gérer les fichiers", "browse_storage")
 	btnRefresh := menu.Data("🔄 Actualiser", "sys_status")
-	btnMenu := menu.Data("🏠 Menu Principal", "status_refresh")
 	
 	menu.Inline(
 		menu.Row(btnBrowse),
-		menu.Row(btnRefresh, btnMenu),
+		menu.Row(btnRefresh),
 	)
 
 	if c.Callback() != nil {
@@ -299,16 +355,16 @@ func (h *BotHandler) showLibrary(c tele.Context, cat string, page int, edit bool
 		rows = append(rows, menu.Row(btns[i:l]...))
 	}
 	
-	nav := []tele.Btn{menu.Data("🏠 Menu", "status_refresh")}
+	nav := []tele.Btn{}
 	if page > 0 { nav = append(nav, menu.Data("⬅️", "lib_page", cat, strconv.Itoa(page-1))) }
 	if end < len(items) { nav = append(nav, menu.Data("➡️", "lib_page", cat, strconv.Itoa(page+1))) }
-	rows = append(rows, menu.Row(nav...))
+	if len(nav) > 0 { rows = append(rows, menu.Row(nav...)) }
 	menu.Inline(rows...)
 
 	msg += "⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n"
 	msg += "<code>✅ Prêt  ⏳ En attente</code>"
 
-	if edit { return c.Edit(msg, menu, tele.ModeHTML) }
+	if edit || c.Callback() != nil { return c.Edit(msg, menu, tele.ModeHTML) }
 	return c.Send(msg, menu, tele.ModeHTML)
 }
 
@@ -481,7 +537,7 @@ func (h *BotHandler) refreshQueue(c tele.Context, edit bool) error {
 	}
 
 	menu := &tele.ReplyMarkup{}
-	menu.Inline(menu.Row(menu.Data("🔄 Actualiser", "q_refresh"), menu.Data("🏠 Menu Principal", "status_refresh")))
+	menu.Inline(menu.Row(menu.Data("🔄 Actualiser", "q_refresh")))
 
 	if edit {
 		return c.Edit(text, menu, tele.ModeHTML)
@@ -517,7 +573,7 @@ func (h *BotHandler) showVpnStatus(c tele.Context, edit bool) error {
 
         msg := fmt.Sprintf("🛡️ <b>PROTECTION VPN & INFRASTRUCTURE</b>\n\n🌍 Adresse IP : <code>%s</code> (%s %s)\n🛰 Statut : Protégé ✅", ip, flag, countryName)
         menu := &tele.ReplyMarkup{}
-        menu.Inline(menu.Row(menu.Data("🔄 Rotation Manuelle", "vpn_rotate"), menu.Data("🔄 Refresh", "vpn_refresh")), menu.Row(menu.Data("🏠 Menu Principal", "status_refresh")))
+        menu.Inline(menu.Row(menu.Data("🔄 Rotation Manuelle", "vpn_rotate"), menu.Data("🔄 Refresh", "vpn_refresh")))
         if edit { return c.Edit(msg, menu, tele.ModeHTML) }
         return c.Send(msg, menu, tele.ModeHTML)
 }
@@ -679,14 +735,22 @@ func (h *BotHandler) sendDetailedMedia(c tele.Context, cat string, it map[string
 		sizeStr = fmt.Sprintf("\n⚖️ Taille : %.1f GB", size / (1024*1024*1024))
 	}
 
-	msg := fmt.Sprintf("%s <b>%s</b> (%v)\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n💾 Emplacement : Stockage Rapide (NVMe)%s\n\nQue souhaitez-vous faire ?", 
-		icon, it["title"], it["year"], sizeStr)
+	// Détection du stockage réel
+	storageLabel := "NVMe (Rapide)"
+	path, _ := it["path"].(string)
+	if strings.Contains(path, "/data/external") || strings.Contains(path, "/mnt/pool") || strings.Contains(path, "/movies") || strings.Contains(path, "/tv") {
+		// Par défaut, movies/tv sont mappés sur le pool HDD dans votre docker-compose
+		storageLabel = "HDD (Archive)"
+	}
+
+	msg := fmt.Sprintf("%s <b>%s</b> (%v)\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n💾 Stockage : %s%s\n\nQue souhaitez-vous faire ?", 
+		icon, it["title"], it["year"], storageLabel, sizeStr)
 	
 	menu := &tele.ReplyMarkup{}
 	btnShare := menu.Data("🔗 Partager", "m_share", cat, fmt.Sprintf("%v", it["id"]))
 	btnDelete := menu.Data("🗑 Supprimer", "m_del", cat, fmt.Sprintf("%v", it["id"]))
-	menu.Inline(menu.Row(btnShare, btnDelete), menu.Row(menu.Data("🏠 Menu Principal", "status_refresh")))
+	menu.Inline(menu.Row(btnShare, btnDelete))
 	
-	return c.Send(msg, menu, tele.ModeHTML)
+	return c.Edit(msg, menu, tele.ModeHTML)
 }
 

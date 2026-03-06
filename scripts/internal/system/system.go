@@ -480,9 +480,10 @@ func (s *SystemManager) StartVPNExporter(ctx context.Context, port string) {
 }
 
 type FileInfo struct {
-	Name string
-	Size float64
-	Path string
+	Name     string
+	Size     float64
+	Path     string
+	Category string
 }
 
 func (s *SystemManager) ListStorageFiles(tier string) ([]FileInfo, error) {
@@ -491,20 +492,29 @@ func (s *SystemManager) ListStorageFiles(tier string) ([]FileInfo, error) {
 		root = s.cfg.StorageHddPath
 	}
 
-	// Dossiers autorisés à l'exploration/suppression
-	allowedDirs := []string{"movies", "tv", "Films", "Series", "downloads", "media/movies", "media/tv"}
+	// Dossiers autorisés avec ordre de priorité pour l'icône (media avant downloads)
+	allowedDirs := []string{"movies", "tv", "Films", "Series", "media/movies", "media/tv", "downloads"}
 	
 	var files []FileInfo
+	seenInodes := make(map[uint64]bool)
+
 	for _, sub := range allowedDirs {
 		targetPath := filepath.Join(root, sub)
 		entries, err := os.ReadDir(targetPath)
-		if err != nil { continue } // On ignore si le dossier n'existe pas
+		if err != nil { continue } 
 
 		for _, e := range entries {
+			fullPath := filepath.Join(targetPath, e.Name())
 			info, err := e.Info()
 			if err != nil { continue }
+
+			// Détection du doublon physique par Inode (uniquement sous Linux)
+			stat, ok := info.Sys().(*syscall.Stat_t)
+			if ok {
+				if seenInodes[stat.Ino] { continue }
+				seenInodes[stat.Ino] = true
+			}
 			
-			fullPath := filepath.Join(targetPath, e.Name())
 			var size int64
 			if e.IsDir() {
 				filepath.WalkDir(fullPath, func(_ string, d os.DirEntry, err error) error {
@@ -519,9 +529,10 @@ func (s *SystemManager) ListStorageFiles(tier string) ([]FileInfo, error) {
 			}
 
 			files = append(files, FileInfo{
-				Name: fmt.Sprintf("[%s] %s", strings.ToUpper(sub), e.Name()),
-				Size: float64(size) / (1024 * 1024 * 1024),
-				Path: fullPath,
+				Name:     e.Name(),
+				Size:     float64(size) / (1024 * 1024 * 1024),
+				Path:     fullPath,
+				Category: strings.ToLower(filepath.Base(sub)),
 			})
 		}
 	}

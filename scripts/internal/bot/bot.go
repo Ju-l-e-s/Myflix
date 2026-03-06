@@ -474,44 +474,53 @@ func (h *BotHandler) cleanTitle(t string) string {
 	return strings.TrimSpace(h.reSpaces.ReplaceAllString(strings.ReplaceAll(c, ".", " "), " "))
 }
 
+func (h *BotHandler) numberToEmoji(n int) string {
+	digits := []string{"0️⃣", "1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣"}
+	if n == 10 { return "🔟" }
+	if n < 10 { return digits[n] }
+	res := ""; s := fmt.Sprintf("%d", n)
+	for _, char := range s { res += digits[char-'0'] }
+	return res
+}
+
 func (h *BotHandler) formatMediaLine(index int, title string, year int, status string) string {
-        const targetWidth = 28 // Largeur maximale pour le texte avant le statut
+        const targetWidth = 28 // Largeur maximale avant le statut
 
         fullTitle := title
         if year > 0 {
                 fullTitle = fmt.Sprintf("%s (%d)", title, year)
         }
 
-        prefix := fmt.Sprintf("%d. ", index)
-        text := fullTitle
+        prefix := h.numberToEmoji(index) + " "
         
+        // Calcul de la largeur visuelle (approximation monospace Telegram)
+        prefixWidth := 3 // Emoji (2) + Espace (1)
+        if index > 10 { prefixWidth = 5 } // ex: 1️⃣1️⃣ (4) + Espace (1)
+
+        text := fullTitle
         runes := []rune(text)
         var finalLines []string
         
-        if len(runes)+len(prefix) > targetWidth {
-                // Si ça dépasse, on essaie de couper proprement
-                limit := targetWidth - len(prefix)
+        if len(runes)+prefixWidth > targetWidth {
+                limit := targetWidth - prefixWidth
+                if limit < 0 { limit = 0 }
                 line1 := string(runes[:limit])
                 line2 := string(runes[limit:])
                 
-                // Troncature de la deuxième ligne si elle est encore trop longue (sécurité)
-                if len([]rune(line2)) > targetWidth {
-                    line2 = string([]rune(line2)[:targetWidth-3]) + "..."
+                if len([]rune(line2)) > targetWidth-prefixWidth {
+                    line2 = string([]rune(line2)[:targetWidth-prefixWidth-3]) + "..."
                 }
 
-                // Padding ligne 1
-                padding1 := strings.Repeat(" ", targetWidth - (len(prefix) + len([]rune(line1))))
+                padding1 := strings.Repeat(" ", targetWidth - (prefixWidth + len([]rune(line1))))
                 finalLines = append(finalLines, fmt.Sprintf("%s%s%s %s", prefix, line1, padding1, status))
                 
-                // Padding ligne 2 (avec décalage pour l'index)
-                indent := strings.Repeat(" ", len(prefix))
-                paddingCount2 := targetWidth - (len(indent) + len([]rune(line2)))
+                indent := strings.Repeat(" ", prefixWidth)
+                paddingCount2 := targetWidth - (prefixWidth + len([]rune(line2)))
                 if paddingCount2 < 0 { paddingCount2 = 0 }
                 padding2 := strings.Repeat(" ", paddingCount2)
                 finalLines = append(finalLines, fmt.Sprintf("%s%s%s", indent, line2, padding2))
         } else {
-                // Ligne unique
-                padding := strings.Repeat(" ", targetWidth - (len(prefix) + len(runes)))
+                padding := strings.Repeat(" ", targetWidth - (prefixWidth + len(runes)))
                 finalLines = append(finalLines, fmt.Sprintf("%s%s%s %s", prefix, text, padding, status))
         }
 

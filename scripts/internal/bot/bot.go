@@ -2,6 +2,7 @@ package bot
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"html"
@@ -12,6 +13,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 
 	"myflixbot.local/internal/ai"
 	"myflixbot.local/internal/arrclient"
@@ -34,6 +36,8 @@ type BotHandler struct {
 	reClean  *regexp.Regexp
 	reSpaces *regexp.Regexp
 	reTMDB   *regexp.Regexp
+	pathMap  map[string]string // Mapping for short path keys
+	pathMu   sync.RWMutex
 }
 
 func NewBotHandler(b *tele.Bot, cfg *config.Config, arr *arrclient.ArrClient, aiClient *ai.GeminiClient, sys *system.SystemManager, vpn *vpnmanager.Manager, shareSrv *share.ShareEngine) (*BotHandler, error) {
@@ -48,6 +52,7 @@ func NewBotHandler(b *tele.Bot, cfg *config.Config, arr *arrclient.ArrClient, ai
 		reClean:  regexp.MustCompile(`(?i)(?:1080p|720p|4k|uhd|x26[45]|h26[45]|web[- ]?(dl|rip)|bluray|aac|dd[p]?5\.1|atmos|repack|playweb|max|[\d\s]+A M|[\d\s]+P M|-NTb|-playWEB)`),
 		reSpaces: regexp.MustCompile(`\s+`),
 		reTMDB:   regexp.MustCompile(`^(?i)(série|serie|film)?\s*(.+?)\s*(\b(19|20)\d{2}\b)?$`),
+		pathMap:  make(map[string]string),
 	}, nil
 }
 
@@ -94,6 +99,16 @@ func (h *BotHandler) setupHandlers() {
 		return nil
 	})
 
+	// Handlers pour le clavier fixe (Reply Keyboard)
+	admin.Handle("🎬 Films", func(c tele.Context) error { return h.showLibrary(c, "films", 0, false) })
+	admin.Handle("📺 Séries", func(c tele.Context) error { return h.showLibrary(c, "series", 0, false) })
+	admin.Handle("📥 Flux", func(c tele.Context) error { return h.refreshQueue(c, false) })
+	admin.Handle("📊 Système", h.handleStatus)
+	admin.Handle("🛡️ VPN", func(c tele.Context) error { return h.showVpnStatus(c, false) })
+	admin.Handle("❓ Aide", func(c tele.Context) error {
+		return c.Send("🔍 <b>COMMENT RECHERCHER ?</b>\n\nC'est très simple : <b>tapez directement le nom</b> d'un film ou d'une série dans le chat (ex: <i>Inception</i>).\n\nL'IA analysera votre demande et cherchera dans votre bibliothèque ou sur internet pour vous proposer l'ajout.", tele.ModeHTML)
+	})
+
 	admin.Handle(tele.OnText, h.handleText)
 
 	// Callback Handlers (Boutons)
@@ -111,29 +126,134 @@ func (h *BotHandler) setupHandlers() {
 	h.bot.Handle(&tele.Btn{Unique: "m_del"}, h.authMiddleware(h.handleDelete))
 	h.bot.Handle(&tele.Btn{Unique: "m_share"}, h.authMiddleware(h.handleShare))
 	h.bot.Handle(&tele.Btn{Unique: "dl_add"}, h.authMiddleware(h.handleAdd))
+
+	// Nouveaux handlers de stockage
+	h.bot.Handle(&tele.Btn{Unique: "browse_storage"}, h.authMiddleware(func(c tele.Context) error {
+		menu := &tele.ReplyMarkup{}
+		menu.Inline(
+			menu.Row(menu.Data("🚀 NVMe", "show_files", "nvme", "0"), menu.Data("📚 HDD", "show_files", "hdd", "0")),
+			menu.Row(menu.Data("🏠 Menu Principal", "status_refresh")),
+		)
+		return c.Edit("📂 <b>CHOIX DU STOCKAGE</b>\n\nQuel tier souhaitez-vous explorer ?", menu, tele.ModeHTML)
+	}))
+
+	h.bot.Handle(&tele.Btn{Unique: "show_files"}, h.authMiddleware(func(c tele.Context) error {
+		return h.handleShowFiles(c)
+	}))
+
+	h.bot.Handle(&tele.Btn{Unique: "file_confirm"}, h.authMiddleware(func(c tele.Context) error {
+		pathKey := c.Args()[1]
+		h.pathMu.RLock()
+		fullPath := h.pathMap[pathKey]
+		h.pathMu.RUnlock()
+
+		if fullPath == "" { return c.Edit("❌ Référence de fichier expirée.", tele.ModeHTML) }
+
+		menu := &tele.ReplyMarkup{}
+		menu.Inline(
+			menu.Row(menu.Data("🔥 CONFIRMER", "file_delete", c.Args()[0], pathKey)),
+			menu.Row(menu.Data("❌ ANNULER", "show_files", c.Args()[0], "0")),
+		)
+		return c.Edit(fmt.Sprintf("⚠️ <b>CONFIRMATION REQUISE</b>\n\nVoulez-vous vraiment supprimer définitivement :\n<code>%s</code> ?", filepath.Base(fullPath)), menu, tele.ModeHTML)
+	}))
+
+	h.bot.Handle(&tele.Btn{Unique: "file_delete"}, h.authMiddleware(func(c tele.Context) error {
+		pathKey := c.Args()[1]
+		h.pathMu.RLock()
+		fullPath := h.pathMap[pathKey]
+		h.pathMu.RUnlock()
+
+		if fullPath == "" { return c.Send("❌ Référence expirée.") }
+
+		if err := h.sys.DeletePath(fullPath); err != nil {
+			return c.Send("❌ Erreur suppression : " + err.Error())
+		}
+		c.Send("🗑 <b>Fichier supprimé avec succès.</b>", tele.ModeHTML)
+		return h.handleShowFiles(c) // Refresh
+	}))
+}
+
+func (h *BotHandler) handleShowFiles(c tele.Context) error {
+	tier := c.Args()[0]
+	page, _ := strconv.Atoi(c.Args()[1])
+	files, err := h.sys.ListStorageFiles(tier)
+	if err != nil { return c.Edit("❌ Erreur accès disque.", tele.ModeHTML) }
+	
+	pageSize := 8
+	start := page * pageSize
+	if start >= len(files) { start, page = 0, 0 }
+	end := start + pageSize
+	if end > len(files) { end = len(files) }
+
+	msg := fmt.Sprintf("📂 <b>FICHIERS (%s)</b> [%d]\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n\n", strings.ToUpper(tier), len(files))
+	menu := &tele.ReplyMarkup{}
+	var rows []tele.Row
+
+	h.pathMu.Lock()
+	for i, f := range files[start:end] {
+		// On crée une clé courte pour le chemin
+		pathKey := fmt.Sprintf("%x", sha256.Sum256([]byte(f.Path)))[:8]
+		h.pathMap[pathKey] = f.Path
+		
+		msg += fmt.Sprintf("%d. <code>%s</code> (%.1f GB)\n", i+1, f.Name, f.Size)
+		rows = append(rows, menu.Row(menu.Data(fmt.Sprintf("%d. 🗑 Supprimer", i+1), "file_confirm", tier, pathKey)))
+	}
+	h.pathMu.Unlock()
+
+	nav := []tele.Btn{}
+	if page > 0 { nav = append(nav, menu.Data("⬅️", "show_files", tier, strconv.Itoa(page-1))) }
+	if end < len(files) { nav = append(nav, menu.Data("➡️", "show_files", tier, strconv.Itoa(page+1))) }
+	if len(nav) > 0 { rows = append(rows, menu.Row(nav...)) }
+	
+	rows = append(rows, menu.Row(menu.Data("⬅️ Retour", "browse_storage")))
+	menu.Inline(rows...)
+	return c.Edit(msg, menu, tele.ModeHTML)
 }
 
 func (h *BotHandler) handleStart(c tele.Context) error {
-	msg := "🏛 <b>MYFLIX : CENTRE DE CONTRÔLE</b>\n\nBienvenue dans votre interface de gestion multimédia. Que souhaitez-vous faire ?"
-	return c.Send(msg, h.buildMainMenu(), tele.ModeHTML)
+	msg := "🏛 <b>MYFLIX : CENTRE DE CONTRÔLE</b>\n\nBienvenue dans votre interface de gestion multimédia.\n\n👉 <i>Tapez le nom d'un média pour le rechercher ou utilisez les boutons ci-dessous.</i>"
+	
+	// On envoie le clavier fixe (Reply Keyboard)
+	menu := h.buildReplyKeyboard()
+	
+	// Optionnel: on peut aussi envoyer un menu inline en même temps si on veut
+	// mais pour la clarté, le clavier fixe suffit souvent au début.
+	return c.Send(msg, menu, tele.ModeHTML)
 }
 
 func (h *BotHandler) handleStatus(c tele.Context) error {
-	return c.Edit(h.sys.GetStorageStatus(), h.buildMainMenu(), tele.ModeHTML)
-}
-
-func (h *BotHandler) buildMainMenu() *tele.ReplyMarkup {
+	msg := h.sys.GetStorageStatus()
+	
 	menu := &tele.ReplyMarkup{}
-	btnF := menu.Data("🎬 Bibliothèque Films", "lib", "films")
-	btnS := menu.Data("📺 Bibliothèque Séries", "lib", "series")
-	btnQ := menu.Data("📥 Flux Téléchargements", "q_refresh")
-	btnSt := menu.Data("📊 État du Serveur", "sys_status")
-	btnVpn := menu.Data("🛡️ Protection VPN", "vpn_refresh")
+	btnBrowse := menu.Data("📂 Gérer les fichiers", "browse_storage")
+	btnRefresh := menu.Data("🔄 Actualiser", "sys_status")
+	btnMenu := menu.Data("🏠 Menu Principal", "status_refresh")
 	
 	menu.Inline(
+		menu.Row(btnBrowse),
+		menu.Row(btnRefresh, btnMenu),
+	)
+
+	if c.Callback() != nil {
+		return c.Edit(msg, menu, tele.ModeHTML)
+	}
+	return c.Send(msg, menu, tele.ModeHTML)
+}
+
+func (h *BotHandler) buildReplyKeyboard() *tele.ReplyMarkup {
+	menu := &tele.ReplyMarkup{ResizeKeyboard: true}
+	
+	btnF := menu.Text("🎬 Films")
+	btnS := menu.Text("📺 Séries")
+	btnQ := menu.Text("📥 Flux")
+	btnSt := menu.Text("📊 Système")
+	btnVpn := menu.Text("🛡️ VPN")
+	btnHelp := menu.Text("❓ Aide")
+	
+	menu.Reply(
 		menu.Row(btnF, btnS),
-		menu.Row(btnQ, btnSt),
-		menu.Row(btnVpn),
+		menu.Row(btnQ, btnSt, btnVpn),
+		menu.Row(btnHelp),
 	)
 	return menu
 }
@@ -546,7 +666,16 @@ func (h *BotHandler) sendDetailedMedia(c tele.Context, cat string, it map[string
 	}
 	
 	sizeStr := ""
-	if size, ok := it["sizeOnDisk"].(float64); ok && size > 0 {
+	var size float64
+	if s, ok := it["sizeOnDisk"].(float64); ok {
+		size = s
+	} else if stats, ok := it["statistics"].(map[string]interface{}); ok {
+		if s, ok := stats["sizeOnDisk"].(float64); ok {
+			size = s
+		}
+	}
+
+	if size > 0 {
 		sizeStr = fmt.Sprintf("\n⚖️ Taille : %.1f GB", size / (1024*1024*1024))
 	}
 

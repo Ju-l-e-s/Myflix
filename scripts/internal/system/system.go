@@ -478,3 +478,66 @@ func (s *SystemManager) StartVPNExporter(ctx context.Context, port string) {
 	<-ctx.Done()
 	srv.Shutdown(context.Background())
 }
+
+type FileInfo struct {
+	Name string
+	Size float64
+	Path string
+}
+
+func (s *SystemManager) ListStorageFiles(tier string) ([]FileInfo, error) {
+	root := s.cfg.StorageNvmePath
+	if tier == "hdd" {
+		root = s.cfg.StorageHddPath
+	}
+
+	// Dossiers autorisés à l'exploration/suppression
+	allowedDirs := []string{"movies", "tv", "Films", "Series", "downloads", "media/movies", "media/tv"}
+	
+	var files []FileInfo
+	for _, sub := range allowedDirs {
+		targetPath := filepath.Join(root, sub)
+		entries, err := os.ReadDir(targetPath)
+		if err != nil { continue } // On ignore si le dossier n'existe pas
+
+		for _, e := range entries {
+			info, err := e.Info()
+			if err != nil { continue }
+			
+			fullPath := filepath.Join(targetPath, e.Name())
+			var size int64
+			if e.IsDir() {
+				filepath.WalkDir(fullPath, func(_ string, d os.DirEntry, err error) error {
+					if err == nil && !d.IsDir() {
+						i, err := d.Info()
+						if err == nil { size += i.Size() }
+					}
+					return nil
+				})
+			} else {
+				size = info.Size()
+			}
+
+			files = append(files, FileInfo{
+				Name: fmt.Sprintf("[%s] %s", strings.ToUpper(sub), e.Name()),
+				Size: float64(size) / (1024 * 1024 * 1024),
+				Path: fullPath,
+			})
+		}
+	}
+
+	// Tri par taille décroissante
+	sort.Slice(files, func(i, j int) bool {
+		return files[i].Size > files[j].Size
+	})
+
+	return files, nil
+}
+
+func (s *SystemManager) DeletePath(path string) error {
+	// Sécurité de base pour éviter de supprimer la racine
+	if path == "/" || path == "" || path == s.cfg.StorageNvmePath || path == s.cfg.StorageHddPath {
+		return fmt.Errorf("suppression de la racine interdite")
+	}
+	return os.RemoveAll(path)
+}

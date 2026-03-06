@@ -144,7 +144,7 @@ func (h *BotHandler) showLibrary(c tele.Context, cat string, page int, edit bool
 	if items == nil { return c.Send("⏳ <i>Synchronisation de la bibliothèque...</i>", tele.ModeHTML) }
 
 	// On ne filtre plus, on affiche tout mais avec un statut
-	pageSize := 15
+	pageSize := 10
 	start, end := page*pageSize, (page+1)*pageSize
 	if start >= len(items) { start, page = 0, 0 }
 	if end > len(items) { end = len(items) }
@@ -168,8 +168,9 @@ func (h *BotHandler) showLibrary(c tele.Context, cat string, page int, edit bool
 		year := 0
 		if y, ok := it["year"].(float64); ok { year = int(y) }
 		
-		msg += h.formatMediaLine(start+i+1, title, year, status) + "\n"
-		btns = append(btns, menu.Data(strconv.Itoa(start+i+1), "m_sel", cat, fmt.Sprintf("%v", it["id"])))
+		// Utilisation de i+1 pour avoir 1️⃣ à 🔟 sur chaque page
+		msg += h.formatMediaLine(i+1, title, year, status) + "\n"
+		btns = append(btns, menu.Data(strconv.Itoa(i+1), "m_sel", cat, fmt.Sprintf("%v", it["id"])))
 	}
 
 	var rows []tele.Row

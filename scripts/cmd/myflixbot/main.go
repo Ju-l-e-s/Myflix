@@ -102,6 +102,10 @@ func main() {
 		sys.StartQbitCleanup(ctx)
 	})
 
+	system.GoSafe(&wg, func() {
+		sys.StartPerformanceMonitor(ctx)
+	})
+
 	// VPN manager routines (en utilisant GoSafe pour la résilience)
 	system.GoSafe(&wg, func() { vpnMgr.UpdateIP() })
 	system.GoSafe(&wg, func() { vpnMgr.RunHealthCheck() })

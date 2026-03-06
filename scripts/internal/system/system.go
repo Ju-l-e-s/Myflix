@@ -301,6 +301,58 @@ func (s *SystemManager) moveFile(src, dst string) error {
 	return os.Remove(src)
 }
 
+func (s *SystemManager) StartPerformanceMonitor(ctx context.Context) {
+	ticker := time.NewTicker(2 * time.Minute)
+	defer ticker.Stop()
+	
+	lastActiveCount := 0
+	slog.Info("Moniteur de performance qBittorrent activé", "threshold", "2MB/s")
+
+	for {
+		select {
+		case <-ticker.C:
+			// 1. Récupérer les infos de transfert (Vitesse globale)
+			resp, err := s.httpClient.Get(s.cfg.QbitURL + "/api/v2/transfer/info")
+			if err != nil { continue }
+			
+			var transfer struct {
+				DlInfoSpeed float64 `json:"dl_info_speed"` // En octets/s
+			}
+			json.NewDecoder(resp.Body).Decode(&transfer)
+			resp.Body.Close()
+
+			// 2. Récupérer le nombre de téléchargements actifs
+			resp, err = s.httpClient.Get(s.cfg.QbitURL + "/api/v2/torrents/info?filter=downloading")
+			if err != nil { continue }
+			
+			var activeTorrents []interface{}
+			json.NewDecoder(resp.Body).Decode(&activeTorrents)
+			resp.Body.Close()
+
+			currentActiveCount := len(activeTorrents)
+			speedMBps := transfer.DlInfoSpeed / (1024 * 1024)
+
+			// LOGIQUE A : Boost au démarrage (Nouveau téléchargement détecté)
+			if currentActiveCount > lastActiveCount {
+				slog.Info("Nouveau téléchargement détecté. Optimisation VPN...")
+				go s.vpn.RotateVPN()
+			}
+
+			// LOGIQUE B : Détection de baisse de régime (Throttling)
+			// Si < 2MB/s (seuil à ajuster) alors qu'on a des téléchargements actifs
+			if currentActiveCount > 0 && speedMBps < 2.0 {
+				slog.Warn("Vitesse de téléchargement faible détectée", "speed", fmt.Sprintf("%.2f MB/s", speedMBps))
+				go s.vpn.RotateVPN()
+			}
+
+			lastActiveCount = currentActiveCount
+
+		case <-ctx.Done():
+			return
+		}
+	}
+}
+
 func (s *SystemManager) StartQbitCleanup(ctx context.Context) {
 	ticker := time.NewTicker(2 * time.Hour)
 	defer ticker.Stop()
@@ -317,13 +369,13 @@ func (s *SystemManager) StartQbitCleanup(ctx context.Context) {
 }
 
 type QbitTorrent struct {
-	Hash         string  `json:"hash"`
-	Name         string  `json:"name"`
-	State        string  `json:"state"`
-	Progress     float64 `json:"progress"`
-	LastActivity int64   `json:"last_activity"`
+        Hash         string  `json:"hash"`
+        Name         string  `json:"name"`
+        State        string  `json:"state"`
+        Progress     float64 `json:"progress"`
+        ContentPath  string  `json:"content_path"`
+        LastActivity int64   `json:"last_activity"`
 }
-
 func (s *SystemManager) executeQbitCleanup() {
 	resp, err := s.httpClient.Get(s.cfg.QbitURL + "/api/v2/torrents/info")
 	if err != nil {
@@ -343,12 +395,23 @@ func (s *SystemManager) executeQbitCleanup() {
 		return
 	}
 
-	now := time.Now().Unix()
-	for _, t := range torrents {
-		// LOGIQUE 1 : Purge des téléchargements BLOQUÉS (Stalled DL)
-		// Si le torrent est bloqué depuis plus de 48h
-		if t.State == "stalledDL" && (now-t.LastActivity) > 172800 {
-			s.deleteTorrent(t.Hash, true)
+	        now := time.Now().Unix()
+	        for _, t := range torrents {
+	                // LOGIQUE 0 : Détection torrent BLOQUÉ à 99.9% (Spécifique Mr Inbetween bug)
+	                // Si > 99.9% mais pas fini, et inactif depuis > 1 min
+	                if t.Progress >= 0.999 && t.Progress < 1.0 && (now-t.LastActivity) > 60 {
+	                        slog.Warn("Torrent bloqué à 99.9% détecté", "name", t.Name)
+	                        if err := s.fixStuckTorrent(t); err == nil {
+	                                s.deleteTorrent(t.Hash, false)
+	                                msg := fmt.Sprintf("🛠️ <b>Récupération Manuelle</b>\n\nTorrent bloqué à 99.9%% déplacé :\n<code>%s</code>", t.Name)
+	                                s.notifyAdminMsg(msg)
+	                                continue
+	                        }
+	                }
+	
+	                // LOGIQUE 1 : Purge des téléchargements BLOQUÉS (Stalled DL)
+	                // Si le torrent est bloqué depuis plus de 48h
+	                if t.State == "stalledDL" && (now-t.LastActivity) > 172800 {			s.deleteTorrent(t.Hash, true)
 			msg := fmt.Sprintf("🗑️ <b>Purge Automatique</b>\n\nTorrent bloqué supprimé : <code>%s</code>\n<i>(Inactif > 48h)</i>", t.Name)
 			s.notifyAdminMsg(msg)
 			continue
@@ -363,6 +426,23 @@ func (s *SystemManager) executeQbitCleanup() {
 	}
 }
 
+
+func (s *SystemManager) fixStuckTorrent(t QbitTorrent) error {
+        // En container: /data/downloads (qbit) == /mnt/pool/downloads (maintenance)
+        src := strings.Replace(t.ContentPath, "/data", "/mnt/pool", 1)
+        dst := strings.Replace(src, "/downloads/incomplete/", "/downloads/", 1)
+
+        slog.Info("Tentative de récupération forcée", "src", src, "dst", dst)
+        
+        if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
+                return fmt.Errorf("mkdir failed: %w", err)
+        }
+
+        if err := os.Rename(src, dst); err != nil {
+                return fmt.Errorf("move failed: %w", err)
+        }
+        return nil
+}
 
 func (s *SystemManager) deleteTorrent(hash string, deleteFiles bool) {
 	data := strings.NewReader(fmt.Sprintf("hashes=%s&deleteFiles=%t", hash, deleteFiles))

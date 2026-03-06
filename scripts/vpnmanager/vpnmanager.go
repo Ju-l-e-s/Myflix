@@ -10,6 +10,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"os/exec"
 	"sort"
 	"strings"
@@ -40,7 +41,10 @@ type Manager struct {
 	isDocker      bool
 	containerName string
 	httpClient    *http.Client
+	internalClient *http.Client
+	discoveryClient *http.Client
 	ipCheckerURL  string
+	lastRotation  time.Time
 }
 
 func NewManager(notifier AdminNotifier, realIP string, qbitURL string, isDocker bool, containerName string) *Manager {
@@ -63,6 +67,12 @@ func NewManager(notifier AdminNotifier, realIP string, qbitURL string, isDocker 
 		httpClient:    &http.Client{
 			Timeout:   15 * time.Second,
 			Transport: transport,
+		},
+		internalClient: &http.Client{
+			Timeout: 10 * time.Second,
+		},
+		discoveryClient: &http.Client{
+			Timeout: 10 * time.Second,
 		},
 		ipCheckerURL: "https://api.ipify.org",
 	}
@@ -149,7 +159,7 @@ func (m *Manager) fetchIP(targetURL string) (string, error) {
 
 // PauseTorrents pauses all downloads in qBittorrent
 func (m *Manager) PauseTorrents() {
-	resp, err := m.httpClient.PostForm(m.qbitURL+"/api/v2/torrents/pause", url.Values{"hashes": {"all"}})
+	resp, err := m.internalClient.PostForm(m.qbitURL+"/api/v2/torrents/pause", url.Values{"hashes": {"all"}})
 	if err != nil {
 		slog.Error("Error pausing torrents", "error", err)
 		return
@@ -160,7 +170,7 @@ func (m *Manager) PauseTorrents() {
 
 // ResumeTorrents resumes all downloads in qBittorrent
 func (m *Manager) ResumeTorrents() {
-	resp, err := m.httpClient.PostForm(m.qbitURL+"/api/v2/torrents/resume", url.Values{"hashes": {"all"}})
+	resp, err := m.internalClient.PostForm(m.qbitURL+"/api/v2/torrents/resume", url.Values{"hashes": {"all"}})
 	if err != nil {
 		slog.Error("Error resuming torrents", "error", err)
 		return
@@ -257,15 +267,17 @@ func (m *Manager) BenchmarkServer(ctx context.Context, s *Server) error {
 	return nil
 }
 
-// FetchSwissServers gets a list of Swiss servers from NordVPN API
-func (m *Manager) FetchSwissServers() ([]Server, error) {
-	resp, err := m.httpClient.Get("https://api.nordvpn.com/v1/servers/recommendations?filters[country_id]=209&limit=10")
+// FetchOptimalServers gets a list of the best servers from Switzerland (209) and Netherlands (153)
+func (m *Manager) FetchOptimalServers() ([]Server, error) {
+	// Requête combinée pour la Suisse et les Pays-Bas
+	url := "https://api.nordvpn.com/v1/servers/recommendations?filters[country_id]=209&filters[country_id]=153&limit=15"
+	resp, err := m.discoveryClient.Get(url)
 	if err != nil {
 		return nil, err
 	}
 	defer func() {
 		if err := resp.Body.Close(); err != nil {
-			slog.Error("Erreur fermeture body FetchSwissServers", "error", err)
+			slog.Error("Erreur fermeture body FetchOptimalServers", "error", err)
 		}
 	}()
 
@@ -290,7 +302,7 @@ func (m *Manager) FetchSwissServers() ([]Server, error) {
 	}
 
 	if len(servers) == 0 {
-		return nil, fmt.Errorf("aucun serveur suisse trouvé dans l'API")
+		return nil, fmt.Errorf("aucun serveur optimal trouvé dans l'API")
 	}
 
 	return servers, nil
@@ -298,9 +310,18 @@ func (m *Manager) FetchSwissServers() ([]Server, error) {
 
 // RotateVPN selects the best server and reconnects
 func (m *Manager) RotateVPN() {
-	m.NotifyAdmin("🔍 <b>VPN Rotation</b> : Début du benchmark nocturne...")
+	m.mu.Lock()
+	if time.Since(m.lastRotation) < 1*time.Hour {
+		slog.Info("Rotation ignorée : Cooldown actif (1h)")
+		m.mu.Unlock()
+		return
+	}
+	m.lastRotation = time.Now()
+	m.mu.Unlock()
 
-	servers, err := m.FetchSwissServers()
+	m.NotifyAdmin("🔍 <b>VPN Rotation</b> : Début du benchmark réactif (CH + NL)...")
+
+	servers, err := m.FetchOptimalServers()
 	if err != nil {
 		m.NotifyAdmin("❌ <b>VPN Rotation</b> : Échec récupération serveurs : " + err.Error())
 		return
@@ -349,7 +370,11 @@ Vitesse : %.1f MB/s`,
 		best.Name, best.Latency.Truncate(time.Millisecond), best.Speed))
 
 	if m.isDocker {
-		m.restartDockerContainer()
+		m.updateEnvConfig(best.Hostname)
+		if err := m.updateGluetunRuntime(best.Hostname); err != nil {
+			slog.Warn("Échec mise à jour runtime Gluetun, repli sur redémarrage container", "error", err)
+			m.restartDockerContainer()
+		}
 	} else {
 		m.connectNordVPN(best.Name)
 	}
@@ -363,6 +388,84 @@ Vitesse : %.1f MB/s`,
 	}
 	
 	m.ResumeTorrents()
+}
+
+func (m *Manager) updateGluetunRuntime(hostname string) error {
+	country := m.getCountryFromHostname(hostname)
+	slog.Info("Mise à jour runtime Gluetun", "hostname", hostname, "country", country)
+	
+	// 1. Mise à jour des réglages
+	settings := map[string]interface{}{
+		"provider": map[string]interface{}{
+			"server_selection": map[string]interface{}{
+				"hostnames": []string{hostname},
+				"countries": []string{country},
+			},
+		},
+	}
+	
+	body, _ := json.Marshal(settings)
+	req, _ := http.NewRequest("PUT", "http://gluetun:8000/v1/vpn/settings", strings.NewReader(string(body)))
+	req.Header.Set("Content-Type", "application/json")
+	
+	resp, err := m.internalClient.Do(req)
+	if err != nil { return err }
+	resp.Body.Close()
+
+	// 2. Redémarrage du tunnel pour appliquer
+	statusReq, _ := http.NewRequest("PUT", "http://gluetun:8000/v1/vpn/status", strings.NewReader(`{"status":"stopped"}`))
+	m.internalClient.Do(statusReq)
+	
+	time.Sleep(1 * time.Second)
+	
+	statusReq, _ = http.NewRequest("PUT", "http://gluetun:8000/v1/vpn/status", strings.NewReader(`{"status":"running"}`))
+	m.internalClient.Do(statusReq)
+	
+	return nil
+}
+
+func (m *Manager) getCountryFromHostname(hostname string) string {
+	if strings.HasPrefix(hostname, "ch") {
+		return "Switzerland"
+	}
+	return "Netherlands"
+}
+
+func (m *Manager) updateEnvConfig(hostname string) {
+	country := m.getCountryFromHostname(hostname)
+	envPath := "/app/infra/ai/.env"
+	data, err := os.ReadFile(envPath)
+	if err != nil {
+		slog.Error("Impossible de lire le fichier .env", "error", err)
+		return
+	}
+
+	lines := strings.Split(string(data), "\n")
+	foundServer := false
+	foundCountry := false
+	for i, line := range lines {
+		if strings.HasPrefix(line, "VPN_SERVER=") {
+			lines[i] = fmt.Sprintf("VPN_SERVER=%s", hostname)
+			foundServer = true
+		}
+		if strings.HasPrefix(line, "VPN_COUNTRY=") {
+			lines[i] = fmt.Sprintf("VPN_COUNTRY=%s", country)
+			foundCountry = true
+		}
+	}
+
+	if !foundServer {
+		lines = append(lines, fmt.Sprintf("VPN_SERVER=%s", hostname))
+	}
+	if !foundCountry {
+		lines = append(lines, fmt.Sprintf("VPN_COUNTRY=%s", country))
+	}
+
+	if err := os.WriteFile(envPath, []byte(strings.Join(lines, "\n")), 0644); err != nil {
+		slog.Error("Impossible d'écrire le fichier .env", "error", err)
+	} else {
+		slog.Info("Configuration VPN persistée dans .env", "server", hostname, "country", country)
+	}
 }
 
 func (m *Manager) connectNordVPN(serverName string) {

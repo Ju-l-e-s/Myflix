@@ -369,14 +369,37 @@ func (h *BotHandler) refreshQueue(c tele.Context, edit bool) error {
 }
 
 func (h *BotHandler) showVpnStatus(c tele.Context, edit bool) error {
-	ip := h.vpn.GetCurrentIP()
-	msg := fmt.Sprintf("🛡️ <b>PROTECTION VPN & INFRASTRUCTURE</b>\n\n🌍 Adresse IP Publique : <code>%s</code>\n🛰 Statut : Protégé ✅", ip)
-	menu := &tele.ReplyMarkup{}
-	menu.Inline(menu.Row(menu.Data("🔄 Rotation Manuelle", "vpn_rotate"), menu.Data("🔄 Refresh", "vpn_refresh")), menu.Row(menu.Data("🏠 Menu Principal", "status_refresh")))
-	if edit { return c.Edit(msg, menu, tele.ModeHTML) }
-	return c.Send(msg, menu, tele.ModeHTML)
-}
+        ip := h.vpn.GetCurrentIP()
+        
+        // Tentative de récupération du pays
+        flag := "🏳️"
+        countryName := "Inconnu"
+        
+        resp, err := http.Get("http://ip-api.com/json/" + ip)
+        if err == nil {
+                defer resp.Body.Close()
+                var geo struct {
+                        CountryCode string `json:"countryCode"`
+                        Country     string `json:"country"`
+                }
+                if json.NewDecoder(resp.Body).Decode(&geo) == nil {
+                        countryName = geo.Country
+                        // Conversion du code pays ISO en emoji drapeau
+                        if len(geo.CountryCode) == 2 {
+                                flag = ""
+                                for _, r := range strings.ToUpper(geo.CountryCode) {
+                                        flag += string(rune(r + 0x1F1A5))
+                                }
+                        }
+                }
+        }
 
+        msg := fmt.Sprintf("🛡️ <b>PROTECTION VPN & INFRASTRUCTURE</b>\n\n🌍 Adresse IP : <code>%s</code> (%s %s)\n🛰 Statut : Protégé ✅", ip, flag, countryName)
+        menu := &tele.ReplyMarkup{}
+        menu.Inline(menu.Row(menu.Data("🔄 Rotation Manuelle", "vpn_rotate"), menu.Data("🔄 Refresh", "vpn_refresh")), menu.Row(menu.Data("🏠 Menu Principal", "status_refresh")))
+        if edit { return c.Edit(msg, menu, tele.ModeHTML) }
+        return c.Send(msg, menu, tele.ModeHTML)
+}
 func (h *BotHandler) handleVpnRotate(c tele.Context) error {
 	go h.vpn.RotateVPN(); return c.Send("🔄 <b>Rotation VPN initiée.</b>\nLe serveur sera redémarré avec une nouvelle IP.", tele.ModeHTML)
 }
@@ -452,33 +475,48 @@ func (h *BotHandler) cleanTitle(t string) string {
 }
 
 func (h *BotHandler) formatMediaLine(index int, title string, year int, status string) string {
-	const targetWidth = 32 // Largeur totale de la ligne (ajustable)
+        const targetWidth = 28 // Largeur maximale pour le texte avant le statut
 
-	fullTitle := title
-	if year > 0 {
-		fullTitle = fmt.Sprintf("%s (%d)", title, year)
-	}
+        fullTitle := title
+        if year > 0 {
+                fullTitle = fmt.Sprintf("%s (%d)", title, year)
+        }
 
-	lineStart := fmt.Sprintf("%d. %s", index, fullTitle)
-	runes := []rune(lineStart)
-	
-	// Troncature si trop long (on garde de la place pour le statut à la fin)
-	if len(runes) > targetWidth-3 {
-		lineStart = string(runes[:targetWidth-6]) + "..."
-		runes = []rune(lineStart)
-	}
+        prefix := fmt.Sprintf("%d. ", index)
+        text := fullTitle
+        
+        runes := []rune(text)
+        var finalLines []string
+        
+        if len(runes)+len(prefix) > targetWidth {
+                // Si ça dépasse, on essaie de couper proprement
+                limit := targetWidth - len(prefix)
+                line1 := string(runes[:limit])
+                line2 := string(runes[limit:])
+                
+                // Troncature de la deuxième ligne si elle est encore trop longue (sécurité)
+                if len([]rune(line2)) > targetWidth {
+                    line2 = string([]rune(line2)[:targetWidth-3]) + "..."
+                }
 
-	// Calcul du padding avec des espaces classiques (car on est en monospaced)
-	paddingCount := targetWidth - len(runes)
-	padding := ""
-	for i := 0; i < paddingCount; i++ {
-		padding += " "
-	}
+                // Padding ligne 1
+                padding1 := strings.Repeat(" ", targetWidth - (len(prefix) + len([]rune(line1))))
+                finalLines = append(finalLines, fmt.Sprintf("%s%s%s %s", prefix, line1, padding1, status))
+                
+                // Padding ligne 2 (avec décalage pour l'index)
+                indent := strings.Repeat(" ", len(prefix))
+                paddingCount2 := targetWidth - (len(indent) + len([]rune(line2)))
+                if paddingCount2 < 0 { paddingCount2 = 0 }
+                padding2 := strings.Repeat(" ", paddingCount2)
+                finalLines = append(finalLines, fmt.Sprintf("%s%s%s", indent, line2, padding2))
+        } else {
+                // Ligne unique
+                padding := strings.Repeat(" ", targetWidth - (len(prefix) + len(runes)))
+                finalLines = append(finalLines, fmt.Sprintf("%s%s%s %s", prefix, text, padding, status))
+        }
 
-	// On enveloppe tout sauf le tag HTML gras dans <code> pour la chasse fixe
-	return fmt.Sprintf("<code>%s%s %s</code>", lineStart, padding, status)
+        return "<code>" + strings.Join(finalLines, "\n") + "</code>"
 }
-
 func (h *BotHandler) findFirstVideo(root string) string {
 	var found string
 	filepath.WalkDir(root, func(p string, d os.DirEntry, err error) error {

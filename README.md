@@ -1,4 +1,4 @@
-# 🏛️ Myflix: The Industrial-Grade Media Orchestrator
+# 🤖 Myflix: Autonomous Infrastructure for Media Home Labs
 
 ![Raspberry Pi 5](https://img.shields.io/badge/Hardware-Raspberry%20Pi%205-C51A4A?style=for-the-badge&logo=Raspberry-Pi)
 ![Golang](https://img.shields.io/badge/Language-Go%201.24-00ADD8?style=for-the-badge&logo=go)

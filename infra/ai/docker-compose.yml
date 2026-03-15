@@ -16,6 +16,10 @@ services:
       - MYFLIX_RADARR_KEY=${MYFLIX_RADARR_KEY}
       - TMDB_API_KEY=${TMDB_API_KEY}
       - MYFLIX_SONARR_KEY=${MYFLIX_SONARR_KEY}
+      - PLEX_URL=${PLEX_URL}
+      - PLEX_TOKEN=${PLEX_TOKEN}
+      - TRIVY_CACHE_DIR=/tmp/trivy_cache
+      - HOME=/tmp
       - GEMINI_KEY=${GEMINI_KEY}
       - SOPS_AGE_KEY=${SOPS_AGE_KEY}
       - SHARE_DOMAIN=${SHARE_DOMAIN}

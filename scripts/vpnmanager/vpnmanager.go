@@ -45,6 +45,7 @@ type Manager struct {
 	discoveryClient *http.Client
 	ipCheckerURL  string
 	lastRotation  time.Time
+	statePath     string
 }
 
 func NewManager(notifier AdminNotifier, realIP string, qbitURL string, isDocker bool, containerName string) *Manager {
@@ -58,7 +59,7 @@ func NewManager(notifier AdminNotifier, realIP string, qbitURL string, isDocker 
 		transport.Proxy = http.ProxyURL(proxyURL)
 	}
 
-	return &Manager{
+	m := &Manager{
 		realIP:        realIP,
 		notifier:      notifier,
 		qbitURL:       qbitURL,
@@ -69,13 +70,40 @@ func NewManager(notifier AdminNotifier, realIP string, qbitURL string, isDocker 
 			Transport: transport,
 		},
 		internalClient: &http.Client{
-			Timeout: 10 * time.Second,
+			Timeout: 15 * time.Second,
 		},
 		discoveryClient: &http.Client{
 			Timeout: 10 * time.Second,
 		},
 		ipCheckerURL: "https://api.ipify.org",
+		statePath:    "/tmp/vpn_manager_state.json",
 	}
+	m.loadState()
+	return m
+}
+
+type vpnState struct {
+	LastRotation time.Time `json:"last_rotation"`
+}
+
+func (m *Manager) loadState() {
+	data, err := os.ReadFile(m.statePath)
+	if err != nil { return }
+	var state vpnState
+	if err := json.Unmarshal(data, &state); err == nil {
+		m.mu.Lock()
+		m.lastRotation = state.LastRotation
+		m.mu.Unlock()
+		slog.Info("État VPN restauré", "last_rotation", state.LastRotation)
+	}
+}
+
+func (m *Manager) saveState() {
+	m.mu.RLock()
+	state := vpnState{LastRotation: m.lastRotation}
+	m.mu.RUnlock()
+	data, _ := json.Marshal(state)
+	_ = os.WriteFile(m.statePath, data, 0644)
 }
 
 // SetIPCheckerURL allows overriding the IP service for testing
@@ -311,15 +339,19 @@ func (m *Manager) FetchOptimalServers() ([]Server, error) {
 // RotateVPN selects the best server and reconnects
 func (m *Manager) RotateVPN() {
 	m.mu.Lock()
-	if time.Since(m.lastRotation) < 1*time.Hour {
-		slog.Info("Rotation ignorée : Cooldown actif (1h)")
+	now := time.Now()
+	diff := now.Sub(m.lastRotation)
+	if diff < 1*time.Hour {
+		slog.Info("Rotation ignorée : Cooldown actif", "restant", (1*time.Hour - diff).Round(time.Minute))
 		m.mu.Unlock()
 		return
 	}
-	m.lastRotation = time.Now()
+	m.lastRotation = now
+	m.saveState()
 	m.mu.Unlock()
 
 	m.NotifyAdmin("🔍 <b>VPN Rotation</b> : Début du benchmark réactif (CH + NL)...")
+	oldIP := m.GetCurrentIP()
 
 	servers, err := m.FetchOptimalServers()
 	if err != nil {
@@ -372,22 +404,54 @@ Vitesse : %.1f MB/s`,
 	if m.isDocker {
 		m.updateEnvConfig(best.Hostname)
 		if err := m.updateGluetunRuntime(best.Hostname); err != nil {
-			slog.Warn("Échec mise à jour runtime Gluetun, repli sur redémarrage container", "error", err)
+			slog.Error("Échec mise à jour runtime Gluetun, repli sur redémarrage container", "error", err)
 			m.restartDockerContainer()
 		}
 	} else {
 		m.connectNordVPN(best.Name)
 	}
 
-	time.Sleep(10 * time.Second)
+	// Attente augmentée pour stabilisation
+	slog.Info("Attente de stabilisation de la connexion VPN (20s)...")
+	time.Sleep(20 * time.Second)
+	
 	newIP, err := m.UpdateIP()
 	if err != nil {
-		m.NotifyAdmin("⚠️ <b>VPN Rotation</b> : Reconnexion effectuée mais impossible de vérifier l'IP : " + err.Error())
+		m.NotifyAdmin("⚠️ <b>VPN Rotation</b> : Impossible de vérifier l'IP finale : " + err.Error())
 	} else {
-		m.NotifyAdmin("✅ <b>VPN Rotation</b> : Reconnexion réussie. IP : " + newIP)
+		if newIP == oldIP && oldIP != "" {
+			slog.Warn("L'IP n'a pas changé après rotation", "ip", newIP)
+			m.NotifyAdmin("⚠️ <b>VPN Rotation</b> : L'IP n'a pas changé (" + newIP + ").")
+		} else {
+			m.NotifyAdmin("✅ <b>VPN Rotation</b> : Reconnexion réussie. IP : " + newIP)
+		}
 	}
 	
 	m.ResumeTorrents()
+	m.refreshTrackers()
+}
+
+func (m *Manager) refreshTrackers() {
+	prefs := map[string]interface{}{
+		"add_trackers_enabled": true,
+		"add_trackers":         "https://raw.githubusercontent.com/ngosang/trackerslist/master/trackers_best.txt",
+	}
+	jsonPrefs, _ := json.Marshal(prefs)
+
+	resp, err := m.internalClient.PostForm(m.qbitURL+"/api/v2/app/setPreferences", url.Values{
+		"json": {string(jsonPrefs)},
+	})
+	if err != nil {
+		slog.Error("Échec du rafraîchissement des trackers qBittorrent", "error", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusOK {
+		slog.Info("✅ Trackers qBittorrent rafraîchis avec succès")
+	} else {
+		slog.Warn("⚠️ Erreur lors du rafraîchissement des trackers", "status", resp.Status)
+	}
 }
 
 func (m *Manager) updateGluetunRuntime(hostname string) error {
@@ -409,23 +473,30 @@ func (m *Manager) updateGluetunRuntime(hostname string) error {
 	req.Header.Set("Content-Type", "application/json")
 	
 	resp, err := m.internalClient.Do(req)
-	if err != nil { return err }
+	if err != nil { return fmt.Errorf("API settings call failed: %w", err) }
 	resp.Body.Close()
+	
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("API settings returned status %d", resp.StatusCode)
+	}
 
 	// 2. Redémarrage du tunnel pour appliquer
 	statusReq, _ := http.NewRequest("PUT", "http://gluetun:8000/v1/vpn/status", strings.NewReader(`{"status":"stopped"}`))
-	m.internalClient.Do(statusReq)
+	respStop, err := m.internalClient.Do(statusReq)
+	if err == nil { respStop.Body.Close() }
 	
-	time.Sleep(1 * time.Second)
+	time.Sleep(2 * time.Second)
 	
 	statusReq, _ = http.NewRequest("PUT", "http://gluetun:8000/v1/vpn/status", strings.NewReader(`{"status":"running"}`))
-	m.internalClient.Do(statusReq)
+	respStart, err := m.internalClient.Do(statusReq)
+	if err == nil { respStart.Body.Close() }
 	
 	return nil
 }
 
 func (m *Manager) getCountryFromHostname(hostname string) string {
-	if strings.HasPrefix(hostname, "ch") {
+	h := strings.ToLower(hostname)
+	if strings.HasPrefix(h, "ch") || strings.Contains(h, "switzerland") {
 		return "Switzerland"
 	}
 	return "Netherlands"

@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"myflixbot.local/internal/ai"
 	"myflixbot.local/internal/arrclient"
@@ -94,8 +95,8 @@ func (h *BotHandler) setupHandlers() {
 	admin.Handle("/queue", func(c tele.Context) error { return h.refreshQueue(c, false) })
 	admin.Handle("/maintenance_test", func(c tele.Context) error {
 		c.Send("🚀 <b>Test manuel de la maintenance nocturne initié...</b>", tele.ModeHTML)
-		go h.sys.ExecuteMaintenance()
-		go h.vpn.RotateVPN()
+		system.GoSafe(nil, func() { h.sys.ExecuteMaintenance() })
+		system.GoSafe(nil, func() { h.vpn.RotateVPN() })
 		return nil
 	})
 
@@ -515,10 +516,14 @@ func (h *BotHandler) refreshQueue(c tele.Context, edit bool) error {
 	text := "📥 <b>FLUX DE TÉLÉCHARGEMENT ACTIFS</b>\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n\n"
 	count := 0
 	for _, t := range torrents {
-		st := t["state"].(string)
+		st, _ := t["state"].(string)
 		// On affiche les téléchargements actifs ou en cours de vérification
 		if strings.Contains(strings.ToLower(st), "dl") || strings.Contains(strings.ToLower(st), "check") {
 			prog := t["progress"].(float64) * 100
+			etaVal, _ := t["eta"].(float64)
+			speedVal, _ := t["dlspeed"].(float64)
+			eta := int(etaVal)
+			speed := speedVal / (1024 * 1024) // MB/s
 			cat, _ := t["category"].(string)
 
 			icon := "📦"
@@ -528,7 +533,21 @@ func (h *BotHandler) refreshQueue(c tele.Context, edit bool) error {
 				icon = "📺"
 			}
 
-			text += fmt.Sprintf("%s <b>%s</b>\n  %s\n\n", icon, h.cleanTitle(t["name"].(string)), h.renderProgressBar(prog))
+			etaStr := ""
+			if eta > 0 && eta < 8640000 {
+				etaStr = " | ⏳ " + h.formatSeconds(eta)
+			} else if prog < 100 && speed > 0 {
+				etaStr = " | ⏳ ∞"
+			}
+
+			speedStr := ""
+			if speed > 0.1 {
+				speedStr = fmt.Sprintf(" (%.1f MB/s)", speed)
+			}
+
+			text += fmt.Sprintf("%s <b>%s</b>%s\n  %s%s\n\n", 
+				icon, h.cleanTitle(t["name"].(string)), speedStr, 
+				h.renderProgressBar(prog), etaStr)
 			count++
 		}
 	}
@@ -578,7 +597,8 @@ func (h *BotHandler) showVpnStatus(c tele.Context, edit bool) error {
         return c.Send(msg, menu, tele.ModeHTML)
 }
 func (h *BotHandler) handleVpnRotate(c tele.Context) error {
-	go h.vpn.RotateVPN(); return c.Send("🔄 <b>Rotation VPN initiée.</b>\nLe serveur sera redémarré avec une nouvelle IP.", tele.ModeHTML)
+	system.GoSafe(nil, func() { h.vpn.RotateVPN() })
+	return c.Send("🔄 <b>Rotation VPN initiée.</b>\nLe serveur sera redémarré avec une nouvelle IP.", tele.ModeHTML)
 }
 
 func (h *BotHandler) tmdbSmartResolve(query string) []map[string]interface{} {
@@ -713,6 +733,22 @@ func (h *BotHandler) findFirstVideo(root string) string {
 		return nil
 	})
 	return found
+}
+
+func (h *BotHandler) formatSeconds(s int) string {
+	if s <= 0 { return "0s" }
+	if s >= 8640000 { return "∞" }
+	d := time.Duration(s) * time.Second
+	if d.Hours() >= 24 {
+		return fmt.Sprintf("%dd %dh", int(d.Hours())/24, int(d.Hours())%24)
+	}
+	if d.Hours() >= 1 {
+		return fmt.Sprintf("%dh %dm", int(d.Hours()), int(d.Minutes())%60)
+	}
+	if d.Minutes() >= 1 {
+		return fmt.Sprintf("%dm %ds", int(d.Minutes()), int(d.Seconds())%60)
+	}
+	return fmt.Sprintf("%ds", int(d.Seconds()))
 }
 
 func (h *BotHandler) sendDetailedMedia(c tele.Context, cat string, it map[string]interface{}) error {

@@ -189,11 +189,15 @@ func (s *SystemManager) notifyAdminMsg(msg string) {
 }
 
 func (s *SystemManager) runConfigBackup() {
+	slog.Info("Démarrage du backup des configurations...")
 	// Use the new backup script
 	cmd := exec.Command("/bin/bash", "/app/infra/ai/maintenance/backup_app_configs.sh")
-	if err := cmd.Run(); err != nil {
-		slog.Error("Backup failed during maintenance", "error", err)
-		s.notifyAdminMsg("⚠️ <b>Alerte Backup</b> : Échec de la sauvegarde nocturne.")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		slog.Error("Backup failed during maintenance", "error", err, "output", string(output))
+		s.notifyAdminMsg("⚠️ <b>Alerte Backup</b> : Échec de la sauvegarde nocturne.\nDétails : <code>" + err.Error() + "</code>")
+	} else {
+		slog.Info("Backup réussi")
 	}
 }
 
@@ -335,14 +339,14 @@ func (s *SystemManager) StartPerformanceMonitor(ctx context.Context) {
 			// LOGIQUE A : Boost au démarrage (Nouveau téléchargement détecté)
 			if currentActiveCount > lastActiveCount {
 				slog.Info("Nouveau téléchargement détecté. Optimisation VPN...")
-				go s.vpn.RotateVPN()
+				GoSafe(nil, func() { s.vpn.RotateVPN() })
 			}
 
 			// LOGIQUE B : Détection de baisse de régime (Throttling)
 			// Si < 2MB/s (seuil à ajuster) alors qu'on a des téléchargements actifs
 			if currentActiveCount > 0 && speedMBps < 2.0 {
 				slog.Warn("Vitesse de téléchargement faible détectée", "speed", fmt.Sprintf("%.2f MB/s", speedMBps))
-				go s.vpn.RotateVPN()
+				GoSafe(nil, func() { s.vpn.RotateVPN() })
 			}
 
 			lastActiveCount = currentActiveCount

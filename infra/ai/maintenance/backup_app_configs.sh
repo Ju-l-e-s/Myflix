@@ -55,17 +55,31 @@ echo "📦 Archivage des fichiers..."
 
 # On cherche les fichiers de config et les bases de données (.db)
 # On EXCLUT Plex (trop gros) et les Definitions de Prowlarr
-# On INCLUT nos infos système temporaires
-find "$ROOT_DIR/infra" "$SYS_TEMP" -type f \
-    \( -name "*.yaml" -o -name "*.yml" -o -name "*.xml" -o -name "*.json" -o -name "*.conf" -o -name ".env" -o -name "*.db" -o -name "*_backup.txt" \) \
+# On EXCLUT les fichiers de logs (logs.db) qui peuvent être énormes
+# On INCLUT nos infos système temporaires et les dossiers sur le disque externe
+find "$ROOT_DIR/infra" "$SYS_TEMP" "/mnt/externe/radarr/config" "/mnt/externe/sonarr/config" -type f \
+    \( -name "*.yaml" -o -name "*.yml" -o -name "*.xml" -o -name "*.json" -o -name "*.conf" -o -name ".env" -o -name "*.db" -o -name "*.zip" -o -name "*_backup.txt" \) \
     ! -name "docker-compose.yml" \
+    ! -name "logs.db" \
     ! -path "*/.git/*" \
     ! -path "*/node_modules/*" \
     ! -path "*/ai-env/*" \
     ! -path "*/prowlarr/Definitions/*" \
     ! -path "*/plex/*" \
     ! -path "*/backups_automated/*.tar.gz*" \
-    -print0 | tar -cvzf "$ARCHIVE_PATH" --null -T -
+    -print0 > /tmp/backup_file_list.txt
+
+# On tolère l'exit code 1 de tar (file changed as we read it) qui arrive souvent avec les bases de données actives
+set +e
+tar -cvzf "$ARCHIVE_PATH" --null -T /tmp/backup_file_list.txt
+TAR_EXIT=$?
+set -e
+rm /tmp/backup_file_list.txt
+
+if [ $TAR_EXIT -ne 0 ] && [ $TAR_EXIT -ne 1 ]; then
+    echo "❌ Erreur Tar : Exit code $TAR_EXIT"
+    exit $TAR_EXIT
+fi
 
 # --- 4. Chiffrement GPG ---
 echo "🔐 Chiffrement de l'archive..."
@@ -92,13 +106,20 @@ if [ ! -z "$GITHUB_PAT" ]; then
     git config user.name "Jules (Bot)"
 
     # On remplace l'ancienne backup par la nouvelle pour éviter de saturer Git
+    echo "📤 Mise à jour du dépôt Git..."
     rm -f app_configs_*.tar.gz.gpg
     cp "$ENCRYPTED_ARCHIVE" .
 
     git add .
-    git commit -m "Full App & System Backup $TIMESTAMP" || echo "Aucun changement"
-    git push origin main --force
-    echo "✅ Backup synchronisée sur GitHub."
+    git commit -m "Full App & System Backup $TIMESTAMP" || echo "ℹ️ Aucun changement à committer"
+    
+    echo "🚀 Push vers GitHub..."
+    if git push origin main --force; then
+        echo "✅ Backup synchronisée sur GitHub."
+    else
+        echo "❌ Échec du push vers GitHub."
+        exit 1
+    fi
 fi
 
-echo "✅ Sauvegarde terminée : $ENCRYPTED_ARCHIVE"
+echo "✅ Sauvegarde terminée avec succès : $ENCRYPTED_ARCHIVE"
